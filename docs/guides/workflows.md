@@ -12,12 +12,94 @@ directly to design thinking methodology and is the endogenic approach to all kno
 
 ## Contents
 
+- [Handoff Architecture](#handoff-architecture)
 - [Research Workflow](#research-workflow)
 - [Documentation Workflow](#documentation-workflow)
 - [Scripting Workflow](#scripting-workflow)
 - [Gates Reference](#gates-reference)
 - [GitHub Issue Conventions](#github-issue-conventions)
 - [Human Review Checkpoints](#human-review-checkpoints)
+
+---
+
+## Handoff Architecture
+
+Three interlocking patterns govern how agents hand off to each other. Together they produce
+**value coherence** across the fleet — agents produce consistent, well-grounded outputs not
+because they share a single rule, but because each layer encodes the same context and passes
+it forward in denser form.
+
+### 1. Self-Loop Phase Gates
+
+Executive agents have handoff buttons that target **themselves** — one per phase boundary.
+After a sub-agent completes its task and returns control, the executive clicks the self-loop
+button to enter a deliberate review step before deciding the next delegation.
+
+```
+Human → Executive
+           ↓ (delegate)
+        Sub-agent A
+           ↓ (takeback)
+        Executive  ← self-loop button fires here: "✓ A done — review & decide"
+           ↓ (delegate)
+        Sub-agent B
+           ↓ (takeback)
+        Executive  ← self-loop button fires here: "✓ B done — review & decide"
+           ↓
+        Review → GitHub
+```
+
+**Why this matters**: the self-loop button pre-fills a prompt that orients the executive to
+the just-completed output and the decision to be made. It enforces a review pause that prevents
+sub-agent output from propagating unchecked into the next phase.
+
+**Authoring rule**: every executive agent should have one self-loop handoff per phase boundary,
+labeled `✓ <Phase> done — review & decide`. The prompt should name where to find the output
+and what the gate criteria are.
+
+### 2. Prompt Enrichment Chain
+
+Each delegation level enriches the prompt with progressively denser project context:
+
+```
+Human           sparse intent
+    ↓
+Executive       reads scratchpad + OPEN_RESEARCH.md + AGENTS.md
+                → emits a richer, grounded, scoped prompt
+    ↓
+Sub-agent       reads specialist sources + executive prompt
+                → emits a precisely targeted instruction
+    ↓
+Specialist      executes with full context
+```
+
+This is the endogenous-first principle in practice. Context already encoded in the repo
+(guides, prior session scratchpad, AGENTS.md guardrails) is absorbed at each level and
+re-emitted in the next delegation — so work at the leaves is grounded in the full project
+knowledge base, not just the human's initial message.
+
+**Implication for prompt authoring**: handoff `prompt:` fields should leave room for the
+receiving agent to apply its own encoded knowledge. Specific enough to convey context;
+general enough not to over-constrain.
+
+### 3. Quasi-Encapsulated Sub-Fleets
+
+Sub-agents default to **returning to their executive** (takeback), but may escalate directly
+to another agent in exceptional cases — when the executive's context is insufficient or the
+issue crosses fleet boundaries.
+
+| Route | When to use |
+|-------|-------------|
+| `Sub-agent → Executive` | Default: always return for the review gate |
+| `Sub-agent → Executive Docs` | Exceptional: output directly implies a doc change the executive can't handle |
+| `Sub-agent → Review` | Exceptional: quality issue requiring an immediate gate before any further work |
+
+**Anti-patterns**:
+- **Full encapsulation** — sub-agents can never escalate: too rigid, breaks on edge cases.
+- **Free-chaining** — sub-agents route freely to any next agent: loses executive oversight.
+
+The hybrid model gives fleets quasi-autonomy while keeping the executive in oversight as the
+default path.
 
 ---
 

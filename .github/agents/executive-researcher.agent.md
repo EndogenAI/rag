@@ -12,21 +12,43 @@ tools:
   - changes
   - agent
 handoffs:
+  # ── Phase-gate checkpoints (self-loop) ────────────────────────────────────
+  # Use these after a sub-agent returns control. Review the output, then decide
+  # the next step. These buttons keep oversight at the executive at every phase.
+  - label: "✓ Scout done — review & decide"
+    agent: Executive Researcher
+    prompt: "Scout output is in the scratchpad under '## Scout Output'. Review it: are there ≥3–5 relevant sources? Is synthesis absent? Any obvious gaps? If satisfied, delegate to Research Synthesizer. If gaps remain, re-delegate to Scout with a refined scope and note what's missing."
+    send: false
+  - label: "✓ Synthesis done — review & decide"
+    agent: Executive Researcher
+    prompt: "Synthesis draft is at docs/research/<slug>.md. Review it against the gate deliverables (D1, D2, D3). Is it free of raw Scout notes? Does it address all deliverables or explicitly defer them? If satisfied, delegate to Research Reviewer. If gaps remain, return to Synthesizer with specific issues."
+    send: false
+  - label: "✓ Review done — archive or revise"
+    agent: Executive Researcher
+    prompt: "Reviewer verdict is in the scratchpad under '## Reviewer Output'. If Approved: delegate to Research Archivist. If Revise: return to Synthesizer with the Reviewer's specific issues noted. If Reject: return to Scout with a refined scope."
+    send: false
+  - label: "✓ Archived — notify & close"
+    agent: Executive Researcher
+    prompt: "Research is committed. Update the GitHub issue with a comment linking to the committed document. Notify Executive Docs if any guides need updating. Close the issue or move to the next milestone."
+    send: false
+  # ── Outbound delegations ──────────────────────────────────────────────────
+  # Use these to dispatch work to sub-agents. Sub-agents return control via
+  # takeback — you will see a phase-gate checkpoint button when they return.
   - label: Delegate to Research Scout
     agent: Research Scout
-    prompt: "Please survey the following topic and catalogue all relevant sources, links, and raw findings into the active session scratchpad. Do not synthesize — gather only. Topic: <!-- insert topic -->"
+    prompt: "Please survey the following topic and catalogue all relevant sources, links, and raw findings into the active session scratchpad under '## Scout Output'. Do not synthesize — gather only. Topic: <!-- insert topic -->. Seed references: <!-- paste from OPEN_RESEARCH.md -->"
     send: false
   - label: Delegate to Research Synthesizer
     agent: Research Synthesizer
-    prompt: "Raw sources have been catalogued in the session scratchpad. Please synthesize them into a structured research draft following the expansion→contraction pattern. Output to docs/research/. Topic: <!-- insert topic -->"
+    prompt: "Raw sources have been catalogued in the scratchpad under '## Scout Output'. Please synthesize into a structured research draft in docs/research/<slug>.md following the expansion→contraction pattern. Gate deliverables: <!-- D1, D2, D3 from OPEN_RESEARCH.md -->"
     send: false
   - label: Delegate to Research Reviewer
     agent: Research Reviewer
-    prompt: "A research synthesis draft is ready. Please validate it against the endogenic methodology standards and flag any gaps, contradictions, or unsupported claims. Draft: <!-- insert path -->"
+    prompt: "A synthesis draft is ready at docs/research/<slug>.md. Please validate against endogenic methodology standards and flag any gaps, unsupported claims, or contradictions. Gate deliverables: <!-- D1, D2, D3 -->"
     send: false
   - label: Delegate to Research Archivist
     agent: Research Archivist
-    prompt: "Research has been reviewed and approved. Please finalise the document in docs/research/ and commit it."
+    prompt: "Research is reviewed and approved (verdict in scratchpad under '## Reviewer Output'). Please finalise docs/research/<slug>.md (Status: Final), route through Review for the commit gate, commit, and push. Closes #<!-- issue number -->"
     send: false
   - label: Spawn New Area Agent
     agent: Executive Scripter

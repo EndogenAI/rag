@@ -83,11 +83,11 @@ Every agent must hand off to at least one downstream agent. Standard patterns:
 ```
 Action agent  →  Review  →  GitHub
 Scaffold agent  →  Review  →  GitHub
-Executive  →  sub-agents  →  Review  →  GitHub
+Executive  →  sub-agents  →  [Back to Executive]  →  Review  →  GitHub
 ```
 
 - An executive agent orchestrates its fleet and must hand off to Review before committing.
-- Sub-agents should hand off back to their executive or directly to Review/GitHub.
+- Sub-agents return control to their executive via takeback — they do not chain directly to the next sub-agent.
 - Read-only agents (review, plan, audit) hand off to action agents or GitHub.
 - The `send: false` default is strongly preferred — avoid auto-submitting prompts.
 
@@ -100,6 +100,47 @@ Executive → Sub-agent A → [Back to Executive] → Sub-agent B → [Back to E
 ```
 
 **Anti-pattern — free-chaining** (`A → B → C → D → Review`): loses the executive's oversight role.
+
+### Self-Loop Phase Gates (Executive Pattern)
+
+Executive agents should include handoff buttons that target **themselves** — one per phase boundary. These fire after a sub-agent returns and force a deliberate review step before the next delegation.
+
+```yaml
+- label: "✓ Scout done — review & decide"
+  agent: Executive Researcher      # targets itself
+  prompt: "Scout output is in the scratchpad. Review: ≥3–5 sources? No synthesis?
+           If satisfied, delegate to Synthesizer. If not, re-delegate Scout."
+  send: false
+```
+
+**Why self-loop**: the executive absorbs the sub-agent's output, evaluates it against gates, and enriches the next prompt with that context before delegating again. The handoff button is the mechanism that enforces the review pause.
+
+### Prompt Enrichment Chain
+
+Each delegation level enriches the prompt with progressively denser project context:
+
+```
+Human (sparse intent)
+  → Executive (reads scratchpad + OPEN_RESEARCH.md + AGENTS.md → richer, grounded prompt)
+    → Sub-agent (reads specialist sources → precisely scoped instruction)
+      → Specialist
+```
+
+This is the endogenous-first principle in practice: context already encoded in the repo is translated into each delegation, so agents do not re-discover it interactively.
+
+**Implication for prompt authoring**: handoff `prompt:` fields on executive agents should leave room for interpretation at the receiving end — specific enough to convey context, general enough that the sub-agent can apply its own encoded knowledge.
+
+### Quasi-Encapsulated Sub-Fleets
+
+Sub-agents **default to returning to their executive** (takeback), but may escalate directly to another agent in exceptional cases — when the executive's context is insufficient or the issue crosses fleet boundaries.
+
+```
+Normal:     Sub-agent → [Back to Executive]
+Escalation: Sub-agent → Executive Docs  (cross-fleet, exceptional)
+Escalation: Sub-agent → Review          (quality issue requiring immediate gate)
+```
+
+This hybrid model gives fleets quasi-autonomy while preserving executive oversight as the default. Full encapsulation (sub-agents can never escalate) and full openness (sub-agents chain freely) are both anti-patterns.
 
 ---
 
