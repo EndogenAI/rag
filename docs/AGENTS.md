@@ -29,7 +29,6 @@ documentation update. The sequence is:
 | Path | Purpose |
 |------|---------|
 | `docs/guides/` | Step-by-step guides for working with agents, scripts, and workflows |
-| `docs/protocols/` | Formal protocol specifications (session management, handoff graph, etc.) |
 | `docs/research/` | Research notes, literature reviews, and synthesis documents |
 
 ---

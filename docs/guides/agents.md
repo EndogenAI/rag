@@ -40,8 +40,16 @@ Invoke an agent by name in the chat input:
 
 | Task | Agent to invoke |
 |------|----------------|
+| Start a research session on any topic | **Executive Researcher** |
+| Gather raw sources for a research topic | **Research Scout** |
+| Synthesize research findings into a draft | **Research Synthesizer** |
+| Review a research draft before archiving | **Research Reviewer** |
+| Commit a finalised research doc | **Research Archivist** |
+| Update or create documentation and guides | **Executive Docs** |
 | Task you've done >2 times interactively | **Executive Scripter** |
 | Need a file watcher, hook, or CI job | **Executive Automator** |
+| Review changes before committing | **Review** |
+| Commit and push approved changes | **GitHub** |
 | Unsure which agent to use | Describe the task; ask Copilot Chat for a recommendation |
 
 ---
@@ -144,6 +152,53 @@ When a sub-agent cannot complete a task (posture limit, context too large, speci
 2. Use the "Back to [Executive]" handoff to return control
 
 The executive reads the escalation note, decides what to do next (re-delegate, create a new specialist agent, or handle directly), and proceeds.
+
+---
+
+## Agent Hierarchy and Task Ownership
+
+The fleet is organised into four functional areas. Each executive owns a vertical slice of work
+and orchestrates its sub-agents. Cross-cutting workflow agents (Review, GitHub) serve all areas.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Human / User                          │
+└──────────────┬────────────────────────┬─────────────────┘
+               │                        │
+   ┌───────────▼──────────┐  ┌──────────▼──────────────┐
+   │  Executive Researcher│  │    Executive Docs        │
+   └───────────┬──────────┘  └──────────┬──────────────┘
+               │                        │
+   ┌───────────▼──────────┐             │
+   │  Research Scout      │             │
+   │  Research Synthesizer│             │
+   │  Research Reviewer   │             │
+   │  Research Archivist  │             │
+   └───────────┬──────────┘             │
+               │                        │
+   ┌───────────▼────────────────────────▼─────┐
+   │  Executive Scripter / Executive Automator │
+   └───────────────────────┬───────────────────┘
+                           │
+              ┌────────────▼─────────────┐
+              │  Review  →  GitHub       │
+              └──────────────────────────┘
+```
+
+### Task Ownership by Workflow Stage
+
+| Workflow stage | Owned by | Escalates to |
+|----------------|----------|--------------|
+| Research question framing | Executive Researcher | Human |
+| Source gathering | Research Scout | Executive Researcher |
+| Synthesis drafting | Research Synthesizer | Executive Researcher |
+| Draft validation | Research Reviewer | Executive Researcher |
+| Final commit of research | Research Archivist | Review → GitHub |
+| Guide and docs updates | Executive Docs | Review → GitHub |
+| Script authoring | Executive Scripter | Review → GitHub |
+| Automation design | Executive Automator | Review → GitHub |
+| Pre-commit quality gate | Review | Originating agent |
+| Commit and push | GitHub | — |
 
 ---
 

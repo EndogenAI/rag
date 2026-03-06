@@ -161,8 +161,12 @@ Key agents for this repo:
 
 | Agent | Trigger |
 |-------|---------|
+| **Executive Researcher** | Start a research session; orchestrate Scout→Synthesizer→Reviewer→Archivist; spawn new area agents |
+| **Executive Docs** | Update guides, top-level docs, AGENTS.md, MANIFESTO.md; codify values across documentation |
 | **Executive Scripter** | Identify tasks done >2 times interactively; audit `scripts/` for gaps |
 | **Executive Automator** | Design file watchers, pre-commit hooks, CI tasks |
+| **Review** | Validate any changed files against AGENTS.md constraints before committing |
+| **GitHub** | Commit approved changes following Conventional Commits |
 
 ---
 
