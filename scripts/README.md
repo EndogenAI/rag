@@ -12,6 +12,7 @@ with a docstring describing its purpose, inputs, outputs, and usage examples.
 scripts/
   prune_scratchpad.py   # Cross-agent scratchpad session file manager (--init, --annotate, --force)
   watch_scratchpad.py   # File watcher — auto-annotates .tmp/*.md on change (uses watchdog)
+  scaffold_agent.py     # Scaffold a new .agent.md stub from a validated template
 ```
 
 ---
@@ -81,6 +82,46 @@ when the workspace opens. Example:
   "presentation": { "reveal": "silent", "panel": "dedicated" }
 }
 ```
+
+---
+
+## scripts/scaffold_agent.py
+
+**Purpose**: Scaffold a new VS Code Copilot `.agent.md` file in `.github/agents/` from a
+validated template. Enforces the frontmatter schema and naming conventions defined in
+`.github/agents/AGENTS.md`. Validates name uniqueness and description length before writing.
+
+**Usage**:
+
+```bash
+# Scaffold a new research sub-agent (dry run first)
+uv run python scripts/scaffold_agent.py \
+    --name "Research Foo" \
+    --description "Surveys sources on foo topics and catalogues findings." \
+    --posture creator \
+    --area research \
+    --dry-run
+
+# Write the file for real
+uv run python scripts/scaffold_agent.py \
+    --name "Research Foo" \
+    --description "Surveys sources on foo topics and catalogues findings." \
+    --posture creator \
+    --area research
+```
+
+**Arguments**:
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--name` | yes | Display name for the agent (must be unique) |
+| `--description` | yes | One-line summary ≤ 200 characters |
+| `--posture` | no | `readonly` \| `creator` \| `full` (default: `creator`) |
+| `--area` | no | Area prefix for fleet sub-agents, e.g. `research` |
+| `--dry-run` | no | Print output without writing |
+
+**After running**: fill in the TODO sections in the generated file, add it to
+`.github/agents/README.md`, run the name-uniqueness check, and commit.
 
 ---
 

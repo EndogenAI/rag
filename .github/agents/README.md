@@ -9,6 +9,30 @@ Typical workflow: **Plan → (approve) → Implement → (complete) → Review �
 
 ---
 
+## Research Agents
+
+Orchestrate research sessions from question to committed synthesis. The Executive Researcher drives the fleet using the expansion→contraction pattern.
+
+| Agent | File | Posture | Trigger | Handoffs |
+|-------|------|---------|---------|----------|
+| **Executive Researcher** | `executive-researcher.agent.md` | full | Start a research session; orchestrate Scout→Synthesizer→Reviewer→Archivist; spawn new area agents | Research Scout, Research Synthesizer, Research Reviewer, Research Archivist, Executive Docs, Review |
+| **Research Scout** | `research-scout.agent.md` | read + web | Gather and catalogue raw sources for a topic — no synthesis | Executive Researcher |
+| **Research Synthesizer** | `research-synthesizer.agent.md` | read + create | Transform Scout findings into a structured synthesis draft in `docs/research/` | Executive Researcher |
+| **Research Reviewer** | `research-reviewer.agent.md` | read-only | Validate synthesis drafts against methodology standards; flag gaps and unsupported claims | Executive Researcher |
+| **Research Archivist** | `research-archivist.agent.md` | read + create | Finalise approved drafts, commit to `docs/research/`, update issue | Review, Executive Researcher |
+
+---
+
+## Documentation Agents
+
+Maintain and evolve all project documentation — encoding dogmatic values and methodology across every documentation layer.
+
+| Agent | File | Posture | Trigger | Handoffs |
+|-------|------|---------|---------|----------|
+| **Executive Docs** | `executive-docs.agent.md` | read + create | Update guides, top-level docs, AGENTS.md, MANIFESTO.md; codify values across all documentation layers | Review, GitHub, Executive Researcher |
+
+---
+
 ## Scripting & Automation Agents
 
 Enforce the programmatic-first principle — encode repeated tasks as scripts and non-agent automation before performing them a third time interactively.
@@ -20,12 +44,24 @@ Enforce the programmatic-first principle — encode repeated tasks as scripts an
 
 ---
 
+## Workflow Agents
+
+Cross-cutting agents used at the end of every workflow for quality gating and committing.
+
+| Agent | File | Posture | Trigger | Handoffs |
+|-------|------|---------|---------|----------|
+| **Review** | `review.agent.md` | read-only | Validate any changed files against AGENTS.md constraints before committing | GitHub, originating agent |
+| **GitHub** | `github.agent.md` | terminal | Commit approved changes to the current branch following Conventional Commits | Review |
+
+---
+
 ## Adding a New Agent
 
 1. Read [`.github/agents/AGENTS.md`](./AGENTS.md) for the frontmatter schema and naming conventions.
-2. Create `.github/agents/<name>.agent.md`.
-3. Add the agent to the correct table above.
-4. Commit: `feat(agents): add <name> agent`.
+2. Run the scaffold script: `uv run python scripts/scaffold_agent.py --name "<Name>" --description "<desc>" --posture <posture>`.
+3. Fill in the generated stub's TODO sections.
+4. Add the agent to the correct table above.
+5. Commit: `feat(agents): add <name> agent`.
 
 ---
 
@@ -35,5 +71,6 @@ Scripts that back agents in this fleet. All scripts support `--dry-run`.
 
 | Script | Purpose |
 |--------|---------|
+| `scripts/scaffold_agent.py` | Scaffold a new `.agent.md` stub from a validated template |
 | `scripts/prune_scratchpad.py` | Manage cross-agent scratchpad session files in `.tmp/` |
 | `scripts/watch_scratchpad.py` | File watcher — auto-annotates `.tmp/*.md` on change |
