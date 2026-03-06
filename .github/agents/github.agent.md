@@ -3,6 +3,7 @@ name: GitHub
 description: Commit approved changes to the current branch following Conventional Commits. The final step in every agent workflow before human review.
 tools:
   - terminal
+  - execute
   - read
   - changes
 handoffs:
