@@ -149,3 +149,31 @@ The current agent fleet emerged organically from the EndogenAI project. As this 
 - [ ] D1 — Agent fleet pattern catalog in `docs/guides/agents.md`
 - [ ] D2 — Recommendations for when to create new specialist agents vs. extend existing ones
 - [ ] D3 — Updated `.github/agents/README.md` with pattern documentation
+
+
+---
+
+## 7. Episodic and Experiential Memory for Agent Sessions
+
+**Priority: Low** (deferred until scratchpad accumulation is confirmed as a bottleneck)
+
+### Research Question
+How should agents store and query *episodic* memory (past session events) and *experiential* memory (heuristics derived from outcomes) without cloud dependency?
+
+### Why This Matters
+Identified as a gap in `docs/research/agentic-research-flows.md` (Memory Architecture section). The project currently accumulates episodic records in scratchpad session files and git history, but there is no queryable layer — no "what did we learn about X in prior sessions?" lookup. Experiential memory is served only by the Copilot memory tool, which is external, ephemeral, and non-portable. This gap becomes acute once session history grows beyond what manual `_index.md` scanning can handle.
+
+**Prerequisite:** Resolve OPEN_RESEARCH.md #1 (local compute) before evaluating embedding-based options.
+
+### Resources to Survey
+- [ ] mem0 — embedding-based long-term memory; https://github.com/mem0ai/mem0
+- [ ] Letta (formerly MemGPT) — memory hierarchy for long-horizon agents; https://github.com/letta-ai/letta
+- [ ] Zep/Graphiti — knowledge-graph temporal memory; https://github.com/getzep/graphiti
+- [ ] Cognee — lighter knowledge-graph option; https://github.com/topoteretes/cognee
+- [ ] AIGNE AFS memory modules (AFSHistory, FSMemory) — SQLite-backed, local-first; https://arxiv.org/abs/2512.05470
+- [ ] `mei2025surveycontextengineeringlarge` — broader context engineering survey (not yet fetched)
+
+### Gate Deliverables
+- [ ] D1 — Comparison of local-capable episodic/experiential memory options
+- [ ] D2 — Recommended approach given current session volume and local-compute constraints
+- [ ] D3 — Script candidate specification (e.g., scratchpad deduplication or semantic search wrapper)

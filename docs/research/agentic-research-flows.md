@@ -1,7 +1,8 @@
 ---
 title: Agentic Research Flows
-status: Final
+status: Final (addendum)
 date: 2026-03-06
+date_updated: 2026-03-06
 sources:
   - https://www.anthropic.com/engineering/building-effective-agents
   - https://www.anthropic.com/engineering/claude-research-system
@@ -13,7 +14,7 @@ sources:
 
 # Agentic Research Flows
 
-> **Status**: Final
+> **Status**: Final (addendum)
 > **Research Question**: How do multi-agent systems architect context, orchestration, memory, and tool use for effective research — and what patterns can be directly applied to this project?
 > **Date**: 2026-03-06
 
@@ -165,3 +166,111 @@ The architecture does not require structural changes — the existing hierarchy,
 4. arXiv 2512.05470v1 — Everything is Context: Agentic File System (AIGNE). https://arxiv.org/abs/2512.05470
 5. arXiv 2304.03442 — Generative Agents: Interactive Simulacra of Human Behavior (Park et al.). https://arxiv.org/abs/2304.03442
 6. arXiv 2210.03629 — ReAct: Synergizing Reasoning and Acting in Language Models (Yao et al.). https://arxiv.org/abs/2210.03629
+
+---
+
+## Addendum — Follow-Up Scout Findings
+
+_Added 2026-03-06 following round-2 scout re-runs (Scout A: prompt templates and handoff formats, Scout B: AIGNE AFS and Agent Teams, Scout C: A2A and Mei et al. context engineering survey)._
+
+---
+
+### Attribution Correction — AIGNE Context Engineering Pattern
+
+**The original synthesis contained an error that must be corrected.**
+
+**OLD (incorrect):**
+> "AIGNE introduces the write/select/compress/isolate four-stage pattern"
+
+**CORRECT:**
+The write/select/compress/isolate four-stage pattern is **LangChain's industrial practice**, cited in the AIGNE paper as `[LangChainContextEngineering2024]`. This is confirmed by both the AIGNE paper itself and the Mei et al. context engineering survey ([arxiv-context-engineering-survey](sources/arxiv-context-engineering-survey.md)).
+
+**AIGNE's actual contribution** is the **Context Engineering Pipeline**:
+- **Context Constructor**: selects and compresses context from the AFS repository; produces a JSON manifest with selected files, compressed representations, and relevance scores.
+- **Context Updater** (three modes): Static Snapshot (full recompute), Incremental Streaming (delta updates), Adaptive Refresh (confidence-triggered refresh).
+- **Context Evaluator**: validates outputs before committing to AFS; writes back with lineage metadata (`createdAt`, `sourceId`, `confidence`, `revisionId`); triggers human review when confidence falls below a configurable threshold.
+
+**Also**: the correct AIGNE GitHub repository URL is `https://github.com/AIGNE-io/aigne-framework` — not the `AIGNE-Project` organisation referenced earlier.
+
+---
+
+### AIGNE Memory Taxonomy
+
+The AIGNE paper (see [arxiv-org-html-2512-05470v1](sources/arxiv-org-html-2512-05470v1.md)) enumerates seven memory types with distinct persistence scopes:
+
+| Memory Type | Persistence Scope |
+|---|---|
+| **Scratchpad** | Ephemeral — single reasoning step |
+| **Episodic** | Session-scoped — task or conversation |
+| **Fact** | Long-term — explicit factual claims |
+| **Experiential** | Long-term — heuristics from outcomes |
+| **Procedural** | Long-term — how-to knowledge |
+| **User** | Long-term — user-specific preferences |
+| **Historical Record** | Immutable — append-only audit trail |
+
+The mapping of this taxonomy to the EndogenAI substrate (original synthesis, Memory Architecture section) remains valid. OPEN gap: Episodic and Experiential types are partially satisfied but not queryable.
+
+---
+
+### Comprehension-Generation Gap (Mei et al.)
+
+The Mei et al. survey (arXiv:2507.13334, see [arxiv-context-engineering-survey](sources/arxiv-context-engineering-survey.md)) identifies a critical finding not captured in the original synthesis:
+
+> "our survey not only establishes a technical roadmap for the field but also reveals a critical research gap: a fundamental asymmetry exists between model capabilities. While current models, augmented by advanced context engineering, demonstrate remarkable proficiency in understanding complex contexts, they exhibit pronounced limitations in generating equally sophisticated, long-form outputs. Addressing this gap is a defining priority for future research."
+
+**Implication for EndogenAI**: the evaluator-optimizer loop is not merely a quality gate — it is the correct architectural response to the comprehension-generation gap. Structuring output generation as iterative evaluation (generate → evaluate → refine) compensates for models' relative weakness at long-form generation. This retroactively strengthens the case for the self-loop phase gate design and argues for making the loop more explicit rather than optional.
+
+---
+
+### A2A Protocol Findings
+
+See [a2a-announcement](sources/a2a-announcement.md) for the full stub. Key additions to the original synthesis:
+
+- **Agent Cards** are JSON documents advertising agent capabilities — the formal mechanism for capability discovery in a multi-agent network. `generate_agent_manifest.py` produces a structurally analogous artefact, but with a different purpose: it is a static CI context-loading artifact, not a live service-discovery document. A future A2A-compatible extension to the manifest would need to add endpoint URLs, authentication schemes, and task lifecycle fields.
+- **Protocol stack**: HTTP + SSE + JSON-RPC — explicitly designed for enterprise IT stacks and air-gapped/local deployment.
+- **MCP relationship confirmed**: "A2A complements Anthropic's Model Context Protocol (MCP), which provides helpful tools and context to agents." MCP governs agent↔tool interactions; A2A governs agent↔agent coordination. These are complementary layers, not competing standards.
+- A2A has production commitment from 50+ technology and services partners including Salesforce, ServiceNow, Anthropic, and major consulting firms.
+- Full A2A spec (endpoint paths, Agent Card JSON schema) requires fetching the `google/A2A` GitHub repository — not yet cached.
+
+---
+
+### Prompt Template and Handoff Format Findings
+
+From Scout A analysis of Anthropic cookbook agents (see [cookbook-research-lead-agent](sources/cookbook-research-lead-agent.md) and [cookbook-research-subagent](sources/cookbook-research-subagent.md)):
+
+- **XML over Markdown**: Anthropic cookbook agents use XML-tagged sections (`<research_process>`, `<delegation_instructions>`, `<subagent_count_guidelines>`) as section boundaries — machine-unambiguous, not Markdown headings. The EndogenAI agent files use Markdown headings (`## Role`, `## Completion Criteria`), which is less parsing-stable.
+- **No structured handoff schema found in any external source**: "The only channel from parent to subagent is the Task prompt string" — all external sources surveyed (cookbook, SDK docs, Agent Teams docs) use unstructured natural language in the Task/prompt field. No JSON schema or typed handoff format was found.
+- **OODA loop confirmed**: the Anthropic cookbook subagent prompt explicitly names the OODA loop (Observe/Orient/Decide/Act) as the production research loop — the precise equivalent of ReAct's Thought/Action/Observation trace.
+- **7-element delegation checklist** (from cookbook lead agent): objective, output format, background context, key questions, sources/quality criteria, specific tools, scope boundaries.
+- **Quantitative subagent budget**: simple → 1 subagent; standard → 2–3; medium → 3–5; hard → 5–10. Default: 3 for most queries.
+- **EndogenAI's `.tmp/` scratchpad append-under-heading convention is novel** — no external analogue found in any source surveyed. The convention is an EndogenAI-specific invention not derived from any external framework.
+
+---
+
+### Open Gaps
+
+The following gaps remain unresolved after round-2 scout re-runs:
+
+| Gap | Status | Next Action |
+|-----|--------|-------------|
+| A2A Agent Card JSON schema fields | OPEN | Fetch `github.com/google/A2A` spec |
+| A2A specific HTTP endpoint paths | OPEN | Fetch `github.com/google/A2A` spec |
+| Mei formal context decomposition (c_x notation) | OPEN | Fetch full paper PDF body |
+| Write/select/compress/isolate primary attribution (LangChain cite) | OPEN | Fetch LangChain blog post |
+| AIGNE SQLite schema DDL | OPEN | Fetch AIGNE repo source |
+| ReAct Thought/Action/Observation prompt format | OPEN | Fetch react-lm.github.io code |
+
+---
+
+### Per-Source References
+
+Sources added in round-2 scout runs that are directly relevant to this synthesis:
+
+- [arxiv-org-html-2512-05470v1](sources/arxiv-org-html-2512-05470v1.md) — AIGNE paper; source of AIGNE Context Engineering Pipeline and 7-type memory taxonomy
+- [arxiv-context-engineering-survey](sources/arxiv-context-engineering-survey.md) — Mei et al. survey; source of comprehension-generation gap finding and LangChain attribution
+- [a2a-announcement](sources/a2a-announcement.md) — Google A2A announcement; source of Agent Card format and MCP/A2A relationship
+- [anthropic-building-effective-agents](sources/anthropic-building-effective-agents.md) — Anthropic BEA; primary source of five-pattern taxonomy and eight prompt engineering principles
+- [cookbook-research-lead-agent](sources/cookbook-research-lead-agent.md) — Anthropic cookbook lead agent prompt; source of 7-element delegation checklist and subagent budget guidelines
+- [cookbook-research-subagent](sources/cookbook-research-subagent.md) — Anthropic cookbook subagent prompt; source of OODA loop confirmation and research budget (5–15 tool calls)
+- [claude-sdk-subagents](sources/claude-sdk-subagents.md) — Claude SDK subagents reference; confirms filesystem-based agent definition as `.claude/agents/` markdown files
+- [tds-claude-skills-subagents](sources/tds-claude-skills-subagents.md) — TDS skills article; source of three-level progressive disclosure model for agent manifest generator
