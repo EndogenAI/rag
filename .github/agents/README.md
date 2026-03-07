@@ -44,6 +44,37 @@ Enforce the programmatic-first principle — encode repeated tasks as scripts an
 
 ---
 
+## Planning & Coordination Agents
+
+Decompose and sequence complex multi-domain work before execution begins. Invoke these when a request spans multiple executive agents or requires explicit dependency ordering.
+
+| Agent | File | Posture | Trigger | Handoffs |
+|-------|------|---------|---------|----------|
+| **Executive Orchestrator** | `executive-orchestrator.agent.md` | full | Coordinate multi-workflow sessions spanning research, docs, scripting, and fleet changes — sequence executive agents and maintain session coherence | All executive agents, Review, GitHub |
+| **Executive Planner** | `executive-planner.agent.md` | read-only | Decompose complex multi-step requests into structured plans with phases, gates, agent assignments, and dependency ordering — before any execution | Executive Orchestrator |
+
+---
+
+## Fleet Management Agents
+
+Maintain the health and standards compliance of the agent fleet itself.
+
+| Agent | File | Posture | Trigger | Handoffs |
+|-------|------|---------|---------|----------|
+| **Executive Fleet** | `executive-fleet.agent.md` | full | Manage the agent fleet — create, audit, update, and deprecate `.agent.md` files and fleet documentation | Review, GitHub, Executive Docs |
+
+---
+
+## Project Management Agents
+
+Maintain the health of the repository as an open-source resource.
+
+| Agent | File | Posture | Trigger | Handoffs |
+|-------|------|---------|---------|----------|
+| **Executive PM** | `executive-pm.agent.md` | full | Maintain issues, labels, milestones, changelog, contributing docs, and community health files following open-source best practices | Review, GitHub, Executive Docs, Executive Orchestrator |
+
+---
+
 ## Workflow Agents
 
 Cross-cutting agents used at the end of every workflow for quality gating and committing.
