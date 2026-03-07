@@ -21,6 +21,8 @@ Rather than prompting an agent from zero context and hoping for the best — the
 
 The name comes from biology: an endogenous process is one that originates from within the organism. Like all living systems, our endogenic substrate is built from inherited knowledge (standing on giants' shoulders) and continuous synthesis of external wisdom (tools, frameworks, best practices). We grow from within, but we do not grow alone.
 
+For a deeper exploration of these metaphors and how they guide all endogenous practice, see [`docs/guides/mental-models.md`](docs/guides/mental-models.md).
+
 ### The Balance: Inside Out, Not Inside Only
 
 Endogenic development is **not isolationism**. The distinction is:
