@@ -38,41 +38,67 @@ uv run python scripts/fetch_source.py --list
 
 ## File Structure
 
-Each stub follows this frontmatter + body format:
+Each stub is a **substantive synthesis document**, not a placeholder. It is generated in isolation from the full `.cache/sources/<slug>.md` distillation.
 
 ```markdown
 ---
 title: "<source title>"
 url: "<source url>"
 slug: "<slug>"
+type: paper | documentation | blog | cookbook | repo
 cached_at: "<YYYY-MM-DD>"
 cache_path: ".cache/sources/<slug>.md"
-issue_syntheses:
-  - docs/research/<topic>.md
+topics: [<tag1>, <tag2>]
 ---
 
 # <Source Title>
 
 **URL**: <url>
-**Type**: paper | documentation | blog | cookbook
+**Type**: paper | documentation | blog | cookbook | repo
 **Cached**: `uv run python scripts/fetch_source.py <url> --slug <slug>`
 
 ## Summary
 
-<!-- 2–4 sentences describing what the source is and its primary contribution. -->
+<!--
+  4–6 sentences covering:
+  - What the source is (type, author/org, publication date if known)
+  - Its structure or scope (e.g. "166-page survey of 1400+ papers")
+  - Its primary contribution or argument
+  - Any notable methodology or standout finding
+-->
 
 ## Key Claims
 
-<!-- Bullet list of the most important claims relevant to EndogenAI research. -->
+<!--
+  8–15 bullet points. Each bullet should:
+  - State a specific, falsifiable claim from the source
+  - Include a direct quote where available (use > blockquote format)
+  - Note if the claim is from the abstract only vs. body
+-->
 
 ## Relevance to EndogenAI
 
-<!-- How this source specifically bears on the EndogenAI project. -->
+<!--
+  5–8 sentences as editorial opinion:
+  - Which EndogenAI agent files, scripts, or guides does this source bear on?
+  - What gap in the EndogenAI methodology does this source address or expose?
+  - What should be adopted, adapted, or rejected — and why?
+-->
 
 ## Referenced By
 
-- [docs/research/<topic>.md](../<topic>.md)
+<!-- Populated automatically by scripts/link_source_stubs.py — do not edit manually -->
 ```
+
+### Depth requirements
+
+A stub is considered complete when:
+- `## Summary` has ≥ 4 sentences
+- `## Key Claims` has ≥ 6 bullets with direct quotes where available
+- `## Relevance to EndogenAI` has ≥ 3 substantive sentences with concrete project references
+- Total length ≥ 60 lines
+
+Stubs below these thresholds are treated as **placeholder stubs** and should be regenerated before any issue synthesis that cites them.
 
 ---
 
