@@ -30,7 +30,7 @@ documentation update. The sequence is:
 |------|---------|
 | `docs/guides/` | Step-by-step guides for working with agents, scripts, and workflows |
 | `docs/research/` | Issue-specific synthesis documents; each closes a GitHub research issue |
-| `docs/research/sources/` | Per-source synthesis stubs — one per surveyed source; committed to git |
+| `docs/research/sources/` | Per-source synthesis reports — one per surveyed source; committed to git |
 | `docs/research/OPEN_RESEARCH.md` | Open research queue, seed references, and gate deliverables |
 
 ---
@@ -49,50 +49,43 @@ documentation update. The sequence is:
 
 The research workflow produces two complementary layers of documentation:
 
-### 1. Per-Source Stubs — `docs/research/sources/<slug>.md`
+### 1. Per-Source Synthesis Reports — `docs/research/sources/<slug>.md`
 
-One file per surveyed source, written by the **Research Synthesizer** during the first pass.
-Each stub is a structured distillation: source metadata, key claims, methodology notes,
-and relevance to the EndogenAI project. These stubs are the **atomic unit** that issue
-synthesis documents reference. Writing them once prevents re-summarising the same source
-across multiple syntheses.
+One file per surveyed source, written by the **Research Synthesizer** (one agent invocation
+per source). Each file is a full academic-style synthesis report — not a summary or index
+card. The format follows standard synthesis note conventions used in systematic literature
+reviews: citation, research question, theoretical framework, methodology, key claims with
+quotes, critical assessment with an evidence quality rating, cross-source connections, and
+project relevance. These reports are the **atomic unit** referenced by issue synthesis
+documents.
 
 ```markdown
 ---
 slug: "<slug>"
 title: "<source title>"
 url: "<source url>"
-cached: true
-type: paper | blog | docs | repo | article
+authors: "<Author(s) or publishing organisation>"
+year: "<YYYY>"
+type: paper | documentation | blog | cookbook | repo
 topics: [<tag1>, <tag2>]
-date_synthesized: "<YYYY-MM-DD>"
----
-
-## Summary
-
-<2-4 sentences on what this source covers>
-
-## Key Claims
-
-- <claim 1 — exact quote preferred>
-- <claim 2>
-- <claim 3>
-
-## Relevance to EndogenAI
-
-<1-3 sentences on how this source applies to the EndogenAI Workflows project>
-
-## Referenced By
-
-<!-- Populated by issue synthesis pass; use relative links -->
-- [docs/research/<topic>.md](../<topic>.md)
+cached: true
+evidence_quality: strong | moderatevidence | evidence_qualityntation
+evidence_quality: strong | moderateviden Citaevidence_quality: uestioevidence_quality:eoevidence_quality: strong | moderateviden Citaevidence_quality: uestioeviden Crevidence_quality: strong | moderateviden Citaevidence_quality: uestioevidence_quality:ed By
 ```
+
+Full section guidance lives in
+[`.github/agents/research-synthesizer.agent.md`](../.github/agents/research-synthesizer.agent.md)
+(Pass 1 format template). Minimum length: **100 lines**.
+
+`## Referenced By` is populated automatically by `scripts/link_source_stubs.py` —
+never edit it manually.
 
 ### 2. Issue Synthesis — `docs/research/<slug>.md`
 
-One file per research issue, written by the **Research Synthesizer** during the second pass.
-Draws conclusions across all per-source stubs for this question. **Must reference the
-per-source stubs** using relative links rather than re-summarising source content inline.
+One file per research issue, written by the **Research Synthesizer** during the third pass
+(Pass 3). Draws conclusions across all per-source synthesis documents for this question.
+**Must reference the per-source synthesis documents** using relative links rather than
+re-summarising source content inline.
 
 ```markdown
 # <Research Topic>
@@ -119,5 +112,5 @@ or documented as a result of the research.
 |----------|---------|------------|
 | Raw HTML→Markdown distillations | `.cache/sources/<slug>.md` | **gitignored** (regenerable) |
 | Source manifest (what has been fetched) | `.cache/sources/manifest.json` | **tracked** |
-| Per-source synthesis stubs | `docs/research/sources/<slug>.md` | **tracked** |
+| Per-source synthesis reports | `docs/research/sources/<slug>.md` | **tracked** |
 | Issue synthesis documents | `docs/research/<slug>.md` | **tracked** |

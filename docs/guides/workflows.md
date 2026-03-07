@@ -16,6 +16,9 @@ directly to design thinking methodology and is the endogenic approach to all kno
 - [Research Workflow](#research-workflow)
 - [Documentation Workflow](#documentation-workflow)
 - [Scripting Workflow](#scripting-workflow)
+- [Multi-Workflow Orchestration](#multi-workflow-orchestration)
+- [Fleet Management Workflow](#fleet-management-workflow)
+- [Project Management Workflow](#project-management-workflow)
 - [Gates Reference](#gates-reference)
 - [GitHub Issue Conventions](#github-issue-conventions)
 - [Human Review Checkpoints](#human-review-checkpoints)
@@ -339,6 +342,114 @@ and [`scripts/README.md`](../../scripts/README.md) for script conventions.
 
 ---
 
+## Multi-Workflow Orchestration
+
+Triggered when a request spans two or more executive agents, or when phases have inter-agent
+dependencies that need explicit sequencing. Orchestrated by **Executive Orchestrator**.
+
+For complex sessions where the scope is unclear before execution, first invoke
+**Executive Planner** to produce a structured plan, then hand it to Orchestrator.
+
+```
+Plan (Executive Planner) → Approve plan → Orchestrate phases (Executive Orchestrator)
+  └── Phase 1: Delegate to domain executive → gate → Phase 2 → ... → Review → Commit → Summarise
+```
+
+### When to invoke
+
+| Situation | Action |
+|-----------|--------|
+| Request touches ≥2 executive domains | Start with Executive Orchestrator |
+| Request is ambiguous or scope is unclear | Start with Executive Planner, then Orchestrator |
+| Single-domain work (e.g., pure research) | Go directly to the domain executive |
+
+### Key Orchestration Rules
+
+1. **Write a plan before delegating**: Orchestrator must produce `## Orchestration Plan` in the scratchpad before any phase delegation.
+2. **One phase at a time**: phases are sequential unless explicitly marked parallelisable.
+3. **Gate deliverables are concrete**: a gate deliverable is a committed file or a confirmed GitHub state — not "phase done".
+4. **Close the loop**: every session ends with `## Session Summary` + `uv run python scripts/prune_scratchpad.py --force`.
+
+### Gate Summary
+
+| Gate | Criteria |
+|------|----------|
+| Before Phase 1 | Orchestration plan written; phases + gates documented |
+| Between phases | Prior phase output confirmed committed; deliverables verified |
+| Session close | All phases done; session summary written; scratchpad pruned |
+
+---
+
+## Fleet Management Workflow
+
+Triggered when the agent fleet needs to be updated: new agents added, existing agents corrected,
+or stale agents deprecated. Orchestrated by **Executive Fleet**.
+
+```
+Orient → Audit → Act (create | update | deprecate) → Update README → Review → Commit
+```
+
+### Triggers
+
+- A gap in the fleet is identified during an active session.
+- A new workflow requires a new specialist agent.
+- An agent's guardrails, handoffs, or tool list are out of date.
+- A previously useful agent is no longer in use.
+
+### Key Rules
+
+- **Always use `scaffold_agent.py`** for new agents — never author from scratch.
+- **Always dry-run first**: `uv run python scripts/scaffold_agent.py ... --dry-run`.
+- **No TODO placeholders** in a completed agent file.
+- **Deprecate, don't delete**: move stale agents to `.github/agents/deprecated/`.
+- **Update `README.md`** after every fleet change.
+
+### Gate Summary
+
+| Gate | Criteria |
+|------|----------|
+| Before creating | Posture decided; description ≤200 chars; `--dry-run` reviewed |
+| Before committing | No TODO placeholders; tool list matches posture; handoff targets are real agents; README updated |
+| Commit | Routed through Review agent; commit type `feat(agents):` |
+
+---
+
+## Project Management Workflow
+
+Triggered periodically or when a release is approaching. Orchestrated by **Executive PM**.
+
+```
+Orient → Audit (issues, changelog, community health) → Triage → Update → Review → Commit
+```
+
+### Surfaces Maintained
+
+| Surface | Tool | Cadence |
+|---------|------|---------|
+| Issue triage | `gh issue` | Per session |
+| Milestone management | `gh milestone` | Per release |
+| Changelog | `CHANGELOG.md` | Per merge to `main` |
+| Community health files | `README.md`, `CONTRIBUTING.md`, etc. | Per quarter |
+| Label taxonomy | `gh label` | As fleet evolves |
+| Release notes | `gh release` | Per tag |
+
+### Key Rules
+
+- **Use Keep a Changelog format** for `CHANGELOG.md`.
+- **Map Conventional Commits to sections**: `feat` → Added, `fix` → Fixed, `docs`/`chore` → Changed.
+- **Label every open issue** — no label = invisible in triage.
+- **Do not edit `MANIFESTO.md`** — that is Executive Docs territory.
+
+### Gate Summary
+
+| Gate | Criteria |
+|------|----------|
+| Before acting | Audit written to scratchpad; self-loop review done |
+| Before committing | All community health files present; changelog covers all merged PRs; issues labelled |
+| Commit | Routed through Review agent; commit type `chore(repo):` |
+
+---
+
 ## Gates Reference
 
 A gate is a set of criteria that must be satisfied before an agent or human may advance to the
@@ -433,13 +544,23 @@ into the active session scratchpad under '## Scout Output'. Do not synthesize �
 gather only. Seed references: [URLs].
 ```
 
-**Delegate to Synthesizer:**
+**Delegate to Synthesizer (Pass 1 — single source):**
 ```
-Raw sources have been catalogued in the session scratchpad under '## Scout Output'.
-Please synthesize using the two-pass approach:
-1. For each source in the Scout table, write a per-source stub at docs/research/sources/<slug>.md.
-2. Then write the issue synthesis at docs/research/<topic-slug>.md referencing those stubs.
-Gate deliverables: [D1, D2, D3]. Topic: [topic].
+You are doing a Pass 1 single-source synthesis.
+Source: [slug]. Cache path: .cache/sources/[slug].md.
+Research question: [question].
+Read the full cache file and write a complete academic synthesis report to
+docs/research/sources/[slug].md following the 8-section format.
+Minimum 100 lines; include evidence_quality in frontmatter and ## Critical Assessment.
+```
+
+**Delegate to Synthesizer (Pass 3 — issue synthesis):**
+```
+You are doing a Pass 3 issue synthesis. Topic: [topic].
+Source synthesis docs: [list of docs/research/sources/<slug>.md paths].
+Gate deliverables: [D1, D2, D3].
+Read all source synthesis documents, write a contraction outline in the scratchpad,
+then draft docs/research/[topic-slug].md with cross-source conclusions only.
 ```
 
 **Delegate to Reviewer:**
@@ -467,6 +588,60 @@ uv run python scripts/scaffold_agent.py \
   --posture [readonly|creator|full] \
   --area [area] \
   --dry-run
+```
+
+### Orchestration & Planning Prompts
+
+**Start a multi-workflow session:**
+```
+@Executive Orchestrator Please coordinate the following session:
+[describe the full scope]
+Begin by writing an Orchestration Plan in the session scratchpad before delegating.
+```
+
+**Pre-plan a complex request:**
+```
+@Executive Planner Please decompose the following request into a structured plan
+with phases, gates, agent assignments, and dependency ordering.
+Do not begin executing — return the plan for approval.
+Request: [describe]
+```
+
+### Fleet Management Prompts
+
+**Audit the fleet:**
+```
+@Executive Fleet Please run a fleet compliance audit.
+Check all .agent.md files against AGENTS.md standards and report findings
+to the session scratchpad under '## Fleet Audit'. Do not apply fixes yet — 
+audit first, then pause for review.
+```
+
+**Create a new agent:**
+```
+@Executive Fleet Please create a new agent:
+Name: [Name]
+Description: [One-sentence description ≤ 200 chars]
+Posture: [readonly|creator|full]
+Run scaffold_agent.py with --dry-run first, then create if approved.
+Fill in all TODO sections before routing to Review.
+```
+
+### Project Management Prompts
+
+**Run a PM health check:**
+```
+@Executive PM Please run a repository health audit.
+Check: open issues without labels, milestone drift, changelog gaps,
+and community health file completeness.
+Write findings to the scratchpad under '## PM Audit' and pause for review.
+```
+
+**Update the changelog:**
+```
+@Executive PM Please update CHANGELOG.md with all merged PRs since the last entry.
+Use Keep a Changelog format. Map conventional commit types to changelog sections.
+Route changes through Review before committing.
 ```
 
 ### General Prompts

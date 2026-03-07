@@ -16,6 +16,7 @@ scripts/
   generate_agent_manifest.py   # Emit a JSON or Markdown skills manifest of all .agent.md files
   fetch_source.py              # Fetch a URL into .cache/sources/ and maintain a manifest (no re-fetching)
   fetch_all_sources.py         # Batch-fetch all URLs from OPEN_RESEARCH.md + research doc frontmatter
+  link_source_stubs.py         # Populate ## Referenced By sections in per-source stubs (bidirectional link graph)
 ```
 
 ---
@@ -286,6 +287,36 @@ uv run python scripts/fetch_all_sources.py --research-docs-only
 **Exit codes**: `0` all fetches succeeded; `1` one or more failed.
 
 **Dependencies**: stdlib only. Delegates to `fetch_source.py` per URL.
+
+---
+
+## scripts/link_source_stubs.py
+
+**Purpose**: Maintain the bidirectional link graph between issue syntheses and per-source stubs.
+Scans `docs/research/*.md` (issue syntheses) and `docs/research/sources/*.md` (stubs) for
+markdown links to stubs, then writes `## Referenced By` entries back into each target stub.
+This is the scripted Pass 2 in the three-pass synthesis workflow — never edit `## Referenced By`
+sections manually.
+
+**Usage**:
+
+```bash
+# Dry-run — show what would change without writing
+uv run python scripts/link_source_stubs.py --dry-run
+
+# Apply changes (idempotent — safe to run repeatedly)
+uv run python scripts/link_source_stubs.py
+
+# Verbose output
+uv run python scripts/link_source_stubs.py --verbose
+```
+
+**When to run**: after Pass 1 (per-source stubs) is complete and before Pass 3 (issue synthesis).
+Also run after adding new links to any issue synthesis or stub.
+
+**Exit codes**: `0` completed (even if 0 stubs updated); `1` `docs/research/sources/` not found.
+
+**Dependencies**: stdlib only.
 
 ---
 
