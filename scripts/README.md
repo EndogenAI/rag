@@ -132,9 +132,27 @@ uv run python scripts/scaffold_agent.py \
 ## scripts/generate_agent_manifest.py
 
 **Purpose**: Enumerate all `.agent.md` files in `.github/agents/`, extract `name`, `description`,
-and `tools` from their YAML frontmatter, and emit a structured skills manifest. Enables
-orchestrators and sessions to load ~100-token agent stubs rather than paying the full ~5K-token
-cost per agent body (lazy-loading pattern; see `docs/research/agentic-research-flows.md`).
+`tools`, `posture`, `capabilities`, and `handoffs` from their YAML frontmatter, and emit a
+structured skills manifest. Enables orchestrators and sessions to load ~100-token agent stubs
+rather than paying the full ~5K-token cost per agent body (lazy-loading pattern; see
+`docs/research/agentic-research-flows.md`).
+
+**Output fields per agent**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `str` | Agent display name from frontmatter |
+| `description` | `str` | One-line summary from frontmatter |
+| `tools` | `list[str]` | Tool names declared in frontmatter |
+| `posture` | `str` | Derived from tools: `readonly` \| `creator` \| `full` |
+| `capabilities` | `list[str]` | 2–5 lowercase-hyphenated tags extracted from description |
+| `handoffs` | `list[str]` | Agent names this agent can delegate to (from `handoffs[].agent`) |
+| `file` | `str` | Repo-relative path to the `.agent.md` file |
+
+**Posture derivation rules**:
+- `full` — tools include any of: `execute`, `terminal`, `agent`, `run`, `browser`
+- `creator` — tools include any of: `edit`, `write`, `create`, `notebook` (but not full)
+- `readonly` — tools are read/search only, or the list is empty
 
 **Usage**:
 
@@ -145,7 +163,7 @@ uv run python scripts/generate_agent_manifest.py
 # Write manifest to a file
 uv run python scripts/generate_agent_manifest.py --output .github/agents/manifest.json
 
-# Emit a Markdown table
+# Emit a Markdown table (includes posture, capabilities, handoffs columns)
 uv run python scripts/generate_agent_manifest.py --format markdown
 
 # Dry-run: list files that would be processed without generating output

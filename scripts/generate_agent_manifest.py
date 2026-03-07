@@ -3,16 +3,25 @@ generate_agent_manifest.py
 --------------------------
 Purpose:
     Enumerate all .agent.md files in .github/agents/, extract name, description,
-    and tools from their YAML frontmatter, and emit a structured manifest to
-    stdout (JSON or Markdown table). Enables lazy-loading of agent metadata —
-    orchestrators can select the right agent from ~100-token stubs without paying
-    the full ~5K-token cost of loading each agent body.
+    tools, posture, capabilities, and handoffs from their YAML frontmatter, and
+    emit a structured manifest to stdout (JSON or Markdown table). Enables
+    lazy-loading of agent metadata — orchestrators can select the right agent
+    from ~100-token stubs without paying the full ~5K-token cost of loading each
+    agent body.
 
 Inputs:
     .github/agents/*.agent.md files with YAML frontmatter blocks.
 
 Outputs:
     JSON manifest (default) or Markdown table to stdout, or to --output file.
+    Each agent entry contains:
+        name          — display name from frontmatter
+        description   — one-line summary from frontmatter
+        tools         — list of tool names from frontmatter
+        posture       — derived from tools: "readonly" | "creator" | "full"
+        capabilities  — 2-5 short lowercase-hyphenated tags from description
+        handoffs      — list of agent names this agent can hand off to
+        file          — repo-relative path to the .agent.md file
     Summary line is always written to stderr:
         Generated manifest: N agents
 
@@ -123,6 +132,129 @@ def parse_simple_yaml(yaml_text: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Posture, capabilities, and handoffs derivation
+# ---------------------------------------------------------------------------
+
+# Tool sets used to classify agent posture
+_FULL_TOOLS = frozenset({"execute", "terminal", "agent", "run", "browser"})
+_CREATOR_TOOLS = frozenset({"edit", "write", "create", "notebook"})
+
+
+def derive_posture(tools: list[str]) -> str:
+    """
+    Derive the agent's posture from its declared tools list.
+
+    Returns:
+        "full"     — tools include execute/terminal/agent/run/browser
+        "creator"  — tools include edit/write/create/notebook (but not full)
+        "readonly" — tools are read/search only, or list is empty
+    """
+    tool_set = {t.lower() for t in tools}
+    if tool_set & _FULL_TOOLS:
+        return "full"
+    if tool_set & _CREATOR_TOOLS:
+        return "creator"
+    return "readonly"
+
+
+# Words to filter when extracting capability tags
+_CAP_SKIP = frozenset({
+    "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of",
+    "with", "by", "from", "as", "is", "are", "be", "was", "were", "been", "being",
+    "have", "has", "had", "do", "does", "did", "will", "would", "could", "should",
+    "may", "might", "must", "can", "all", "any", "each", "every", "both", "either",
+    "before", "after", "between", "into", "through", "during", "per", "via", "this",
+    "that", "these", "those", "it", "its", "they", "their", "them", "not", "no",
+    "if", "when", "while", "about", "vs", "end", "non", "also", "only", "just",
+    "use", "used", "always", "never",
+})
+
+
+def derive_capabilities(description: str, max_tags: int = 5) -> list[str]:
+    """
+    Extract 2-5 discriminating capability tags from an agent description.
+
+    Strategy:
+        Split on phrase boundaries (em-dash, semicolons, commas, periods), then
+        from each non-trivial segment form a tag from the first 1-2 significant
+        words (filtered against _CAP_SKIP).  Earlier segments are preferred since
+        they capture the agent's core mandate.
+
+    Returns a list of lowercase-hyphenated tags, 2 <= len <= max_tags.
+    """
+    # Split on natural phrase boundaries
+    segments = re.split(r"\s*[—;,\.]\s*", description)
+
+    tags: list[str] = []
+    seen: set[str] = set()
+
+    def sig_words(text: str) -> list[str]:
+        """Return significant tokens from text, preserving hyphens."""
+        tokens = re.findall(r"[A-Za-z]+(?:-[A-Za-z]+)*", text)
+        return [t for t in tokens if t.lower() not in _CAP_SKIP and len(t) > 2]
+
+    for seg in segments:
+        if len(tags) >= max_tags:
+            break
+        words = sig_words(seg)
+        if not words:
+            continue
+        tag = f"{words[0].lower()}-{words[1].lower()}" if len(words) >= 2 else words[0].lower()
+        if tag not in seen:
+            tags.append(tag)
+            seen.add(tag)
+
+    # Fallback: ensure at least 2 tags using individual significant words
+    if len(tags) < 2:
+        for w in sig_words(description):
+            t = w.lower()
+            if t not in seen:
+                tags.append(t)
+                seen.add(t)
+                if len(tags) >= 2:
+                    break
+
+    return tags[:max_tags]
+
+
+def extract_handoff_agents(yaml_text: str) -> list[str]:
+    """
+    Extract unique agent names from the handoffs[] block in raw YAML frontmatter.
+
+    The handoffs block uses the schema:
+        handoffs:
+          - label: "some label"
+            agent: AgentName
+            ...
+
+    Returns a deduplicated list of agent name strings in declaration order.
+    Returns an empty list if no handoffs block is present.
+    """
+    in_handoffs = False
+    agents: list[str] = []
+    seen: set[str] = set()
+
+    for line in yaml_text.splitlines():
+        # Detect start of handoffs top-level key
+        if re.match(r"^handoffs\s*:", line):
+            in_handoffs = True
+            continue
+        # A new non-indented key ends the handoffs block
+        if in_handoffs and re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*:", line):
+            break
+        # Within the handoffs block, extract agent: sub-fields
+        if in_handoffs:
+            m = re.match(r"^\s+agent\s*:\s*(.+)", line)
+            if m:
+                agent_name = m.group(1).strip().strip("\"'")
+                if agent_name and agent_name not in seen:
+                    agents.append(agent_name)
+                    seen.add(agent_name)
+
+    return agents
+
+
+# ---------------------------------------------------------------------------
 # Core processing
 # ---------------------------------------------------------------------------
 
@@ -134,10 +266,13 @@ def process_agent_file(path: Path) -> dict | None:
 
     Returned dict shape:
         {
-            "name": str,
-            "description": str,
-            "tools": list[str],
-            "file": str,   # absolute path — relativised by build_manifest()
+            "name":         str,
+            "description":  str,
+            "tools":        list[str],
+            "posture":      str,         # "readonly" | "creator" | "full"
+            "capabilities": list[str],   # 2-5 lowercase-hyphenated tags
+            "handoffs":     list[str],   # agent names this agent can delegate to
+            "file":         str,         # absolute path — relativised by build_manifest()
         }
     """
     try:
@@ -174,10 +309,15 @@ def process_agent_file(path: Path) -> dict | None:
         )
         return None
 
+    tools_list: list[str] = tools if isinstance(tools, list) else [tools]
+
     return {
         "name": name,
         "description": description,
-        "tools": tools if isinstance(tools, list) else [tools],
+        "tools": tools_list,
+        "posture": derive_posture(tools_list),
+        "capabilities": derive_capabilities(description),
+        "handoffs": extract_handoff_agents(frontmatter_raw),
         "file": str(path),
     }
 
@@ -206,14 +346,16 @@ def build_manifest(agent_entries: list[dict], repo_root: Path) -> dict:
 def format_markdown(manifest: dict) -> str:
     """Render the manifest as a plain Markdown table (no trailing newline)."""
     rows = [
-        "| Agent | Description | Tools |",
-        "|-------|-------------|-------|",
+        "| Agent | Description | Posture | Capabilities | Handoffs |",
+        "|-------|-------------|---------|--------------|----------|",
     ]
     for agent in manifest["agents"]:
         name = agent["name"]
         desc = agent["description"]
-        tools = ", ".join(agent["tools"])
-        rows.append(f"| {name} | {desc} | {tools} |")
+        posture = agent.get("posture", "")
+        caps = ", ".join(agent.get("capabilities", []))
+        handoffs = ", ".join(agent.get("handoffs", []))
+        rows.append(f"| {name} | {desc} | {posture} | {caps} | {handoffs} |")
     return "\n".join(rows)
 
 
