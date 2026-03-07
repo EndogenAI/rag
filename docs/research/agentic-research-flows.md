@@ -1,0 +1,167 @@
+---
+title: Agentic Research Flows
+status: Final
+date: 2026-03-06
+sources:
+  - https://www.anthropic.com/engineering/building-effective-agents
+  - https://www.anthropic.com/engineering/claude-research-system
+  - https://towardsdatascience.com/claude-skills-and-subagents
+  - https://arxiv.org/abs/2512.05470
+  - https://arxiv.org/abs/2304.03442
+  - https://arxiv.org/abs/2210.03629
+---
+
+# Agentic Research Flows
+
+> **Status**: Final
+> **Research Question**: How do multi-agent systems architect context, orchestration, memory, and tool use for effective research — and what patterns can be directly applied to this project?
+> **Date**: 2026-03-06
+
+---
+
+## Executive Summary
+
+The literature converges on a small set of durable patterns — orchestrator-workers, evaluator-optimizer loops, tiered memory, and lazy context loading — that are well-validated at production scale. Our current fleet design is broadly correct: the self-loop phase gate maps directly to the evaluator-optimizer pattern, our scratchpad satisfies the ephemeral working memory role, and git history covers the immutable audit trail. The primary gaps are (1) no semantic retrieval layer over episodic/experiential memory, (2) agent prompt files that lack explicit completion criteria and example outputs, and (3) a context loading strategy that pays full cost at session start rather than on demand. The most actionable near-term intervention is a skills-manifest script that enables lazy loading of agent metadata — estimated at a significant token reduction with no new dependencies. The longer-term architectural opportunity is an Agentic File System (AFS) layer, but that should be deferred until the local-compute-first baseline is stable.
+
+---
+
+## Orchestration Patterns
+
+The Anthropic multi-agent research system and the broader five-pattern taxonomy from *Building Effective Agents* draw a consistent picture of how capable systems are structured.
+
+The five patterns — **prompt chaining, routing, parallelization, orchestrator-workers, and evaluator-optimizer** — are not alternatives but a composable vocabulary. Our fleet uses all five, though not always by design. The executive→sub-agent→specialist hierarchy is an orchestrator-workers instance. The review-before-commit phase is an evaluator-optimizer loop. Recognising these as established patterns matters because it means the design is validated, not novel, and we should lean into their documented properties rather than re-derive them.
+
+The **evaluator-optimizer loop** deserves explicit naming: in the literature this is the pattern our self-loop phase gate implements. We should call it that in documentation — it signals intent to future contributors and anchors the design to a body of prior art.
+
+The **15× token multiplier** for multi-agent research (approximately 180K tokens per research query versus 12K for single-agent chat) is not a flaw — it is the cost structure of the architecture. Decisions about when to spawn parallel workers must account for this. Token usage explains approximately 80% of output quality variance in the Anthropic system; throwing more tokens at parallelism is the primary quality lever, which means our local-compute-first principle directly constrains how ambitiously we can parallelize.
+
+The **lightweight context handoff** strategy from the Anthropic system — summarise completed phases, store in external memory, spawn fresh subagents with references rather than full content — is the direct theoretical basis for our scratchpad and `.tmp/` branch folders. Our design is correct. The scratchpad's `## Session Summary` convention implements this handoff; the `_index.md` stub file implements the reference layer. This should be documented explicitly in `docs/guides/session-management.md` so future contributors understand why the convention exists.
+
+ReAct's interleaved Thought→Act→Observation trace confirms the value of explicit reasoning steps before and after each action. Our agents do not currently require or enforce this trace. It is worth encoding as a prompt principle in agent files for research-phase tasks where hallucination risk is elevated.
+
+---
+
+## Memory Architecture
+
+The seven-type memory hierarchy from arXiv 2512.05470v1 provides a useful audit lens for our current substrate. The mapping is closer than expected:
+
+| Memory Type | Our Substrate | Assessment |
+|---|---|---|
+| **Scratchpad** | `.tmp/<branch>/<date>.md` | ✅ Satisfied |
+| **Procedural** | `.github/agents/*.agent.md` + `docs/guides/` | ✅ Satisfied |
+| **Fact** | `docs/` content, `AGENTS.md`, `MANIFESTO.md` | ✅ Partially satisfied — no structured retrieval |
+| **Historical Record** | `git log` | ✅ Satisfied — immutable, auditable |
+| **User** | Not applicable (single-operator repo) | — Not required |
+| **Episodic** | Scratchpad session files | ⚠️ Present but not queryable |
+| **Experiential** | `repository_memories` (Copilot memory tool) | ⚠️ External, non-portable, shallow |
+
+The two meaningful gaps are **episodic** and **experiential** memory. We accumulate episodic records in scratchpad session files and git history, but there is no mechanism to query across them semantically — no "what did we learn about X in prior sessions?" lookup. Experiential memory (heuristics derived from past outcomes) is partially served by the Copilot memory tool, but this is external, ephemeral, and not portable across agents or sessions.
+
+These gaps are real but not urgent. The current session-by-session scratchpad discipline, combined with the `_index.md` stub archive, is a functional episodic retrieval mechanism for most practical purposes. The gap becomes acute only when sessions accumulate enough history that manual index scanning becomes a bottleneck — likely beyond the current scale of the project.
+
+A semantic retrieval layer (e.g., mem0 or an embedded vector store over scratchpad files) would close both gaps. This should be treated as a D3 investigation item, not an immediate action.
+
+---
+
+## Prompt Engineering Principles
+
+Anthropic's eight prompt engineering principles for agents (from *Building Effective Agents*) provide a direct audit framework for our `.agent.md` format. Current state:
+
+| Principle | Our Agent Files | Status |
+|---|---|---|
+| 1. Clear, narrow role definition | `## Role` section in frontmatter | ✅ Present |
+| 2. Explicit tool list | `tools:` frontmatter key | ✅ Present |
+| 3. Explicit completion criteria (when to stop) | Not present | ❌ Missing |
+| 4. Minimal context; strip irrelevant history | Partially — session scope not enforced | ⚠️ Partial |
+| 5. Decompose before delegating | Documented in `AGENTS.md` | ⚠️ Principle only, not enforced in agent files |
+| 6. Structured output for agent-to-agent comms | Scratchpad headings provide loose structure | ⚠️ Informal |
+| 7. Examples of good vs. bad outputs | Absent from all agent files | ❌ Missing |
+| 8. Explicit instructions over implicit role defaults | Variable; some agents rely on role name conventions | ⚠️ Inconsistent |
+
+The two sharpest gaps are **completion criteria** (principle 3) and **output examples** (principle 7). These are low-cost additions to existing agent files that would meaningfully reduce ambiguous agent behaviour. Each agent file should gain a `## Completion Criteria` section and at least one annotated output example. This is a task for the Executive Docs agent, not this synthesis.
+
+The Claude Skills progressive disclosure pattern (TDS) also implies that the current agent prompt structure — loading full `.agent.md` bodies at session start — is unnecessarily expensive. See Token Offloading below.
+
+---
+
+## Token Offloading
+
+The most applicable near-term token reduction technique requires no new dependencies: the **Claude Skills lazy-loading pattern** from TDS.
+
+Currently, any session that needs to reference agent capabilities must either load full `.agent.md` bodies (expensive) or rely on an agent knowing the fleet from training (unreliable). The Skills pattern solves this with a three-level disclosure model: (1) ~100-token metadata stub always available, (2) full instructions loaded on invocation, (3) referenced files loaded only when instructions require them.
+
+We can implement level 1 today with a script (D5 candidate #3 — agent skills manifest generator) that enumerates `.github/agents/` and emits a JSON manifest of name, description, and capability tags for each agent. This manifest (~100 tokens per agent) becomes the default context payload for the orchestrator; full agent bodies are referenced by path and loaded only when that agent is invoked. No new infrastructure required.
+
+**AIGNE AFS** (Agentic File System with SQLite + vector backend + MCP integration) is the longer-term architectural option most aligned with local-compute-first. It provides the context governance layer — write, select, compress, isolate — that our scratchpad implements manually today. It should be evaluated after the local-compute baseline (OPEN_RESEARCH.md #1) is stable; adopting it before that would add complexity against an uncertain inference backend.
+
+**mem0 and Letta** are heavier dependencies that address the episodic/experiential memory gap identified in Memory Architecture. Table for a dedicated D4 evaluation once the scratchpad accumulation problem is confirmed at scale.
+
+**Zep/Graphiti and Cognee** were surveyed as additional candidates. Zep/Graphiti provides temporal knowledge-graph-based memory — useful for relational memory over time but a heavier dependency than our current needs warrant. Cognee is a lighter knowledge-graph option with similar tradeoffs. Both are deferred alongside mem0/Letta pending confirmation of the episodic memory bottleneck; neither offers a clear advantage over the simpler scratchpad approach at current session volume.
+
+---
+
+## Script Candidates
+
+Six scripts were identified from the Scout findings. Priority order, with rationale:
+
+1. **Agent skills manifest generator** — Enumerate `docs/` and `.github/agents/` files; emit a JSON manifest (name, description, tags, ~100 tokens per agent). Enables lazy-loading pattern immediately. Highest ROI, no dependencies, purely additive. *(Source: TDS Skills pattern)*
+
+2. **Session checkpoint serializer** — Pre-serialize research plan + session state to a structured JSON checkpoint before context window overflow risk. Enables resume-from-checkpoint for long-running research sessions. Critical for sessions that approach the context limit without natural breakpoints. *(Source: Anthropic multi-agent context management)*
+
+3. **Context manifest builder** — Assemble context from scratchpad + docs + prior session stubs into a JSON manifest at session start. Implements the LangChain four-stage context engineering loop (write → select → compress → isolate) as a pre-computation step. *(Source: arXiv 2512.05470v1, which cites this pattern; see also `mei2025surveycontextengineeringlarge` — not yet fetched — for fuller treatment and likely primary attribution)*
+
+4–6 require additional evaluation before committing:
+
+4. **Tool metadata token counter** — Compute total tool metadata token cost for any agent configuration. Useful for optimization but requires understanding our actual MCP tool inventory first. *(Source: TDS ~32K token observation)*
+
+5. **Scratchpad deduplication script** — Cluster scratchpad entries by semantic similarity, prune near-duplicates. Depends on having a local embedding model available; premature without OPEN_RESEARCH.md #1 resolved. *(Source: arXiv 2512.05470v1 memory deduplication)*
+
+6. **Evaluation rubric pre-builder** — Pre-build evaluation rubric files per research topic as cached artifacts. Useful for formalising the evaluator-optimizer loop, but the evaluator pattern needs to be more consistently used before rubric pre-building adds value. *(Source: Anthropic multi-agent LLM-as-judge pattern)*
+
+Scripts 1–3 are ready to specify as issues. Scripts 4–6 should be revisited after their prerequisite gaps are closed.
+
+---
+
+## Gaps and Follow-Up Leads
+
+- **Anthropic cookbook agent examples** — basic workflow patterns not yet fetched; likely contains directly applicable prompt templates. (https://platform.claude.com/cookbook/patterns-agents-basic-workflows)
+- **ReAct project code** — the paper describes the pattern; the reference implementation may contain prompt templates directly usable in agent files. (https://react-lm.github.io/)
+- **AIGNE AFS evaluation** — the AFS module is the strongest candidate for a context governance layer; needs a focused evaluation against our MCP setup. (https://github.com/AIGNE-Project/aigne-framework)
+- **Anthropic Agent Teams for Opus 4** — impacts quasi-encapsulation design; if Agent Teams formalises multi-agent coordination at the API level, it may change how we think about executive→subagent delegation.
+- **Google A2A Protocol readiness** — not assessed; relevant if we evaluate cross-provider agent coordination.
+- **`mei2025surveycontextengineeringlarge`** — broader context engineering survey not fetched; likely covers the LangChain four-stage pattern and alternatives in more depth.
+- **arXiv 2304.03442 identity confirmation** — confirmed as Generative Agents (Park et al.), not ReAct. ReAct is 2210.03629. Update any internal references that conflate these.
+- **Episodic/experiential memory gap** — the memory architecture section identifies this as real but non-urgent; it should be added to OPEN_RESEARCH.md as a new topic once the local-compute baseline is resolved.
+
+---
+
+## Applicability to This Project
+
+Immediate actions — warranted now, low risk, no new dependencies:
+
+1. **Add `## Completion Criteria` to all agent files.** This is the highest-leverage prompt engineering improvement available. An agent that does not know when it is done will either under-deliver or over-run. Assign to Executive Docs.
+
+2. **Script the agent skills manifest generator (D5 #1).** One script, one JSON output, immediate reduction in context loading cost. Assign to Executive Scripter.
+
+3. **Rename the self-loop phase gate to "evaluator-optimizer loop" in documentation.** Purely a documentation change; establishes shared vocabulary with the broader literature and signals design intent. Assign to Executive Docs.
+
+Defer with a tracking note in OPEN_RESEARCH.md:
+
+4. **AIGNE AFS evaluation** — deferred until OPEN_RESEARCH.md #1 (local compute) is closed. Adding a context governance layer before the inference backend is stable is premature.
+
+5. **Semantic memory layer (mem0/Letta)** — deferred until scratchpad accumulation is confirmed as a bottleneck. The current manual approach is adequate at current scale.
+
+6. **Output examples in agent files** — desirable but lower priority than completion criteria. Can be added incrementally as agents are edited for other reasons.
+
+The architecture does not require structural changes — the existing hierarchy, scratchpad conventions, and procedural memory in agent files are all well-grounded in the literature. What is warranted is a discipline pass on existing agent files and a small number of targeted scripts. This is evolutionary improvement, not redesign.
+
+---
+
+## Sources
+
+1. Anthropic Engineering — Building Effective Agents. https://www.anthropic.com/engineering/building-effective-agents
+2. Anthropic Engineering — Claude Multi-Agent Research System. https://www.anthropic.com/engineering/claude-research-system
+3. Towards Data Science — Claude Skills and Subagents. https://towardsdatascience.com/claude-skills-and-subagents
+4. arXiv 2512.05470v1 — Everything is Context: Agentic File System (AIGNE). https://arxiv.org/abs/2512.05470
+5. arXiv 2304.03442 — Generative Agents: Interactive Simulacra of Human Behavior (Park et al.). https://arxiv.org/abs/2304.03442
+6. arXiv 2210.03629 — ReAct: Synergizing Reasoning and Acting in Language Models (Yao et al.). https://arxiv.org/abs/2210.03629
