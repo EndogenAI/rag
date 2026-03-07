@@ -14,6 +14,7 @@ directly to design thinking methodology and is the endogenic approach to all kno
 
 - [Handoff Architecture](#handoff-architecture)
 - [Research Workflow](#research-workflow)
+  - [CI Gates for Research Documents](#ci-gates-for-research-documents)
 - [Implementation Workflow](#implementation-workflow)
 - [Documentation Workflow](#documentation-workflow)
 - [Scripting Workflow](#scripting-workflow)
@@ -309,6 +310,36 @@ docs/research/
 
 Update the GitHub issue with a comment linking to the committed document.
 Close the issue or move to the next phase if follow-on work is needed.
+
+---
+
+### CI Gates for Research Documents
+
+Every `docs/research/*.md` (except `OPEN_RESEARCH.md`) is validated in CI by the `lint:` job. Two failure modes to know before committing research docs:
+
+#### 1. `validate_synthesis.py` — D4 required headings
+
+The `validate_synthesis.py` script enforces that D4 issue synthesis documents contain these exact headings (or headings whose text contains these keywords):
+
+- `## 2. Hypothesis Validation`
+- `## 3. Pattern Catalog`
+
+Documents missing these headings fail CI. When backfilling an older document:
+- Add a genuine `## 2. Hypothesis Validation` section (H1/H2/H3 claims validated from sources).
+- Prefix an existing relevant section: `## 3. Pattern Catalog — <Original Title>`.
+
+#### 2. Lychee — broken links and missing source stubs
+
+The `links:` job runs lychee against all committed Markdown. Two common failure modes:
+
+**Dead external URLs**: External links that are legitimately 404 (link rot, restructured sites) should be added to `.lycheeignore` at the workspace root. Do *not* remove the URL from the research doc — it is part of the citation record. Document the reason inline in `.lycheeignore`.
+
+**Missing source stubs**: If a synthesis doc references `./sources/<slug>.md`, that file must exist in `docs/research/sources/` (committed), *not* only in `.cache/sources/` (gitignored). Copy any referenced stubs from `.cache/sources/` to `docs/research/sources/` before committing the synthesis doc.
+
+```bash
+# Check which source stubs are referenced but missing from the committed docs:
+grep -r "\./sources/" docs/research/*.md | grep -v "sources/" | cut -d: -f2 | sort -u
+```
 
 ---
 

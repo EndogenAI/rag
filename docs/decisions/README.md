@@ -34,3 +34,4 @@ Write an ADR when:
 | [ADR-001](ADR-001-uv-package-manager.md) | Adopt `uv` as sole Python package manager | Accepted | 2026-03-07 |
 | [ADR-002](ADR-002-kanban-not-scrum.md) | Kanban over Scrum for project planning | Accepted | 2026-03-07 |
 | [ADR-003](ADR-003-xml-hybrid-agent-format.md) | XML-hybrid format for agent instruction files | Proposed | 2026-03-07 |
+| [ADR-004](ADR-004-no-coverage-threshold.md) | No CI coverage percentage threshold | Accepted | 2026-03-07 |

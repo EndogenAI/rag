@@ -490,7 +490,45 @@ feat(scripts): add my_script.py
 
 If tests fail on GitHub (but pass locally):
 
-1. **Check Python version**: CI runs on Python 3.9+; your local environment might differ.
+### Common CI failure: `uv sync --extra dev`
+
+Dev dependencies (`pytest`, `ruff`, `pytest-mock`) are declared under `[project.optional-dependencies]` in `pyproject.toml` — **not** under `[dependency-groups]`. This means:
+
+```bash
+uv sync             # ← Does NOT install dev deps
+uv sync --extra dev # ← Correct — installs pytest, ruff, pytest-mock
+```
+
+`uv pip install` is also wrong in CI because GitHub Actions runners have no pre-existing virtualenv. Always use `uv sync --extra dev` in CI steps.
+
+### Common CI failure: `ruff format --check`
+
+The CI lint job runs two separate ruff checks:
+
+1. `uv run ruff check scripts/ tests/` — lint rules (E, F, W, I)
+2. `uv run ruff format --check scripts/ tests/` — formatter (black-style)
+
+`ruff check --fix` does **not** fix format issues. After any lint fixes, always run:
+
+```bash
+uv run ruff format scripts/ tests/          # apply formatting
+uv run ruff format --check scripts/ tests/  # verify clean
+```
+
+### Coverage numbers are low by design
+
+Most tests invoke scripts via `subprocess.run(["uv", "run", "python", "scripts/..."])`. Coverage tooling only instruments the parent process, so measured coverage is ~6% even when all 100+ tests pass. See [ADR-004](../decisions/ADR-004-no-coverage-threshold.md) for the full rationale. The `--cov-fail-under` flag is intentionally absent from CI.
+
+If you need to achieve meaningful coverage for a new script, follow the direct-import pattern in `tests/test_seed_labels.py`:
+
+```python
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+import my_script  # noqa: E402
+```
+
+
    ```bash
    python --version
    uv py list  # Show available Python versions
