@@ -6,13 +6,20 @@ Guidance for AI coding agents working in this repository.
 
 ## Guiding Constraints
 
-- **Endogenous-first**: scaffold from existing system knowledge *and* from external best practices — do not author from scratch in isolation, and do not ignore well-maintained external tools. Synthesize external wisdom into the encoded substrate.
-- **Programmatic-first**: prefer encoding repeated or automatable tasks as scripts over interactive agent steps.
-  If you have done a task twice interactively, the third time is a script. See [Programmatic-First Principle](#programmatic-first-principle).
-- **Documentation-first**: every change to a workflow, agent, or script must be accompanied by clear documentation.
-- **Local compute first**: minimize token usage; prefer local models and pre-encoded scripts over re-discovering context interactively.
-- **Minimal posture**: agents carry only the tools required for their stated role.
-- **Commit discipline**: small, incremental commits following [Conventional Commits](https://www.conventionalcommits.org/).
+These constraints govern all agent behavior. They derive from three core axioms in [`MANIFESTO.md`](MANIFESTO.md):
+
+1. **Endogenous-First** — scaffold from existing system knowledge and external best practices
+2. **Algorithms Before Tokens** — prefer deterministic, encoded solutions over interactive token burn
+3. **Local Compute-First** — minimize token usage; run locally whenever possible
+
+Additional operational constraints:
+
+- **Minimal Posture** — agents carry only the tools required for their stated role
+- **Programmatic-First** — if you have done a task twice interactively, the third time is a script. See [Programmatic-First Principle](#programmatic-first-principle).
+- **Documentation-First** — every change to a workflow, agent, or script must be accompanied by clear documentation
+- **Commit Discipline** — small, incremental commits following [Conventional Commits](https://www.conventionalcommits.org/) — see [`CONTRIBUTING.md#commit-discipline`](CONTRIBUTING.md#commit-discipline)
+
+For a complete treatment of guiding principles and ethical values, read [`MANIFESTO.md#guiding-principles-cross-cutting`](MANIFESTO.md#guiding-principles-cross-cutting) and [`MANIFESTO.md#ethical-values`](MANIFESTO.md#ethical-values).
 
 ---
 
@@ -69,31 +76,6 @@ python scripts/prune_scratchpad.py
 ```
 
 `uv run` ensures the correct locked environment is used regardless of shell state.
-
----
-
-## Commit Discipline
-
-**Make small, incremental commits** — one logical change per commit, not one large commit at the end of a session.
-
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-<type>(<scope>): <description>
-```
-
-| Type | When to use |
-|------|-------------|
-| `feat` | new functionality |
-| `fix` | bug or correction |
-| `docs` | documentation only |
-| `refactor` | restructuring without behaviour change |
-| `chore` | tooling, config, scripts |
-
-Good commit cadence:
-1. Docs change → commit
-2. Script change → commit
-3. Agent change → commit
 
 ---
 
