@@ -134,6 +134,32 @@ When delegating with a restricted scope, **state exclusions explicitly** in the 
 Good example:
 > "Edit `.md` files only — do not modify scripts, config, or agent files."
 
+### Verify-After-Act for Remote Writes
+
+Any command that creates or modifies a remote side effect must be immediately followed by a verification read:
+
+| Command | Verification |
+|---------|-------------|
+| `gh issue create` | `gh issue list --state open --limit 5` |
+| `git push` | `git log --oneline -1` |
+| `gh pr create` | `gh pr view` |
+| `gh issue close` | `gh issue view <number>` |
+
+**Zero error output is not confirmation of success.** Output truncation, network timeouts, and silent API failures all produce clean exits. Always verify.
+
+### Convention Propagation Rule
+
+When a new convention is introduced, identify **every** `AGENTS.md` file it applies to and update them all in the same commit:
+
+- Root `AGENTS.md` — applies to all agents
+- `docs/AGENTS.md` — applies to any convention touching `docs/`
+- `.github/agents/AGENTS.md` — applies to agent file authoring conventions
+
+A convention documented only in the root file will be missed by agents operating under subdirectory scope. Check with:
+```bash
+find . -name 'AGENTS.md' | grep -v node_modules
+```
+
 ---
 
 ## When to Ask vs. Proceed

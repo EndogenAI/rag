@@ -165,6 +165,16 @@ Every agent body must follow this structure:
 
 ## Naming Conventions
 
+### Convention Propagation Rule
+
+When a new authoring convention is introduced for agent files, check whether it must also appear in the root `AGENTS.md` or `docs/AGENTS.md`:
+
+- If it affects how **all agents communicate** (scratchpad, handoffs) → update root `AGENTS.md`
+- If it affects **documentation structure** (how findings are written up) → update `docs/AGENTS.md`
+- If it is **agent-file-authoring-only** (frontmatter, section order) → this file is sufficient
+
+Run `find . -name 'AGENTS.md' | grep -v node_modules` to see all narrowing files before closing a PR that introduces a new convention.
+
 | Agent type | File name pattern | `name` field |
 |-----------|------------------|-------------|
 | Fleet executive | `<area>-executive.agent.md` | `<Area> Executive` |

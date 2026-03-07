@@ -104,7 +104,9 @@ cat .tmp/<branch>/<date>.md 2>/dev/null || echo "No scratchpad yet."
 
 Read `docs/research/OPEN_RESEARCH.md`. Check for open GitHub issues tagged `research`. Identify whether the topic has prior work in `docs/research/` or related guides.
 
-### 2. Frame the Research Question
+### 2. Frame the Research Question ← **highest-leverage step**
+
+**This is the most important phase.** A well-framed question produces a Scout prompt that no human would write cold. Spend the time here — it compounds directly into synthesis quality. Read `OPEN_RESEARCH.md`, all open `research` issues, and any prior scratchpad entries before writing the frame.
 
 Write a concise research question in the session scratchpad:
 - What are we trying to learn?
@@ -163,6 +165,16 @@ If the research output implies changes to guides, AGENTS.md, or MANIFESTO.md, ha
 
 Update the corresponding GitHub issue with a comment linking to the committed document and close or move it to the next phase.
 
+### 11. Reflect — Cross-Session Heuristic Capture
+
+Before closing the session, write a brief `## Reflection` block in the scratchpad:
+- What worked well in the prompt enrichment chain?
+- What did the Scout miss that the Synthesizer had to compensate for?
+- Were there any source-quality surprises (higher or lower quality than expected)?
+- What would the Frame phase have done differently with hindsight?
+
+This reflection does not require a subagent — write it directly. If it produces a generalizable heuristic (a pattern that would change future Scout prompts or Frame framing), log it under `## Heuristic` and consider whether it should be encoded into the relevant agent file. This step implements the **reflection layer** from the Generative Agents architecture and closes the experiential memory gap without requiring any new tooling.
+
 ---
 
 ## Spawning New Area Agents
@@ -192,7 +204,8 @@ Then:
 - All four sub-agent phases (Scout → Synthesize → Review → Archive) have completed and returned control; each phase's gate criteria are met before the next phase was started.
 - Research document is committed to `docs/research/` with `Status: Final`; GitHub issue is updated with a link to the committed document and closed or moved.
 - Executive Docs has been notified if any guides or AGENTS.md files require updating based on the findings.
-- **Do not stop early** after the Archivist commits — the GitHub issue update and Executive Docs notification are required completion steps, not optional follow-ups.
+- `## Reflection` block written in the scratchpad; any generalizable heuristics identified and encoded or logged.
+- **Do not stop early** after the Archivist commits — the GitHub issue update, Executive Docs notification, and Reflection are required completion steps, not optional follow-ups.
 
 ---
 

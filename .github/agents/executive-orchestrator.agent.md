@@ -72,11 +72,15 @@ You are the **chief of staff**: you decompose, delegate, and monitor. You do not
 
 ## Endogenous Sources — Read Before Acting
 
+**Read these in order before taking any other action.** Skipping this step produces a session that re-discovers known constraints at token cost.
+
+0. **Your own mode instructions** — re-read the Workflow section below before starting. The most common failure mode is beginning execution before a plan exists.
 1. [`AGENTS.md`](../../AGENTS.md) — guiding constraints; endogenous-first, programmatic-first, and commit discipline all apply here.
 2. [`docs/guides/workflows.md`](../../docs/guides/workflows.md) — current formalized workflow patterns.
 3. [`.github/agents/README.md`](./README.md) — agent fleet catalog; consult before delegating.
 4. [`scripts/prune_scratchpad.py`](../../scripts/prune_scratchpad.py) — session management; run at session start (`--init`) and end (`--force`).
 5. The active session scratchpad (`.tmp/<branch>/<date>.md`) — read **first**, before delegating anything.
+6. [`docs/plans/`](../../docs/plans/) — check for an existing workplan on this branch before creating a new one.
 
 ---
 
@@ -105,9 +109,20 @@ cat .tmp/<branch>/$(date +%Y-%m-%d).md
 
 Identify: what branch, what PR, what open issues, what prior unfinished phases. Write `## Session Start` with a one-paragraph orientation.
 
-### 2. Frame the Work
+### 2. Frame the Work — Create the Workplan
 
-Write `## Orchestration Plan` in the scratchpad. For each domain area required, create a phase entry:
+**Before writing a single file or delegating a single agent**, create a workplan:
+
+```bash
+# Create the committed workplan file (use scaffold script if available)
+uv run python scripts/scaffold_workplan.py <brief-slug> 2>/dev/null || \
+  # fallback: create manually
+  touch docs/plans/$(date +%Y-%m-%d)-<brief-slug>.md
+```
+
+The workplan file (`docs/plans/YYYY-MM-DD-<slug>.md`) is committed to git and is the **plan of record**. The scratchpad `## Orchestration Plan` section is a live mirror — useful during the session but not authoritative. See `AGENTS.md` → `docs/plans/` section for the required structure.
+
+Write `## Orchestration Plan` in the scratchpad as well. For each domain area required, create a phase entry:
 
 ```markdown
 ## Orchestration Plan
@@ -191,9 +206,13 @@ A correct output from this agent looks like:
 
 ## Guardrails
 
-- Do not begin delegating without a written plan in the scratchpad.
+- Do not begin delegating without a written plan in the scratchpad **and** a committed workplan file in `docs/plans/`.
 - Do not batch multiple executive delegations simultaneously — phases must be sequential unless the plan explicitly marks them as parallelisable (and even then, use caution).
 - Do not commit directly — route through Review, then GitHub agent.
 - Do not modify `MANIFESTO.md` — that is Executive Docs territory.
 - Do not proceed past a phase gate if the prior deliverables are not committed and confirmed.
 - Do not close the session without writing a `## Session Summary` and running `prune_scratchpad.py --force`.
+- **Verify every remote write** — after any `gh issue create`, `git push`, `gh pr create`, or similar, immediately run a verification read (`gh issue list`, `git log --oneline -1`, `gh pr view`). Zero error output is not confirmation of success.
+- **Never use heredocs for Markdown content** — backtick-delimited inline code breaks heredoc quoting regardless of `'EOF'` style. Use `replace_string_in_file`, `create_file`, or a Python write instead. Never use `cat >> file << 'EOF'` for any content that may contain backticks.
+- **Subagents do not commit** — assume all subagents (including Executive Docs) lack terminal access and will return file edits only. The orchestrator is always responsible for running `git add`, `git commit`, and `git push` after a subagent delegation completes. The GitHub agent is the sole exception, and only because `execute` was added to its toolset explicitly.
+- **When introducing a convention, update every AGENTS.md** — identify all relevant narrowing files (`AGENTS.md`, `docs/AGENTS.md`, `.github/agents/AGENTS.md`) and update them in the same commit. A convention documented only in the root file will be missed by agents operating in subdirectory scope.
