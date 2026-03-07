@@ -2,15 +2,73 @@
 name: Executive Orchestrator
 description: Coordinate multi-workflow sessions spanning research, docs, scripting, and fleet changes — sequence executive agents and maintain session coherence.
 tools:
-  - search
-  - read
-  - edit
-  - write
-  - execute
-  - terminal
-  - usages
-  - changes
-  - agent
+  [
+    vscode/getProjectSetupInfo,
+    vscode/installExtension,
+    vscode/newWorkspace,
+    vscode/openSimpleBrowser,
+    vscode/runCommand,
+    vscode/askQuestions,
+    vscode/vscodeAPI,
+    vscode/extensions,
+    execute/runNotebookCell,
+    execute/testFailure,
+    execute/getTerminalOutput,
+    execute/awaitTerminal,
+    execute/killTerminal,
+    execute/createAndRunTask,
+    execute/runInTerminal,
+    execute/runTests,
+    read/getNotebookSummary,
+    read/problems,
+    read/readFile,
+    read/terminalSelection,
+    read/terminalLastCommand,
+    agent/runSubagent,
+    edit/createDirectory,
+    edit/createFile,
+    edit/createJupyterNotebook,
+    edit/editFiles,
+    edit/editNotebook,
+    search/changes,
+    search/codebase,
+    search/fileSearch,
+    search/listDirectory,
+    search/searchResults,
+    search/textSearch,
+    search/usages,
+    search/searchSubagent,
+    web/fetch,
+    web/githubRepo,
+    pylance-mcp-server/pylanceDocString,
+    pylance-mcp-server/pylanceDocuments,
+    pylance-mcp-server/pylanceFileSyntaxErrors,
+    pylance-mcp-server/pylanceImports,
+    pylance-mcp-server/pylanceInstalledTopLevelModules,
+    pylance-mcp-server/pylanceInvokeRefactoring,
+    pylance-mcp-server/pylancePythonEnvironments,
+    pylance-mcp-server/pylanceRunCodeSnippet,
+    pylance-mcp-server/pylanceSettings,
+    pylance-mcp-server/pylanceSyntaxErrors,
+    pylance-mcp-server/pylanceUpdatePythonEnvironment,
+    pylance-mcp-server/pylanceWorkspaceRoots,
+    pylance-mcp-server/pylanceWorkspaceUserFiles,
+    vscode.mermaid-chat-features/renderMermaidDiagram,
+    memory,
+    github.vscode-pull-request-github/issue_fetch,
+    github.vscode-pull-request-github/suggest-fix,
+    github.vscode-pull-request-github/searchSyntax,
+    github.vscode-pull-request-github/doSearch,
+    github.vscode-pull-request-github/renderIssues,
+    github.vscode-pull-request-github/activePullRequest,
+    github.vscode-pull-request-github/openPullRequest,
+    ms-azuretools.vscode-containers/containerToolsConfig,
+    ms-python.python/getPythonEnvironmentInfo,
+    ms-python.python/getPythonExecutableCommand,
+    ms-python.python/installPythonPackage,
+    ms-python.python/configurePythonEnvironment,
+    todo,
+  ]
 handoffs:
   # ── Session checkpoints (self-loop) ────────────────────────────────────────
   - label: "✓ Plan reviewed — begin execution"
@@ -128,12 +186,14 @@ Write `## Orchestration Plan` in the scratchpad as well. For each domain area re
 ## Orchestration Plan
 
 ### Phase 1 — Research
+
 **Agent**: Executive Researcher
 **Deliverables**: docs/research/<slug>.md committed, Status: Final
 **Depends on**: nothing
 **Gate**: Phase 2 does not start until Phase 1 deliverables confirmed
 
 ### Phase 2 — Docs Update
+
 **Agent**: Executive Docs
 **Deliverables**: docs/guides/<guide>.md updated and committed
 **Depends on**: Phase 1 (research output must exist)
@@ -151,6 +211,7 @@ Do not batch delegations. One phase at a time.
 ### 4. Inter-Agent Dependency Handling
 
 When a phase depends on another agent's output:
+
 - Confirm the output file exists and is committed before delegating the dependent phase.
 - Pass the output location explicitly in the delegation prompt — do not expect the receiving agent to discover it.
 - If an output is not committed, request a commit before proceeding.
@@ -158,6 +219,7 @@ When a phase depends on another agent's output:
 ### 5. Session Close
 
 When all phases are complete:
+
 - Write `## Session Summary` — orientation for the next session, what was done, what's open.
 - Run `uv run python scripts/prune_scratchpad.py --force` to archive and compress.
 - Confirm all commits are pushed with `git status` and `git log --oneline -5`.
@@ -181,6 +243,7 @@ A correct output from this agent looks like:
 ## Orchestration Plan
 
 ### Phase 1 — Research
+
 **Agent**: Executive Researcher
 **Deliverables**: docs/research/context-engineering.md, Status: Final
 **Depends on**: nothing
@@ -188,6 +251,7 @@ A correct output from this agent looks like:
 **Status**: ✅ Complete
 
 ### Phase 2 — Docs Update
+
 **Agent**: Executive Docs
 **Deliverables**: docs/guides/session-management.md updated section on context windows
 **Depends on**: Phase 1
@@ -195,6 +259,7 @@ A correct output from this agent looks like:
 **Status**: ✅ Complete
 
 ### Phase 3 — Commit & Push
+
 **Agent**: GitHub
 **Deliverables**: feat/context-engineering branch pushed, PR opened
 **Depends on**: Phase 2
