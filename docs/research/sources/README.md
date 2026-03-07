@@ -174,6 +174,28 @@ The synthesis reports are the curated, committed record of what each source argu
 
 ---
 
+## Self-Referential Session Syntheses
+
+Not all files in this directory are analyses of external sources. Some are **self-referential session synthesis documents** — structured retrospectives written by the research fleet about a session in which the workflow itself was the subject of investigation.
+
+These files have a distinct naming convention:
+
+```
+session-synthesis-<YYYY-MM-DD>-<letter>.md
+```
+
+Examples: `session-synthesis-2026-03-06-a.md`
+
+They do not follow the 8-section external-source format. Their content is first-person operational: what was attempted, what actually happened, and what was learned — with particular attention to lessons that update assumptions previously encoded in agent files or guides.
+
+**Why they belong here**: self-referential sessions are a class of primary source in the endogenic methodology. The session itself is the object of study; the synthesis is the analysis of that object. Placing these alongside external source syntheses maintains a single, queryable knowledge base of what the fleet has learned — regardless of whether the origin was external or internal. Over time this record enables a Synthesizer or Executive to query across sessions for recurring patterns without re-reading raw scratchpad archives.
+
+**Traceability purpose**: these files are the primary traceability artefact for decisions that were reached through live practice rather than literature review. When an agent convention changes mid-session (e.g., the scratchpad write-back requirement added to `executive-researcher.agent.md` during the 2026-03-06 session), the session synthesis is the record of *why* the change was made and what failure mode it addressed.
+
+**Do not truncate or gitignore these files.** They are committed history, not scratchpad noise.
+
+---
+
 ## Relationship to Issue Syntheses
 
 ```
