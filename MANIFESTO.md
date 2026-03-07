@@ -36,9 +36,22 @@ The endogenic system *starts* from within (the morphogenetic seed) and *grows ou
 
 ---
 
-## The Core Dogmas
+## Foundational Principle: Augmentive Partnership
 
-### 1. Endogenous-First (with External Integration)
+Endogenic development is not about agent autonomy or reducing human involvement. It is about creating a **tight human-system partnership** where:
+
+- The **human** provides direction, judgment, ethical guidance, and oversight
+- The **system** provides deterministic execution, encoding, memory, and automation
+- Neither works without the other — they form a unified cognitive system
+- The goal is to **amplify human judgment**, not replace it
+
+This partnership is why we encode knowledge, minimize token burn, and enforce governance. Every axiom and principle serves this partnership. The system grows smarter so the human can make better decisions — not to work autonomously.
+
+---
+
+## The Three Core Axioms
+
+### 1. Endogenous-First
 
 > Scaffold from existing system knowledge. Absorb and encode the best of what exists externally.
 
@@ -54,25 +67,21 @@ Before writing any new agent, script, or document:
 
 **Anti-pattern (vibe coding)**: Dropping into Copilot Chat without reading `AGENTS.md` and asking the agent to "write a script to do X" — the agent will re-invent the wheel, miss project conventions, and burn tokens discovering what is already documented.
 
-### 2. Programmatic-First
+### 2. Algorithms Before Tokens
 
-> If you have done a task twice interactively, the third time is a script.
+> Prefer deterministic, encoded solutions over interactive token burn. Invest in automation early.
 
-Any repeated or automatable task must be encoded as a committed script or automation before being performed a third time by hand. This is not optional — it is a constraint on the entire agent fleet.
+Every token spent in interactive sessions comes at a cost — computational, financial, and environmental. The core strategy is to move work upstream: encode algorithms, scripts, and decision trees that prevent re-discovery at session time.
 
-**Why**: Interactive agent sessions are expensive (tokens, time, potential for error). Scripts are cheap, deterministic, and composable. Encoding knowledge as scripts is the primary mechanism by which the system grows its own intelligence.
+This axiom drives:
+- Preference for scripts over interactive prompts
+- Caching and pre-computation over re-fetching
+- Deterministic workflows over adaptive ones
+- Context compression and isolation over broad context loads
 
 See [`docs/guides/programmatic-first.md`](docs/guides/programmatic-first.md) for decision criteria and examples.
 
-### 3. Documentation-First
-
-> Every implementation change must be accompanied by clear documentation.
-
-Documentation is not an afterthought — it is part of the change. A script without a docstring is incomplete. An agent without an `AGENTS.md` reference is incomplete. A feature without a guide is incomplete.
-
-This principle exists because the documentation *is* the knowledge the system encodes for future agents.
-
-### 4. Local Compute First
+### 3. Local Compute-First
 
 > Minimize token burn. Run locally whenever possible.
 
@@ -82,25 +91,119 @@ Cloud LLM inference is expensive — in tokens, money, and environmental cost. T
 - Using free/cheaper tiers where local compute is insufficient
 - Caching and pre-computing context rather than re-discovering it interactively
 
-### 5. Commit Discipline
+When tight feedback loops between human and system are required, local models enable the augmentive partnership to function without delays.
 
-> Small, incremental commits. One logical change per commit.
+---
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+## Guiding Principles (Cross-Cutting)
 
-```
-<type>(<scope>): <description>
-```
+These principles reinforce the core axioms and guide all implementation decisions. Each principle serves one or more axioms — they are not hierarchical, but interconnected.
 
-| Type | When to use |
-|------|-------------|
-| `feat` | new functionality |
-| `fix` | bug or correction |
-| `docs` | documentation only |
-| `chore` | tooling, config, scripts |
-| `refactor` | restructuring without behavior change |
+### Programmatic-First
 
-Good commit cadence: docs change → commit, script change → commit, agent change → commit. Never one giant commit at the end of a session.
+**Reinforces**: Algorithms Before Tokens + Endogenous-First
+
+> If you have done a task twice interactively, the third time is a script.
+
+Any repeated or automatable task must be encoded as a committed script or automation before being performed a third time by hand. This is not optional — it is a constraint on the entire agent fleet.
+
+**Why**: Interactive agent sessions are expensive (tokens, time, potential for error). Scripts are cheap, deterministic, and composable. Encoding knowledge as scripts is the primary mechanism by which the system grows its own intelligence and serves the human-system partnership.
+
+### Documentation-First
+
+**Reinforces**: All three axioms
+
+> Every implementation change must be accompanied by clear documentation.
+
+Documentation is not an afterthought — it is part of the change. A script without a docstring is incomplete. An agent without an `AGENTS.md` reference is incomplete. A feature without a guide is incomplete.
+
+This principle exists because the documentation *is* the knowledge the system encodes for future agents. It reflects what humans have decided; it guides future human decisions.
+
+### Adopt Over Author (Avoid Reinventing the Wheel)
+
+**Reinforces**: Algorithms Before Tokens + Endogenous-First
+
+> Use established open-source tools and frameworks when they solve a problem well. Do not rebuild what is already well-maintained externally.
+
+When evaluating whether to build or adopt:
+- Does the external tool solve the problem correctly? Adopt it.
+- Does it have active maintenance and community support? Adopt it.
+- Would building it ourselves consume tokens better spent elsewhere? Adopt it.
+
+Adoption is not dependency — it is standing on shoulders of giants. Document the integrated tool, encode its usage patterns into scripts and agents, and let it become part of the endogenous substrate.
+
+### Self-Governance & Guardrails
+
+**Reinforces**: All three axioms
+
+> Agents self-report deviations. Guardrails are validated programmatically, not just documented.
+
+Governance happens at three levels:
+1. **Documented conventions** in `AGENTS.md` and `MANIFESTO.md` (what agents should know before acting)
+2. **Programmatic validation** via scripts that check compliance (what scripts ensure happens)
+3. **Self-reporting by agents** when they detect deviations (what agents communicate back to humans)
+
+Governor modules and enforcement scripts are part of the architecture, not afterthoughts. They close the gap between principle and practice, reducing token waste and preventing bad outputs from propagating downstream.
+
+### Compress Context, Not Content
+
+**Reinforces**: Algorithms Before Tokens + Local Compute-First
+
+> Minimize the context window burden through lazy loading, selective compression, and caching. Every token in context should serve a purpose; remove irrelevant history, not knowledge.
+
+Context engineering is critical for token efficiency and bounded inference costs (especially on local hardware). Techniques include:
+- Lazy loading: load full agent bodies only when that agent is invoked
+- Selective compression: summarize completed phases, retain decision rationale
+- Caching: store pre-fetched sources, pre-computed vectors, and analysis results
+- Isolation: strip irrelevant conversation history from agent prompts
+
+### Isolate Invocations, Parallelize Safely
+
+**Reinforces**: Algorithms Before Tokens + Endogenous-First
+
+> Per-invocation context isolation eliminates context rot. Parallelize only when isolation can be maintained. One source per synthesizer invocation; one task per agent run; independent operations in parallel.
+
+When agents process large batches (e.g., multiple sources in a research synthesis), a single large invocation suffers "context rot" — early items degrade as the model processes later ones. Instead:
+- Isolate each invocation to a single source/task
+- Aggregate results afterward
+- Parallelize independent invocations
+
+This maintains fidelity across the entire batch and enables safe parallelization without context interference.
+
+### Validate & Gate, Always
+
+**Reinforces**: Self-Governance & Guardrails + Algorithms Before Tokens
+
+> Every phase has a gate. Every gate is checked before advancing. Evaluator-optimizer loops catch errors early. Early validation avoids wasted tokens and prevents bad outputs propagating downstream.
+
+Gates are the mechanism by which the system enforces governance without heavyweight process. Examples include:
+- Deliverables checklist before phase transition (research workflow)
+- Review gate before commit (all changes)
+- Completion criteria self-check before agent handoff
+
+### Minimal Posture
+
+**Reinforces**: Algorithms Before Tokens + Local Compute-First
+
+> Every agent carries only the tools it needs. Every script only the dependencies it requires. Avoid over-provisioning — minimize surface area, maximize efficiency.
+
+Minimal posture extends beyond agents to all design decisions:
+- Tools: include only what an agent actually uses (no "just in case" tools)
+- Dependencies: validate before adding; prefer well-maintained over feature-rich
+- Context: load only what the task requires
+- Handoff information: include enough for the next agent to succeed, nothing more
+
+---
+
+## Ethical Values
+
+These values underpin all decisions and encode our commitment to responsible AI development. They are not aspirational — they are enforced through documentation, scripts, and governance.
+
+- **Transparency**: All decisions are documented and traceable to a principle or axiom. No hidden heuristics or unexplained choices.
+- **Human Oversight**: Agents operate under governance and gates. Humans make strategic decisions; the system executes and surfaces information for those decisions. No unconstrained autonomy.
+- **Reproducibility**: Outputs are deterministic, reviewable, and auditable. A decision made on day one can be reproduced on day 100 with the same inputs.
+- **Sustainability**: Minimize computational cost, environmental impact, and token burn. The finite cost of local inference is a feature, not a bug — it incentivizes efficient design.
+- **Determinism**: Reduce randomness through encoding, scripts, and established practices. Vagueness is expensive; clarity is cheap.
 
 ---
 
@@ -130,9 +233,17 @@ The goal is synthesis, not isolation.
 
 Prompt engineering — tuning the words you use to get better outputs — is a useful tactic but not a strategy. Endogenic development treats the prompt as the thin interface to a deep substrate of encoded knowledge. The value lives in the substrate, not the prompt.
 
-### Not One-Shot Automation
+### Not Autonomous Agents
 
-Endogenic development is not "set it and forget it" automation. Agents operate under human oversight. The system grows iteratively. Every session is reviewed before it is committed. The agent fleet is governed by documented conventions, not by unconstrained autonomy.
+Endogenic development rejects the goal of "autonomous agents." This is not a technical limitation — it is a deliberate design choice based on the Augmentive Partnership principle.
+
+We build agents that:
+- Operate under human oversight at every gate
+- Escalate decisions that require human judgment
+- Self-report when they detect deviations from guidance
+- Amplify human capabilities, not replace them
+
+The system grows smarter so humans can make better decisions *faster*, not so humans can stop making decisions.
 
 ---
 
@@ -140,10 +251,12 @@ Endogenic development is not "set it and forget it" automation. Agents operate u
 
 Agents in the endogenic model are:
 
-- **Constrained by convention**: every agent reads `AGENTS.md` before acting, and every action traces to a documented rule
+- **Constrained by convention**: every agent reads `AGENTS.md` before acting, and every action traces to a documented rule or principle
 - **Backed by scripts**: auditable, automatable actions are encoded as scripts — agents call scripts, they don't re-invent them
-- **Hierarchical**: executive agents orchestrate sub-agents; sub-agents escalate blockers back up; nothing proceeds without a checkpoint
+- **Hierarchical with gates**: executive agents orchestrate sub-agents; sub-agents escalate blockers back up; nothing proceeds without a completed gate
 - **Minimal-posture**: every agent carries only the tools it needs for its stated role — no over-provisioning
+- **Self-reporting & governed**: agents detect and report deviations from guidance; governor modules validate compliance; guardrails prevent propagation of bad outputs
+- **Augmentive, not autonomous**: agents surface information and options for human decision-making; they do not make strategic choices
 - **Commit before handoff**: changes are committed (via Review → GitHub) before control passes to the next agent
 
 ---
