@@ -10,9 +10,10 @@ with a docstring describing its purpose, inputs, outputs, and usage examples.
 
 ```
 scripts/
-  prune_scratchpad.py          # Cross-agent scratchpad session file manager (--init, --annotate, --force)
+  prune_scratchpad.py          # Cross-agent scratchpad session file manager (--init, --annotate, --force, --append-summary, --check-only)
   watch_scratchpad.py          # File watcher — auto-annotates .tmp/*.md on change (uses watchdog)
   scaffold_agent.py            # Scaffold a new .agent.md stub from a validated template
+  scaffold_workplan.py         # Scaffold a docs/plans/YYYY-MM-DD-<slug>.md workplan from template
   generate_agent_manifest.py   # Emit a JSON or Markdown skills manifest of all .agent.md files
   fetch_source.py              # Fetch a URL into .cache/sources/ and maintain a manifest (no re-fetching)
   fetch_all_sources.py         # Batch-fetch all URLs from OPEN_RESEARCH.md + research doc frontmatter
@@ -40,12 +41,63 @@ uv run python scripts/prune_scratchpad.py --annotate --file .tmp/my-branch/2026-
 # Dry-run prune — print result without writing
 uv run python scripts/prune_scratchpad.py --dry-run
 
-# Prune completed sections (only when file exceeds 200 lines, or use --force)
+# Prune completed sections (only when file exceeds 2000 lines, or use --force)
 uv run python scripts/prune_scratchpad.py --force
+
+# Append a session summary block safely (no heredocs; safe for backtick content)
+uv run python scripts/prune_scratchpad.py --append-summary "Session closed. Phases 1-3 complete. Open: issue #12."
+
+# Corruption detection only — exits 0 if clean, 1 if corrupted lines found
+uv run python scripts/prune_scratchpad.py --check-only
 ```
 
-**When to run**: at session start (`--init`), after agent writes to check line count, and at
-session end (`--force`) to archive the session and update `_index.md`.
+**Flags**:
+
+| Flag | Description |
+|------|-------------|
+| `--init` | Create today's session file if absent; exits 0 |
+| `--annotate` | Annotate H2 headings with `[Lstart–Lend]` ranges; idempotent |
+| `--dry-run` | Print pruned output without writing |
+| `--force` | Prune regardless of line count; also updates `_index.md` |
+| `--append-summary TEXT` | Append a `## Session Summary — YYYY-MM-DD` block using Python file I/O (no heredocs) |
+| `--check-only` | Scan for corruption (repeated heading patterns); exits 0 if clean, 1 if found |
+| `--file PATH` | Override path resolution; target a specific scratchpad file |
+
+**When to run**: at session start (`--init`), after agent writes to check line count,
+at session end (`--force` + `--append-summary`) to archive cleanly and update `_index.md`.
+
+---
+
+## scripts/scaffold_workplan.py
+
+**Purpose**: Scaffold a new `docs/plans/YYYY-MM-DD-<slug>.md` workplan file from a standard
+template, with today's date and the current git branch pre-filled. Prints the created path to
+stdout. Exits 1 without overwriting if the target file already exists.
+
+Per `AGENTS.md`: for any session with ≥ 3 phases or ≥ 2 agent delegations, a workplan must be
+created and committed *before* execution starts. This script makes that step one command.
+
+**Usage**:
+
+```bash
+# Create a workplan for today
+uv run python scripts/scaffold_workplan.py <slug>
+
+# Example
+uv run python scripts/scaffold_workplan.py formalize-workflows
+# Creates: docs/plans/2026-03-06-formalize-workflows.md
+```
+
+**Arguments**:
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `slug` | yes | Dash-separated slug, e.g. `fix-session-management`. Converted to title-case for the workplan heading. |
+
+**Exit codes**: `0` file created; `1` missing slug, file already exists, or write error.
+
+**After running**: fill in the `## Objective` section and at least one `## Phase Plan` entry,
+then commit with `docs(plans): add workplan for <slug>`.
 
 ---
 
