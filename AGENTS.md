@@ -61,6 +61,22 @@ The scratchpad auto-annotator (`scripts/watch_scratchpad.py`) exemplifies this p
 
 ---
 
+## Toolchain Reference
+
+**Before constructing or suggesting a command for any tool listed below, check that tool's reference file.**
+
+Re-deriving command syntax or re-encountering known failure modes each session wastes tokens and risks repeating documented mistakes. The `docs/toolchain/` substrate encodes canonical safe patterns and known footguns for heavily-used CLI tools so agents look them up rather than reconstruct them.
+
+| Tool | Reference |
+|------|-----------|
+| `gh` (GitHub CLI) | [`docs/toolchain/gh.md`](docs/toolchain/gh.md) |
+
+To refresh the auto-generated raw reference cache: `uv run python scripts/fetch_toolchain_docs.py --check`
+
+See [`docs/toolchain/README.md`](docs/toolchain/README.md) for the full update workflow and two-layer architecture (`.cache/toolchain/` vs `docs/toolchain/`).
+
+---
+
 ## Testing-First Requirement for Scripts
 
 **Every script committed to `scripts/` must have automated tests before it ships.**

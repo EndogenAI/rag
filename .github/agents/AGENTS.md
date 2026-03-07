@@ -21,6 +21,8 @@ uv run python scripts/fetch_all_sources.py
 
 This is the **fetch-before-act** posture. Scouts read cached `.md` files via `read_file` rather than re-fetching pages through the context window. See [`scripts/README.md`](../../scripts/README.md#scriptsfetch_all_sourcespy) for full usage.
 
+**`gh` CLI in agent files**: any `.agent.md` that includes `gh` commands must use [`docs/toolchain/gh.md`](../../docs/toolchain/gh.md) as the source of command patterns — do not reconstruct syntax from memory. Known failure modes (body corruption, Projects v2 auth, silent API failures) are encoded there.
+
 ---
 
 ## Purpose

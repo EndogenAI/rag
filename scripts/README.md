@@ -22,6 +22,7 @@ scripts/
   migrate_agent_xml.py         # Bulk-migrate .agent.md body sections to hybrid Markdown + XML format (--dry-run safe)
   pr_review_reply.py           # Post replies to PR inline review comments and resolve threads (--reply-to, --resolve, --batch)
   seed_labels.py               # Idempotent GitHub label seeder — reads data/labels.yml and syncs via gh label create --force (--dry-run, --delete-legacy)
+  fetch_toolchain_docs.py      # Cache gh CLI help output as structured Markdown under .cache/toolchain/ (--check, --force, --dry-run)
 ```
 
 ---
@@ -405,6 +406,62 @@ uv run python scripts/fetch_all_sources.py --research-docs-only
 **Exit codes**: `0` all fetches succeeded; `1` one or more failed.
 
 **Dependencies**: stdlib only. Delegates to `fetch_source.py` per URL.
+
+---
+
+## scripts/fetch_toolchain_docs.py
+
+**Purpose**: Run `gh help` and `gh <subcommand> --help` for every top-level subcommand, convert
+the output to structured Markdown, and write it to `.cache/toolchain/`. Agents can look up `gh`
+CLI syntax locally without burning tokens or network round-trips.
+
+Per the programmatic-first principle: agents repeatedly look up `gh` CLI flags interactively
+(e.g. `gh issue create`, `gh pr merge`, `gh api` pagination). This script encodes that lookup.
+
+**Tests**: [`tests/test_fetch_toolchain_docs.py`](../tests/test_fetch_toolchain_docs.py)
+
+**Usage**:
+
+```bash
+# Fetch and cache all gh CLI docs (writes to .cache/toolchain/)
+uv run python scripts/fetch_toolchain_docs.py
+
+# Skip refresh if cache files are < 24 hours old
+uv run python scripts/fetch_toolchain_docs.py --check
+
+# Force re-fetch even if recently cached
+uv run python scripts/fetch_toolchain_docs.py --force
+
+# Dry run — print what would be written without touching the filesystem
+uv run python scripts/fetch_toolchain_docs.py --dry-run
+
+# Custom output directory
+uv run python scripts/fetch_toolchain_docs.py --output-dir /tmp/toolchain-cache
+```
+
+**Outputs**:
+
+| File | Contents |
+|------|----------|
+| `.cache/toolchain/gh/<subcommand>.md` | Per-subcommand structured Markdown (Usage, Flags table, Examples) |
+| `.cache/toolchain/gh/index.md` | All subcommands with one-line descriptions and links |
+| `.cache/toolchain/gh.md` | Single aggregate file, all subcommands concatenated |
+
+**Arguments**:
+
+| Flag | Description |
+|------|-------------|
+| `--tool gh` | CLI tool to document. Currently only `gh` is supported. Default: `gh`. |
+| `--output-dir PATH` | Root directory for cache output. Default: `.cache/toolchain/`. |
+| `--check` | Skip refresh if cache files are < 24 hours old. |
+| `--force` | Always re-fetch, ignoring cache age. |
+| `--dry-run` | Print what would be written without touching the filesystem. |
+
+**Exit codes**: `0` success; `1` `gh` not on PATH, no subcommands found, or usage error.
+
+**When to run**: at the start of any session that will issue `gh` CLI commands — especially
+before writing new scripts that use the `gh` API, to verify flag names without re-running
+interactive lookups.
 
 ---
 

@@ -30,10 +30,16 @@ documentation update. The sequence is:
 |------|---------|
 | `docs/guides/` | Step-by-step guides for working with agents, scripts, and workflows |
 | `docs/guides/github-workflow.md` | Actionable `gh` CLI reference, label taxonomy, issue conventions, milestone patterns — distilled from `docs/research/github-project-management.md` |
+| `docs/toolchain/` | Curated agent-readable CLI references — canonical safe patterns and known failure modes per tool |
+| `docs/toolchain/gh.md` | `gh` CLI reference: issues, PRs, labels, milestones, Projects v2, API |
 | `docs/plans/` | Committed workplan files for multi-phase sessions — one per session, tracked in git history |
 | `docs/research/` | Issue-specific synthesis documents; each closes a GitHub research issue |
 | `docs/research/sources/` | Per-source synthesis reports — one per surveyed source; committed to git |
 | `docs/research/OPEN_RESEARCH.md` | Open research queue, seed references, and gate deliverables |
+
+### Toolchain Substrate Note
+
+When updating `docs/toolchain/*.md`, run `uv run python scripts/fetch_toolchain_docs.py <tool>` first to refresh the `.cache/toolchain/` layer — then use that as a reference when curating `docs/toolchain/<tool>.md`. The script writes to `.cache/`, not to `docs/toolchain/`; never auto-overwrite the curated files with script output. When a new failure mode is discovered, add it to both `docs/toolchain/<tool>.md` and the relevant `docs/guides/<tool>-workflow.md`.
 
 ---
 
