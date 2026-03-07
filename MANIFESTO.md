@@ -162,6 +162,8 @@ Context engineering is critical for token efficiency and bounded inference costs
 - Caching: store pre-fetched sources, pre-computed vectors, and analysis results
 - Isolation: strip irrelevant conversation history from agent prompts
 
+**Empirical basis**: Live session practice confirmed that when agents skip writing to `.tmp/`, the next agent starts blind — scout outputs existed only in the conversation summary and had to be reconstructed at token cost. The scratchpad is the only durable cross-agent memory that survives a context window boundary. Write discipline — not queryability — is the primary gap in practised context management; the write-back requirement has since been mechanically encoded into agent files. See [`docs/research/sources/session-synthesis-2026-03-06-a.md`](docs/research/sources/session-synthesis-2026-03-06-a.md).
+
 ### Isolate Invocations, Parallelize Safely
 
 **Reinforces**: Algorithms Before Tokens + Endogenous-First
@@ -175,6 +177,8 @@ When agents process large batches (e.g., multiple sources in a research synthesi
 
 This maintains fidelity across the entire batch and enables safe parallelization without context interference.
 
+**Empirical basis**: Five independent orchestration traditions — Anthropic *Building Effective Agents*, ReAct (arXiv:2210.03629), AIGNE (arXiv:2512.05470), the Claude Agent SDK, and Claude Code Agent Teams — all independently enforce strict per-invocation scope isolation. The SDK states the invariant most precisely: *"the only channel from parent to subagent is the Task prompt string."* These teams did not coordinate their specifications; the convergence confirms that per-invocation isolation is a structural requirement for reliable multi-agent behaviour, not a stylistic preference. Confirmed empirically in this project: running a Synthesizer across 22 sources in a single invocation produced context rot; per-source isolation eliminated it. See [`docs/research/agentic-research-flows.md`](docs/research/agentic-research-flows.md).
+
 ### Validate & Gate, Always
 
 **Reinforces**: Self-Governance & Guardrails + Algorithms Before Tokens
@@ -185,6 +189,8 @@ Gates are the mechanism by which the system enforces governance without heavywei
 - Deliverables checklist before phase transition (research workflow)
 - Review gate before commit (all changes)
 - Completion criteria self-check before agent handoff
+
+**Empirical basis**: Mei et al.'s context engineering survey (arXiv:2507.13334, 1400+ papers) documents a fundamental comprehension-generation asymmetry across LLMs — models understand complex context far better than they generate equivalently sophisticated long-form outputs. This gap is structural, not model-family-specific. The evaluator-optimizer loop is the architecturally correct response: structuring output generation as iterative evaluate-and-refine compensates for models' relative weakness at long-form generation and independently validates the self-loop phase gate design. See [`docs/research/sources/arxiv-context-engineering-survey.md`](docs/research/sources/arxiv-context-engineering-survey.md).
 
 ### Minimal Posture
 
