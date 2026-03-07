@@ -87,6 +87,16 @@ git push origin HEAD
 
 ---
 
+## Completion Criteria
+
+- All specified files have been staged with `git add <explicit files>` — never `git add -A` or `git add .`.
+- A single atomic commit has been created with a Conventional Commits message and includes an issue reference if applicable.
+- The branch has been pushed to remote and the push confirmed with exit code 0.
+- If opening a PR, the PR URL has been returned in the response.
+- **Do not stop early** after staging — confirm the commit and push before returning control; staged-but-uncommitted changes are not done.
+
+---
+
 ## Guardrails
 
 - Do not commit without confirmed **Review** approval.

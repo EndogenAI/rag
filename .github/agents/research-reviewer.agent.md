@@ -98,6 +98,16 @@ Use the "Return to Executive Researcher" handoff. The Executive Researcher decid
 
 ---
 
+## Completion Criteria
+
+- Every item in the Review Checklist (all five sections) has been evaluated with a pass or fail noted — no section skipped.
+- A `## Reviewer Output` section has been appended to the session scratchpad with a clear **Approved**, **Revise**, or **Reject** verdict.
+- Every issue listed under "Issues Found" includes the specific section or location in the document and the violated criterion.
+- If verdict is **Revise** or **Reject**, the issues are specific enough for the Synthesizer to act on without follow-up questions.
+- **Do not stop early** by issuing a partial verdict — evaluate the full checklist before reaching a verdict, even when early issues strongly suggest rejection.
+
+---
+
 ## Guardrails
 
 - Do not edit any document — you are read-only.

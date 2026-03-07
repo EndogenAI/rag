@@ -120,6 +120,17 @@ If the task is a one-shot script rather than event-driven, hand off to **Executi
 
 ---
 
+## Completion Criteria
+
+- Automation category, trigger event, and loop-prevention strategy are documented in the session scratchpad before any code is written.
+- Existing automation has been audited; the new automation does not duplicate an existing watcher, hook, or CI task.
+- All four non-negotiable guard-rails are present in the implementation: loop prevention, file-existence guard, graceful Ctrl-C handling, and an informative log prefix.
+- The new automation is documented in `scripts/README.md` and/or `.vscode/tasks.json` with correct `isBackground` and `runOn` settings.
+- Changes have been routed through **Review** and returned with an Approved verdict.
+- **Do not stop early** once the watcher script is written — VS Code task registration, README update, and Review are required completion steps before returning.
+
+---
+
 ## Guardrails
 
 - **Never use `fswatch`** — use Python `watchdog` for OS-agnostic watching.

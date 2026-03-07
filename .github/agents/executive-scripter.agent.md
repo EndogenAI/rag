@@ -98,6 +98,17 @@ If the task requires ongoing automation (file watchers, hooks, CI), hand off to 
 
 ---
 
+## Completion Criteria
+
+- `scripts/` has been audited; a gap or repeated task is identified and documented in the session scratchpad before any script is written.
+- A new or extended script exists in `scripts/` with a module docstring, `--dry-run` flag (if it writes or deletes files), and a `uv run` invocation example.
+- The script has been run with `--dry-run` first, then for real; output from both runs is captured in the session scratchpad.
+- `scripts/README.md` has a current entry for the new or extended script.
+- Changes have been routed through **Review** and returned with an Approved verdict.
+- **Do not stop early** after writing the script — dry-run, real run, README update, and Review are all required before returning; a script not yet in `scripts/README.md` is not done.
+
+---
+
 ## Guardrails
 
 - **Never invoke Python directly** — always `uv run python ...`.

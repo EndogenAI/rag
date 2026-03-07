@@ -13,6 +13,14 @@ Before authoring, reviewing, or auditing agents interactively, check `scripts/` 
 Agent scaffolding, frontmatter validation, and fleet compliance checks should be encoded as scripts — extend them, don't repeat steps by hand.
 Escalate scripting gaps to the `Executive Scripter`; automation design (watchers, hooks) to the `Executive Automator`.
 
+**Research sessions**: before delegating to any Scout, pre-warm the source cache:
+
+```bash
+uv run python scripts/fetch_all_sources.py
+```
+
+This is the **fetch-before-act** posture. Scouts read cached `.md` files via `read_file` rather than re-fetching pages through the context window. See [`scripts/README.md`](../../scripts/README.md#scriptsfetch_all_sourcespy) for full usage.
+
 ---
 
 ## Purpose
@@ -101,7 +109,7 @@ Executive → Sub-agent A → [Back to Executive] → Sub-agent B → [Back to E
 
 **Anti-pattern — free-chaining** (`A → B → C → D → Review`): loses the executive's oversight role.
 
-### Self-Loop Phase Gates (Executive Pattern)
+### Evaluator-Optimizer Loop (Executive Pattern)
 
 Executive agents should include handoff buttons that target **themselves** — one per phase boundary. These fire after a sub-agent returns and force a deliberate review step before the next delegation.
 
@@ -113,7 +121,7 @@ Executive agents should include handoff buttons that target **themselves** — o
   send: false
 ```
 
-**Why self-loop**: the executive absorbs the sub-agent's output, evaluates it against gates, and enriches the next prompt with that context before delegating again. The handoff button is the mechanism that enforces the review pause.
+**Why evaluator-optimizer loop**: the executive absorbs the sub-agent's output, evaluates it against gates, and enriches the next prompt with that context before delegating again. The handoff button is the mechanism that enforces the review pause.
 
 ### Prompt Enrichment Chain
 

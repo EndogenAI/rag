@@ -112,6 +112,16 @@ Route all changes through **Review** before committing. Never self-merge documen
 
 ---
 
+## Completion Criteria
+
+- All documents in scope have been audited against `MANIFESTO.md` and `AGENTS.md`; every identified gap or inconsistency is addressed or explicitly deferred with a note.
+- Every change is consistent with the endogenic methodology — no guiding axiom has been diluted and no ungrounded constraint has been introduced.
+- All edited documents retain their guardrails and "do not" sections in full; none have been silently removed or softened.
+- Changed files have been routed through **Review** and returned with an Approved verdict before handoff to GitHub.
+- **Do not stop early** after drafting — validate against `MANIFESTO.md` and route through Review before returning; a draft is not done until it is approved.
+
+---
+
 ## Guardrails
 
 - **MANIFESTO.md changes require explicit user instruction.** Do not edit MANIFESTO.md speculatively or as a side effect of other documentation work.

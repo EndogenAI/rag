@@ -73,6 +73,16 @@ Use the "Return to Executive Researcher" handoff so the executive can update gui
 
 ---
 
+## Completion Criteria
+
+- Reviewer verdict has been confirmed as **Approved** in the session scratchpad before any edits were made to the document.
+- The synthesis document has `Status: Final` and a correct `Date` field; only minor formatting issues were changed — no substantive edits.
+- The document has been routed through **Review** and the Review verdict is **Approved**.
+- A conventional commit has been made and pushed; `git log` confirms the commit and `git push` returned exit code 0.
+- **Do not stop early** after committing — return to Executive Researcher so the GitHub issue can be updated and Executive Docs can be notified of any guide changes needed.
+
+---
+
 ## Guardrails
 
 - Do not commit without first routing through **Review**.

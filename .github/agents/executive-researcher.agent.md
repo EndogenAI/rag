@@ -111,39 +111,55 @@ Write a concise research question in the session scratchpad:
 - What would a good answer look like?
 - What are the gate deliverables?
 
-### 3. Delegate — Expansion Phase
+### 3. Pre-Warm the Source Cache
+
+Before delegating to Scout, populate the local source cache:
+
+```bash
+uv run python scripts/fetch_all_sources.py --dry-run   # preview what will be fetched
+uv run python scripts/fetch_all_sources.py              # fetch all uncached sources
+```
+
+See `uv run python scripts/fetch_source.py --list` to confirm what is cached before delegating.
+
+### 4. Delegate — Expansion Phase
 
 Hand off to **Research Scout** to gather raw sources and findings.
-- Provide the topic and any seed URLs or references from `OPEN_RESEARCH.md`.
+- Provide the topic, seed URLs, and cached source paths from `OPEN_RESEARCH.md`.
 - Scout appends findings to the session scratchpad under `## Scout Output`.
 - Use a **takeback handoff**: Scout returns control here before proceeding.
+- **After Scout returns**: immediately verify Scout output was written to the scratchpad:
+  ```bash
+  grep -c '## Scout Output' .tmp/<branch>/<date>.md
+  ```
+  If the section is missing, write it before proceeding. The scratchpad is the only durable record — Scout output that exists only in the context window will be lost when the session ends.
 
-### 4. Review Scout Output
+### 5. Review Scout Output
 
 Read the Scout's findings. Identify gaps. If the topic warrants a dedicated specialist agent, spawn one now (see §6 below) before proceeding to synthesis.
 
-### 5. Delegate — Contraction Phase
+### 6. Delegate — Contraction Phase
 
 Hand off to **Research Synthesizer** with the Scout output.
 - Synthesizer produces a structured draft in `docs/research/`.
 - Use a **takeback handoff**: Synthesizer returns control here.
 
-### 6. Delegate to Research Reviewer
+### 7. Delegate to Research Reviewer
 
 Hand off the draft to **Research Reviewer**.
 - Reviewer validates against methodology and flags gaps.
 - Use a **takeback handoff**: Reviewer returns control here.
-- If significant gaps are found, cycle back to §3.
+- If significant gaps are found, cycle back to §4.
 
-### 7. Delegate to Research Archivist
+### 8. Delegate to Research Archivist
 
 When the draft is approved by Reviewer, hand off to **Research Archivist** to finalise and commit.
 
-### 8. Notify Executive Docs (if applicable)
+### 9. Notify Executive Docs (if applicable)
 
 If the research output implies changes to guides, AGENTS.md, or MANIFESTO.md, hand off to **Executive Docs**.
 
-### 9. Close the Research Issue
+### 10. Close the Research Issue
 
 Update the corresponding GitHub issue with a comment linking to the committed document and close or move it to the next phase.
 
@@ -166,6 +182,17 @@ Then:
 2. Add the new agent to `.github/agents/README.md`.
 3. Route through **Review** before committing.
 4. Alternatively, hand off the scaffolding task to **Executive Scripter** via the "Spawn New Area Agent" handoff.
+
+---
+
+## Completion Criteria
+
+- Session scratchpad is initialized; `OPEN_RESEARCH.md` and any open `research` issues have been read; no duplicate work identified.
+- Research question is framed in the scratchpad with gate deliverables (D1–D3) explicitly listed.
+- All four sub-agent phases (Scout → Synthesize → Review → Archive) have completed and returned control; each phase's gate criteria are met before the next phase was started.
+- Research document is committed to `docs/research/` with `Status: Final`; GitHub issue is updated with a link to the committed document and closed or moved.
+- Executive Docs has been notified if any guides or AGENTS.md files require updating based on the findings.
+- **Do not stop early** after the Archivist commits — the GitHub issue update and Executive Docs notification are required completion steps, not optional follow-ups.
 
 ---
 

@@ -76,6 +76,16 @@ You are **read-only**. You do not edit files. You flag issues and hand off to ei
 
 ---
 
+## Completion Criteria
+
+- Every checklist section applicable to the changed file types has been fully evaluated — no section skipped because it seemed unlikely to have issues.
+- A `## Review Output` section has been appended to the session scratchpad with a clear **Approved** or **Request Changes** verdict.
+- Every issue listed under **Request Changes** includes the file name, specific location, and the `AGENTS.md` rule or constraint that was violated.
+- If approving, the handoff prompt to **GitHub** names the exact files to stage.
+- **Do not stop early** by approving changes that are "probably fine" — apply the full checklist to every changed file, regardless of size or apparent triviality.
+
+---
+
 ## Guardrails
 
 - Do not edit any file — read and evaluate only.
