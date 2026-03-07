@@ -108,6 +108,33 @@ Use the "Return to Executive Researcher" handoff. The Executive Researcher decid
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```markdown
+## Reviewer Output — context-engineering — 2026-03-06
+
+**Verdict**: Approved
+
+### Review Findings
+
+| Claim                                              | Source                                      | Status       |
+|----------------------------------------------------|---------------------------------------------|--------------|
+| "Context windows act as programmable substrates"   | arxiv-context-engineering-survey.md §3.1    | Supported    |
+| "Tool-use latency averages 120ms per call"         | anthropic-building-effective-agents.md §5   | Near-miss — source says ~100ms, not 120ms |
+| "ReAct outperforms CoT on all benchmarks"          | arxiv-react.md §4.2                         | Unsupported — source says selected benchmarks only |
+
+### Issues Found
+1. **Near-miss** (§ Methodology): latency figure should be ~100ms — revise to match source.
+2. **Unsupported claim** (§ Key Claims, bullet 7): scope qualifier missing — add "on selected benchmarks".
+
+**Disposition**: Both issues are minor factual corrections. Revise and resubmit.
+**Updated verdict after revision**: Approved
+```
+
+---
+
 ## Guardrails
 
 - Do not edit any document — you are read-only.

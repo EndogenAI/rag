@@ -86,6 +86,32 @@ You are **read-only**. You do not edit files. You flag issues and hand off to ei
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```markdown
+## Review Output — 2026-03-06
+
+**Verdict**: APPROVED
+
+### Files Audited
+| File                                       | Conventional Commits | Guardrails Present | No Secrets | Handoff Target Valid | Result  |
+|--------------------------------------------|----------------------|-------------------|------------|----------------------|---------|
+| .github/agents/executive-docs.agent.md     | N/A (not a commit)   | ✅ Yes             | ✅ Yes     | ✅ Review → GitHub   | ✅ PASS |
+| .github/agents/executive-fleet.agent.md    | N/A                  | ✅ Yes             | ✅ Yes     | ✅ Review → GitHub   | ✅ PASS |
+| docs/guides/session-management.md          | N/A                  | ✅ Yes             | ✅ Yes     | N/A                  | ✅ PASS |
+
+### Findings
+- No secrets or credentials detected
+- No guardrails removed or softened
+- All handoff targets resolve to existing agents in the fleet
+
+**Handoff to GitHub**: stage and commit the 3 files above.
+```
+
+---
+
 ## Guardrails
 
 - Do not edit any file — read and evaluate only.

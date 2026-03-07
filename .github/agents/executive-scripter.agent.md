@@ -109,6 +109,33 @@ If the task requires ongoing automation (file watchers, hooks, CI), hand off to 
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```markdown
+## Scripter Audit — 2026-03-06
+
+**Repeated task identified**: Annotating H2 headings in scratchpad files with line-range
+numbers — performed interactively twice in sessions 2026-03-04 and 2026-03-05.
+
+**Script spec**:
+- Path: scripts/watch_scratchpad.py
+- Trigger: file-change event on .tmp/**/*.md (via watchdog)
+- Behaviour: rewrites H2 headings to append [L42–L61]
+- Guards: --dry-run flag; loop-prevention via 1-second cooldown
+
+**Dry-run output** (uv run python scripts/watch_scratchpad.py --dry-run):
+  [DRY RUN] Would rewrite: .tmp/main/2026-03-06.md — 3 headings updated
+
+**Real run**: confirmed 3 headings rewritten, no data loss.
+**scripts/README.md**: entry added for watch_scratchpad.py.
+**Review verdict**: Approved
+**Commit**: def5678 — feat(scripts): add scratchpad heading watcher
+```
+
+---
+
 ## Guardrails
 
 - **Never invoke Python directly** — always `uv run python ...`.

@@ -196,6 +196,42 @@ Then:
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```markdown
+## Research Session — context-engineering — 2026-03-06
+
+### Delegation Chain
+
+**Phase 1 — Scout**
+Agent: Research Scout
+Output: ## Scout Output in .tmp/feat-research/2026-03-06.md
+  - 6 sources surveyed, 4 cached under .cache/sources/
+  - 3 leads for follow-up identified
+Gate: ✅ Scratchpad section populated, ≥3 primary sources confirmed
+
+**Phase 2 — Synthesize**
+Agent: Research Synthesizer
+Output: docs/research/context-engineering.md (Status: Draft — pending review)
+Gate: ✅ All 8 required sections present, ≥10 bullets in Key Claims
+
+**Phase 3 — Review**
+Agent: Research Reviewer
+Verdict: Approved
+Gate: ✅ Verdict recorded in scratchpad
+
+**Phase 4 — Archive**
+Agent: Research Archivist
+Commit: mno7890 — docs(research): add context-engineering synthesis
+Gate: ✅ Commit confirmed, issue #9 updated and closed
+
+**Executive Docs notified**: yes — guides/mental-models.md flagged for update
+```
+
+---
+
 ## Guardrails
 
 - Do not implement code changes as part of a research session — `docs/research/` only during the research phase.

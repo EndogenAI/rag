@@ -83,6 +83,34 @@ Use the "Return to Executive Researcher" handoff so the executive can update gui
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```markdown
+## Archivist Output — context-engineering — 2026-03-06
+
+**Pre-archive check**:
+- Reviewer verdict: Approved ✅ (confirmed in scratchpad)
+- Document status field before edit: Draft — pending review
+- Document status field after edit: Final
+- Date field: 2026-03-06 ✅
+- Substantive content: unchanged (only status and date updated)
+
+**Commit details**:
+- Files staged: docs/research/context-engineering.md
+- Commit message: docs(research): archive context-engineering synthesis as Final
+- Commit hash: pqr2345
+- Push: exit code 0, branch feat/research-context pushed to origin
+
+**Handoff**:
+- Returned control to Executive Researcher
+- GitHub issue #9: commented with commit hash, labelled `archived`, closed
+- Executive Docs notified: docs/guides/mental-models.md may need update
+```
+
+---
+
 ## Guardrails
 
 - Do not commit without first routing through **Review**.

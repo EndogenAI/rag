@@ -277,6 +277,38 @@ Use the "Return to Executive Researcher" handoff with the path to the completed 
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```markdown
+---
+title: Context Engineering — Synthesis
+date: 2026-03-06
+status: Draft — pending review
+sources:
+  - .cache/sources/arxiv-context-engineering-survey.md
+  - .cache/sources/anthropic-building-effective-agents.md
+---
+
+# Context Engineering — Synthesis
+
+## Citation
+Various authors (2024–2025). Context Engineering: Techniques for optimising LLM
+prompt windows. arXiv preprints and official documentation.
+
+## Research Question Addressed
+How should agents structure and manage context windows to maximise task performance
+while minimising token usage?
+
+## Theoretical / Conceptual Framework
+Context engineering treats the prompt window as a programmable substrate rather than
+a static template — dynamic composition, caching, and retrieval determine what the
+model "knows" at inference time.
+```
+
+---
+
 ## Guardrails
 
 - Do not write outside `docs/research/` and `docs/research/sources/` — guides and other docs are **Executive Docs**'s responsibility.

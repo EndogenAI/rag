@@ -142,6 +142,40 @@ Use the `Return plan to Executive Orchestrator` handoff. Do not begin executing 
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```markdown
+## Planning Brief
+
+**Objective**: Formalize the session-management workflow into a guide.
+**Scope**: docs/guides/session-management.md — new file.
+**Constraints**: No MANIFESTO.md edits; Review required before commit.
+
+## Plan — Session Management Guide
+
+### Phase 1 — Research
+**Agent**: Executive Researcher
+**Deliverables**: docs/research/session-management.md (Status: Final)
+**Depends on**: nothing
+**Gate**: Committed and confirmed before Phase 2 starts
+
+### Phase 2 — Guide Authoring
+**Agent**: Executive Docs
+**Deliverables**: docs/guides/session-management.md created and committed
+**Depends on**: Phase 1
+**Gate**: Routed through Review with Approved verdict
+
+## Acceptance Criteria
+- [ ] Guide exists at docs/guides/session-management.md
+- [ ] No MANIFESTO.md edits made
+- [ ] Review Approved verdict recorded in scratchpad
+- [ ] Commit pushed to origin
+```
+
+---
+
 ## Guardrails
 
 - Do not create, edit, or delete any file — this agent is read-only.

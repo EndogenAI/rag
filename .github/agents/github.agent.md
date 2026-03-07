@@ -97,6 +97,33 @@ git push origin HEAD
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```bash
+# Stage only the explicitly specified files — never git add -A
+git add .github/agents/executive-docs.agent.md \
+        .github/agents/executive-fleet.agent.md \
+        docs/guides/session-management.md
+
+# Conventional Commits format: type(scope): description — refs issue if applicable
+git commit -m "docs(agents): add output examples to all agent files
+
+Adds ## Output Examples section to all 14 .agent.md files.
+Section placed between ## Completion Criteria and ## Guardrails.
+Closes #12."
+
+# Push to the feature branch — never force-push to main
+git push origin feat/issue-2-formalize-workflows
+
+# Confirm push exit code and return the commit hash
+git log -1 --format="%H %s"
+# Output: stu6789 docs(agents): add output examples to all agent files
+```
+
+---
+
 ## Guardrails
 
 - Do not commit without confirmed **Review** approval.

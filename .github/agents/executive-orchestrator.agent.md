@@ -158,6 +158,37 @@ When all phases are complete:
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```markdown
+## Orchestration Plan
+
+### Phase 1 — Research
+**Agent**: Executive Researcher
+**Deliverables**: docs/research/context-engineering.md, Status: Final
+**Depends on**: nothing
+**Gate**: Phase 2 does not begin until deliverable is committed and confirmed
+**Status**: ✅ Complete
+
+### Phase 2 — Docs Update
+**Agent**: Executive Docs
+**Deliverables**: docs/guides/session-management.md updated section on context windows
+**Depends on**: Phase 1
+**Gate**: Phase 3 does not begin until changes are committed
+**Status**: ✅ Complete
+
+### Phase 3 — Commit & Push
+**Agent**: GitHub
+**Deliverables**: feat/context-engineering branch pushed, PR opened
+**Depends on**: Phase 2
+**Gate**: Session closes when PR URL is returned
+**Status**: ⬜ Not started
+```
+
+---
+
 ## Guardrails
 
 - Do not begin delegating without a written plan in the scratchpad.

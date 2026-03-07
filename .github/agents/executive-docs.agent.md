@@ -122,6 +122,27 @@ Route all changes through **Review** before committing. Never self-merge documen
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```markdown
+## Docs Session Summary
+
+**Files updated**:
+- docs/guides/session-management.md — added ## Scratchpad Naming section (lines 42–61)
+- AGENTS.md — updated ## Agent Communication table to add branch-slug rule
+- .github/agents/README.md — added executive-fleet entry to fleet catalog table
+
+**Sections added**: 1 new section, 2 revised sections
+**Sections removed**: 0 (no guardrails softened or removed)
+**Validation**: All changes checked against MANIFESTO.md axioms — no dilution found
+**Review verdict**: Approved (returned from Review agent, 2026-03-06)
+**Commit**: abc1234 — docs: add scratchpad naming convention and fleet catalog entry
+```
+
+---
+
 ## Guardrails
 
 - **MANIFESTO.md changes require explicit user instruction.** Do not edit MANIFESTO.md speculatively or as a side effect of other documentation work.

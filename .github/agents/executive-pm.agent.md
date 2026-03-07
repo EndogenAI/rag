@@ -226,6 +226,33 @@ GitHub evaluates repos against a community profile. Keep all of these present an
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```markdown
+## PM Audit — 2026-03-06
+
+### Changelog Entry Added
+## [Unreleased]
+### Added
+- docs/guides/session-management.md — formalized scratchpad workflow (PR #14)
+- scripts/watch_scratchpad.py — auto-annotates H2 headings on file change (PR #15)
+
+### Issue Triage Output
+| Issue | Title                              | Labels Applied              | Milestone     |
+|-------|------------------------------------|-----------------------------|---------------|
+| #12   | Add output examples to agent files | docs, good first issue      | v0.2          |
+| #13   | Scout missing seed URL handling    | bug, research               | backlog       |
+| #16   | Duplicate synthesis check          | enhancement, research       | v0.2          |
+
+**Community health files**: CONTRIBUTING.md ✅, LICENSE ✅, README.md ✅
+**Review verdict**: Approved
+**Commit**: jkl3456 — docs(pm): update changelog and triage open issues
+```
+
+---
+
 ## Guardrails
 
 - Do not edit `MANIFESTO.md` — that is Executive Docs territory, requiring explicit user instruction.

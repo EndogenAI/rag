@@ -123,6 +123,30 @@ Use the "Return to Executive Researcher" handoff.
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```markdown
+## Scout Output — context-engineering — 2026-03-06
+
+### Source Catalogue
+
+| # | Title                                      | Local Path                                          | Key Relevance                                      |
+|---|--------------------------------------------|----------------------------------------------------|----------------------------------------------------|
+| 1 | Anthropic: Building Effective Agents        | .cache/sources/anthropic-building-effective-agents.md | Defines tool-use and subagent patterns              |
+| 2 | arXiv 2512.05470 — Context Engineering      | .cache/sources/arxiv-context-engineering-survey.md  | Survey of prompt/context optimisation techniques   |
+| 3 | ReAct: Synergizing Reasoning and Acting     | .cache/sources/arxiv-react.md                       | Foundational loop: Thought → Action → Observation  |
+| 4 | Claude SDK Subagents                        | .cache/sources/claude-sdk-subagents.md              | Official API patterns for multi-agent delegation   |
+| 5 | Generative Agents (arXiv)                   | .cache/sources/arxiv-generative-agents.md           | Memory stream and reflection architecture          |
+
+### Leads for Follow-Up
+- https://docs.anthropic.com/en/docs/build-with-claude/tool-use — tool-use reference not yet cached
+- https://github.com/BerriAI/litellm — mentioned in source 4, follow-up warranted
+```
+
+---
+
 ## Guardrails
 
 - Do not synthesize, conclude, or make recommendations — catalogue only.

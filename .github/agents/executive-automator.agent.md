@@ -131,6 +131,27 @@ If the task is a one-shot script rather than event-driven, hand off to **Executi
 
 ---
 
+## Output Examples
+
+A correct output from this agent looks like:
+
+```json
+// .vscode/tasks.json — Watch Scratchpad task entry
+{
+  "label": "Watch Scratchpad",        // human-readable label shown in VS Code
+  "type": "shell",
+  "command": "uv run python scripts/watch_scratchpad.py",
+  "isBackground": true,               // keeps task running without blocking
+  "runOptions": { "runOn": "folderOpen" }, // auto-starts when workspace opens
+  "presentation": { "reveal": "silent", "panel": "shared" },
+  "problemMatcher": []
+}
+// Loop-prevention: 1-second cooldown in watch_scratchpad.py prevents re-trigger
+// File-existence guard: script exits gracefully if .tmp/ does not exist
+```
+
+---
+
 ## Guardrails
 
 - **Never use `fswatch`** — use Python `watchdog` for OS-agnostic watching.
