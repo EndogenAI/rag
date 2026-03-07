@@ -10,6 +10,23 @@ When multiple agents collaborate across a session, they need a shared scratchpad
 
 ---
 
+## Workplans (`docs/plans/`)
+
+For any session with ≥ 3 phases or ≥ 2 agent delegations, create a **workplan file** in `docs/plans/` and commit it _before_ execution begins.
+
+**Naming**: `YYYY-MM-DD-<brief-slug>.md`
+
+A workplan captures:
+- **Objective** — one paragraph stating what the session accomplishes
+- **Phase plan** — each phase with agent assignment, deliverables, dependencies, and a status marker (`✅` / `⬜`)
+- **Acceptance criteria** — a checkbox list the Orchestrator ticks off at session close
+
+Workplans are **committed to git** (not gitignored). They serve as the durable, auditable record of multi-phase sessions. The ephemeral `.tmp/` scratchpad is for live inter-agent handoff data; the workplan is the plan of record.
+
+See [`docs/plans/2026-03-06-formalize-workflows.md`](../plans/2026-03-06-formalize-workflows.md) for the canonical example.
+
+---
+
 ## Design Rationale
 
 The scratchpad convention implements the **lightweight context handoff** pattern from the Anthropic multi-agent research system. When an agent completes a phase, it writes a summary to the scratchpad; the next agent (or the same agent in a new invocation) reads that summary as its starting context rather than re-deriving it from scratch. This prevents the token cost of re-discovery and maintains fidelity across context window boundaries.

@@ -110,6 +110,23 @@ Rules:
 | Session end | Write `## Session Summary`, then run `uv run python scripts/prune_scratchpad.py --force` |
 | New session day | Run `uv run python scripts/prune_scratchpad.py --init` |
 
+### `docs/plans/` — Tracked Workplans
+
+For any multi-phase session, create a **workplan** before execution begins and commit it to `docs/plans/`.
+
+**Naming**: `docs/plans/YYYY-MM-DD-<brief-slug>.md` (date-first for chronological sorting)
+
+**When to create**:
+- Any session with ≥ 3 phases or ≥ 2 agent delegations
+- Any session spanning more than one day
+
+**Contents** (use `docs/plans/2026-03-06-formalize-workflows.md` as the canonical template):
+- Objective
+- Phase plan: agent, deliverables, depends-on, status
+- Acceptance criteria checklist
+
+**Commit** the workplan at the start of the session (before Phase 1 executes), then update status markers as phases complete. This creates an auditable plan history in git, separate from the ephemeral `.tmp/` scratchpad.
+
 ### Scope-Narrowing in Delegations
 
 When delegating with a restricted scope, **state exclusions explicitly** in the delegation prompt. Agents default to full scope; they need explicit constraints to narrow it.
