@@ -92,13 +92,17 @@ rather than re-fetching pages through the context window, saving tokens every se
 
 ### Writing to the Scratchpad
 
-Each agent appends findings under a named heading:
+Each agent appends findings under its **own named section heading** and reads only its own prior section:
 
 ```markdown
-## <Task Name> Results
+## <AgentName> Output
 
 <findings here>
 ```
+
+Standard heading patterns: `## Scout Output`, `## Synthesizer Output`, `## Reviewer Output`, `## Archivist Output`.
+
+**Section-scope isolation rule**: each agent writes only to its own heading and reads only its own prior section. The **Executive is the sole integration point** — it alone reads the full scratchpad to coordinate across agents. Subagents do not read laterally across other agents' sections.
 
 **Never overwrite another agent's section.** Always append.
 
@@ -207,3 +211,148 @@ uv run python scripts/prune_scratchpad.py
 # Force prune + archive session (at session end)
 uv run python scripts/prune_scratchpad.py --force
 ```
+
+---
+
+## Context Compaction
+
+VS Code Copilot Chat has a built-in **context compaction** mechanism that reduces conversation history when the context window is filling up. It appears as:
+
+- A **"Compact Conversation"** button in the context window summary popup
+- The **`/compact`** slash command (type `/compact` in the chat input)
+- An automatic **"Compacted conversation"** label when the conversation is compacted by the system
+
+### What Compaction Does
+
+Compaction replaces the detailed message history with a structured summary — a `<conversation-summary>` block injected into the context. This summary captures:
+
+- The conversation's goal and key decisions
+- Files that were modified and why
+- Current state (what was done, what is pending)
+- Critical open questions
+
+What is **lost** after compaction:
+
+- Specific intermediate conversation turns ("why did we decide X?")
+- Terminal output history that wasn't explicitly noted
+- Inline reasoning that was never synthesised to a file
+
+What **survives** compaction (because it lives in files, not history):
+
+- All committed and uncommitted file changes on disk
+- The scratchpad (`.tmp/<branch>/<date>.md`) — **this is the key**
+- `docs/plans/` workplan files
+- `AGENTS.md`, guides, and research docs
+- GitHub issues and their bodies
+
+### The Scratchpad is Compaction-Proof
+
+The scratchpad exists on disk. Compaction cannot touch it. This is the core reason write-back is non-negotiable: if a finding is in the scratchpad, it survives any compaction event. If it is only in the chat history, it is lost.
+
+**Treat every important discovery as if the next token will trigger compaction.**
+
+### Compaction Posture: Before It Happens
+
+When you see the context window is above 80% or before running `/compact` manually:
+
+1. **Write a `## Pre-Compact Checkpoint` in the scratchpad** — capture current state, open questions, next actions
+2. **Commit all in-progress file changes** — anything uncommitted disappears from reliable context
+3. **Update the workplan** — tick completed phases, note in-progress items
+4. **Run `prune_scratchpad.py`** if the scratchpad is large (reduces what the agent needs to re-read)
+
+```bash
+# Safe pre-compact sequence
+git add -A && git commit -m "chore: pre-compact checkpoint"
+python scripts/prune_scratchpad.py --dry-run  # check first
+python scripts/prune_scratchpad.py
+# then run /compact in VS Code Copilot Chat
+```
+
+### Compaction Posture: After It Happens
+
+After compaction, the new session starts with the `<conversation-summary>` block as context. To re-orient:
+
+1. **Re-read the scratchpad** — `read_file .tmp/<branch>/<date>.md`
+2. **Re-read the workplan** — `read_file docs/plans/<current-plan>.md`
+3. **Run `git status`** — confirms what is committed vs. in-flight
+4. **Do not assume the compaction summary captured everything** — verify from files, not from the summary
+
+### Writing Habits for Compaction Resilience
+
+These habits make sessions resilient to both compaction and context window rollovers:
+
+| Anti-pattern | Compaction-safe alternative |
+|---|---|
+| "As I mentioned earlier, X" | Put X in the scratchpad |
+| "The plan we discussed" | Write the plan to `docs/plans/` |
+| "The open question about Y" | Add Y as a bullet in the scratchpad `## Active` section |
+| Long terminal output referenced in chat | Extract the key result to a file or comment |
+| Decisions made only in chat | Write the decision to the relevant `AGENTS.md` or guide |
+
+### When to Run `/compact` Manually
+
+Run `/compact` proactively (before being forced) when:
+
+- The context window indicator is above 75%
+- Starting a new major phase in a long session
+- Switching domains (e.g., finishing research, starting implementation)
+- Before delegating to a subagent that needs a clean context
+
+**Do not** run `/compact` when:
+- You have uncommitted changes that haven't been noted in the scratchpad
+- You are mid-implementation and the chat history contains the only record of in-progress decisions
+- The last scratchpad write was more than 20 minutes ago
+
+### Relationship to `prune_scratchpad.py`
+
+`prune_scratchpad.py` and `/compact` are complementary, not equivalent:
+
+| Tool | What it compresses | Where the compressed content goes |
+|---|---|---|
+| `prune_scratchpad.py` | Scratchpad sections | `_index.md` stubs (on disk, permanent) |
+| `/compact` | Conversation history | `<conversation-summary>` block (in VS Code context, ephemeral) |
+
+Run `prune_scratchpad.py` to keep the scratchpad lean so the re-read after compaction is fast.
+Run `/compact` when the conversation context window is full and you want the model to continue with a fresh context window.
+
+---
+
+## Starting a New Session
+
+When opening a new chat on an existing branch (whether after compaction, after a break, or at the start of a new day), use the **session continuation handoff prompt**.
+
+### Standard Continuation Prompt
+
+```
+@Executive Orchestrator Please continue the session on branch [branch-slug].
+Read the active scratchpad at .tmp/[branch-slug]/[YYYY-MM-DD].md before delegating anything —
+specifically the ## Executive Handoff and ## Session Summary sections.
+Focus for this session: [one sentence from the handoff's "Recommended Next Session" section].
+Write ## Session Start with a one-paragraph orientation before proceeding.
+```
+
+**How to fill it in:**
+1. `[branch-slug]` — the branch name with `/` replaced by `-` (e.g., `feat-implement-research-findings`)
+2. `[YYYY-MM-DD]` — today's date (`date +%Y-%m-%d` in a terminal)
+3. `[one sentence...]` — copy from the `### Recommended Next Session` section of the prior `## Executive Handoff`, or from `### What Is Open` in the `## Session Summary`
+
+### What the Orchestrator Should Do After Receiving This Prompt
+
+1. Run `uv run python scripts/prune_scratchpad.py --init` to create today's file if needed
+2. Read the scratchpad — specifically `## Executive Handoff` and `## Session Summary`
+3. Write `## Session Start` with a one-paragraph orientation (branch, HEAD commit, what was done, what is next)
+4. Write a committed workplan in `docs/plans/` if the session has ≥ 3 phases
+5. Begin delegating — one phase at a time
+
+### Writing a Useful Handoff Section
+
+At the **end** of any session that will continue later, write a `## Executive Handoff — <date>` section in the scratchpad covering:
+
+- **New Lessons Learned** — what went wrong or better than expected; not yet in AGENTS.md
+- **Synthesis Recs Status** — table of R-items from research docs: done / not done / partial
+- **Open Research Threads** — prioritized list of next research questions
+- **Missing Workflows** — gaps in `docs/guides/workflows.md` needed before the next phase
+- **Recommended Next Session Scope** — one paragraph per candidate session (Session A, Session B…)
+
+The handoff section is the contract between sessions. Without it, the next session re-discovers at token cost what the prior session already knew.
+

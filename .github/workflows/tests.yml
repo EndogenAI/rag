@@ -1,0 +1,107 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+      - feat/**
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Run pytest with coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run pytest with coverage
+        run: uv run pytest tests/ --cov=scripts --cov-report=term-missing --cov-report=xml -v
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-3.11
+          fail_ci_if_error: false
+
+  lint:
+    name: Lint code style
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run ruff
+        run: uv run ruff check scripts/ tests/
+
+      - name: Run validate_synthesis
+        run: |
+          for f in docs/research/*.md; do
+            [ "$(basename "$f")" = "OPEN_RESEARCH.md" ] && continue
+            uv run python3 scripts/validate_synthesis.py "$f"
+          done
+
+      - name: Run ruff format (check)
+        run: uv run ruff format --check scripts/ tests/
+
+  links:
+    name: Check links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --exclude-loopback --accept 200,403,429 docs/**/*.md README.md CHANGELOG.md CONTRIBUTING.md
+          fail: true
+
+  required:
+    name: All tests passed
+    runs-on: ubuntu-latest
+    needs: [test, lint, links]
+    if: always()
+    steps:
+      - name: Decide whether all tests and checks passed
+        run: |
+          if [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.links.result }}" != "success" ]; then
+            echo "Tests or linting failed"
+            exit 1
+          fi

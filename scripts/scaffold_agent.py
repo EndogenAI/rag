@@ -36,6 +36,8 @@ Exit codes:
     1  Validation error (name conflict, description too long, missing required arg)
 """
 
+from __future__ import annotations
+
 import argparse
 import re
 import sys
@@ -45,8 +47,18 @@ AGENTS_DIR = Path(__file__).parent.parent / ".github" / "agents"
 
 POSTURE_TOOLS: dict[str, list[str]] = {
     "readonly": ["search", "read", "changes", "usages"],
-    "creator":  ["search", "read", "edit", "web", "changes", "usages"],
-    "full":     ["search", "read", "edit", "write", "execute", "terminal", "usages", "changes", "agent"],
+    "creator": ["search", "read", "edit", "web", "changes", "usages"],
+    "full": [
+        "search",
+        "read",
+        "edit",
+        "write",
+        "execute",
+        "terminal",
+        "usages",
+        "changes",
+        "agent",
+    ],
 }
 
 TEMPLATE = """\
@@ -66,40 +78,61 @@ handoffs:
     send: false
 ---
 
+## Persona
+
+<persona>
 You are the **{name}** for the EndogenAI Workflows project.
 
 <!-- TODO: Write a one-sentence mandate for this agent. -->
+</persona>
 
 ---
 
 ## Endogenous Sources — Read Before Acting
 
+<context>
 1. [`AGENTS.md`](../../AGENTS.md) — guiding constraints.
 2. [`docs/guides/`](../../docs/guides/) — existing formalized guides.
 3. The active session scratchpad (`.tmp/<branch>/<date>.md`) — read before acting to avoid re-discovering context.
 
 <!-- TODO: Add any additional files this agent must read before acting. -->
+</context>
 
 ---
 
 ## Workflow
 
+<instructions>
 <!-- TODO: Enumerate the numbered steps or role-specific checklist for this agent. -->
 
 1. Read endogenous sources listed above.
 2. <!-- Step 2 -->
 3. <!-- Step 3 -->
 4. Hand off to **Review** when work is complete.
+</instructions>
 
 ---
 
 ## Guardrails
 
+<constraints>
 <!-- Explicit list of what this agent must NOT do. -->
 
 - Do not commit directly — always hand off to **Review** first.
 - Do not modify files outside the scope of this agent's stated role.
 - Do not install packages or modify lockfiles without explicit instruction.
+</constraints>
+
+---
+
+## Completion Criteria
+
+<output>
+<!-- TODO: Define the deliverables and success conditions for this agent. -->
+
+- [ ] All required files created or updated.
+- [ ] Changes reviewed (handed off to Review) before committing.
+</output>
 """
 
 
@@ -122,7 +155,10 @@ def validate_name_unique(name: str) -> None:
 def build_tools_yaml(posture: str) -> str:
     tools = POSTURE_TOOLS.get(posture)
     if tools is None:
-        print(f"ERROR: Unknown posture '{posture}'. Choose one of: readonly, creator, full", file=sys.stderr)
+        print(
+            f"ERROR: Unknown posture '{posture}'. Choose one of: readonly, creator, full",
+            file=sys.stderr,
+        )
         sys.exit(1)
     return "\n".join(f"  - {t}" for t in tools)
 
@@ -136,9 +172,7 @@ def infer_executive(name: str, area: str | None) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Scaffold a new .agent.md file in .github/agents/."
-    )
+    parser = argparse.ArgumentParser(description="Scaffold a new .agent.md file in .github/agents/.")
     parser.add_argument("--name", required=True, help="Display name for the agent")
     parser.add_argument("--description", required=True, help="One-line summary ≤ 200 chars")
     parser.add_argument(
@@ -190,7 +224,7 @@ def main() -> None:
     print("Next steps:")
     print("  1. Fill in the TODO sections in the generated file.")
     print("  2. Update .github/agents/README.md with the new agent entry.")
-    print(f"  3. Verify handoff targets: grep -h '^name:' .github/agents/*.agent.md | sort | uniq -d")
+    print("  3. Verify handoff targets: grep -h '^name:' .github/agents/*.agent.md | sort | uniq -d")
     print("  4. Commit: feat(agents): add <name> agent")
 
 

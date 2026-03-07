@@ -61,6 +61,45 @@ The scratchpad auto-annotator (`scripts/watch_scratchpad.py`) exemplifies this p
 
 ---
 
+## Testing-First Requirement for Scripts
+
+**Every script committed to `scripts/` must have automated tests before it ships.**
+
+Tests are not optional. They are:
+- **Specification**: Tests define what the script does (inputs, outputs, error cases)
+- **Regression prevention**: If a script breaks, tests catch it immediately (not in production)
+- **Token-saving**: If a script is broken, agents discover it via test failure (fast) not re-discovery (expensive)
+
+### Agent Responsibility
+
+When creating or modifying a script:
+
+1. **Write the script** with a docstring (purpose, inputs, outputs, usage)
+2. **Write tests** covering:
+   - Happy path (normal operation)
+   - Error cases (invalid args, missing files, network failure)
+   - Exit codes (every `sys.exit(N)` is tested)
+   - Idempotency (where applicable)
+3. **Verify coverage**: `uv run pytest tests/test_<script_name>.py --cov=scripts`
+   - Minimum: 80% coverage
+   - Every code path should have a test
+4. **Document in tests**: Use test docstrings to specify behavior
+
+If a script is modified and tests fail, the script is not ready to commit. Fix the script or update tests (if the changed behavior is intentional).
+
+For detailed testing guidance, see [`docs/guides/testing.md`](docs/guides/testing.md).
+
+### Test Markers
+
+Scripts may take time to test. Mark tests by category:
+- `@pytest.mark.io` — Tests that perform file I/O
+- `@pytest.mark.integration` — Tests that hit network or subprocess calls
+- `@pytest.mark.slow` — Tests that take >1 second
+
+This allows fast local development: `uv run pytest tests/ -m "not slow and not integration"`
+
+---
+
 ## Python Tooling
 
 **Always use `uv run` — never invoke Python or package executables directly.**
@@ -96,10 +135,15 @@ python scripts/prune_scratchpad.py
 **`<branch-slug>`** = branch name with `/` replaced by `-`
 
 Rules:
-- Each delegated agent **appends** findings under a named heading: `## <Phase> Results` or `## <Task> Output`. Never overwrite another agent's section.
+- Each delegated agent **appends** findings under its own named section heading — `## <AgentName> Output` or `## <Phase> Results` — and **reads only its own prior section**. Never read another agent's section; never overwrite another agent's section.
+- The **Executive is the sole integration point** — it alone reads the full scratchpad to synthesise findings across all agents. Subagents do not read laterally.
 - The executive **reads today's session file first** before delegating to avoid re-discovering context another agent already gathered.
 - At session end, the executive writes a `## Session Summary` section so the next session starts with an orientation point.
 - Use the active session file for inter-agent handoff notes, gap reports, and aggregated sub-agent results.
+
+### Focus-on-Descent / Compression-on-Ascent
+
+**Outbound delegation prompts should be narrow and task-scoped** — dispatch the minimum necessary context to complete the subagent's task. **Returned results should target ≤ 2,000 tokens** — subagents compress extensive exploration into a dense handoff; they do not return raw search histories or intermediate reasoning.
 
 ### Size Guard and Archive Convention
 
@@ -144,8 +188,30 @@ Any command that creates or modifies a remote side effect must be immediately fo
 | `git push` | `git log --oneline -1` |
 | `gh pr create` | `gh pr view` |
 | `gh issue close` | `gh issue view <number>` |
+| `gh issue edit <num>` | `gh issue view <num> --json labels,milestone` |
+| milestone create via API | `gh api repos/:owner/:repo/milestones` |
 
 **Zero error output is not confirmation of success.** Output truncation, network timeouts, and silent API failures all produce clean exits. Always verify.
+
+### GitHub Label and Issue Conventions
+
+All issues must use the colon-prefixed label namespace from `docs/guides/github-workflow.md`:
+- `type:` — work category (bug, feature, docs, research, chore)
+- `area:` — codebase domain (scripts, agents, docs, ci)
+- `priority:` — urgency (critical, high, medium, low)
+- `status:` — workflow state (blocked, needs-review, stale)
+
+Every issue must have at minimum one `type:` and one `priority:` label.
+
+**Copilot reads issue title, body, and labels — it does NOT read Projects v2 field values.** Encode priority as a label (not only in project fields). Put key facts in the issue body directly; do not rely on cross-reference links.
+
+**Projects v2 CLI prerequisite** (run once per machine, not per session):
+```bash
+gh auth refresh -s project
+gh auth status  # verify "project" appears in scopes
+```
+
+See [`docs/guides/github-workflow.md`](docs/guides/github-workflow.md) for the full `gh` CLI quick-reference and [`docs/research/github-project-management.md`](docs/research/github-project-management.md) for the full synthesis.
 
 ### Convention Propagation Rule
 
@@ -165,6 +231,34 @@ find . -name 'AGENTS.md' | grep -v node_modules
 ## When to Ask vs. Proceed
 
 **Default posture: stop and ask before any ambiguous or irreversible action.**
+
+### Session Continuation Handoff
+
+When starting a new session on an existing branch, **always reference the scratchpad before delegating**. Use this standard prompt:
+
+```
+@Executive Orchestrator Please continue the session on branch [branch-slug].
+Read the active scratchpad at .tmp/[branch-slug]/[YYYY-MM-DD].md before delegating anything —
+specifically the ## Executive Handoff and ## Session Summary sections.
+Focus for this session: [one sentence from the handoff's "Recommended Next Session" section].
+Write ## Session Start with a one-paragraph orientation before proceeding.
+```
+
+Full prompt library entry and protocol: `docs/guides/workflows.md` → **Orchestration & Planning Prompts** → *Continue from a prior session*.
+
+---
+
+### Compaction-Aware Writing
+
+VS Code Copilot Chat can compact the conversation history at any time — either automatically when the context window is full, or manually via the `/compact` command or "Compact Conversation" button. **Write as if the next message will trigger compaction.**
+
+- Every important finding goes to the **scratchpad** (`.tmp/<branch>/<date>.md`) — not just the chat
+- Every decision goes to the relevant `AGENTS.md`, guide, or research doc
+- Every in-progress plan goes to `docs/plans/`
+- Uncommitted changes are the most vulnerable: commit early, commit often
+- Before delegating to a subagent, write a `## Handoff to <Agent>` section in the scratchpad
+
+See [`docs/guides/session-management.md#context-compaction`](docs/guides/session-management.md) for the full compaction protocol.
 
 Ask when:
 - Requirements or acceptance criteria are unclear
@@ -205,6 +299,8 @@ Key agents for this repo:
 - Commit secrets, API keys, or credentials of any kind
 - `git push --force` to `main`
 - Delete or rename committed script or agent files without a migration plan
+- Use heredocs (`cat >> file << 'EOF'` or Python inline `<< 'PYEOF'`) to write Markdown content — backticks, triple-backtick fences, and special characters silently corrupt or truncate output through the terminal tool. **Always use `replace_string_in_file` or `create_file` (the built-in VS Code tools) for any file write that contains Markdown, code blocks, or backtick-containing content.**
+- Pass multi-line `gh issue` bodies via `--body "..."` on the command line — shell quoting and backtick interpolation cause `gh` to hang or silently corrupt content. **Always write the body to a temp file and use `--body-file <path>`, or use Python `subprocess` with a list of args.**
 
 **Prefer caution over assumption for:**
 

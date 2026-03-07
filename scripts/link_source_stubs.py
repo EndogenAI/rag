@@ -58,6 +58,7 @@ SENTINEL = "<!-- Populated automatically by scripts/link_source_stubs.py — do 
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def find_stub_links(content: str, from_path: Path) -> list[Path]:
     """Return absolute Paths to stubs linked from content at from_path."""
     stubs: list[Path] = []
@@ -132,12 +133,7 @@ def write_referenced_by(stub_path: Path, links: list[str], dry_run: bool, verbos
     # Deduplicate and sort
     merged = sorted(set(existing) | set(links))
 
-    new_section = (
-        "\n"
-        + SENTINEL
-        + "\n"
-        + ("\n".join(merged) + "\n" if merged else "")
-    )
+    new_section = "\n" + SENTINEL + "\n" + ("\n".join(merged) + "\n" if merged else "")
 
     # Reconstruct — ensure single blank line between before and section
     new_content = before.rstrip("\n") + "\n" + new_section
@@ -162,6 +158,7 @@ def write_referenced_by(stub_path: Path, links: list[str], dry_run: bool, verbos
 # Main
 # ---------------------------------------------------------------------------
 
+
 def collect_references() -> dict[Path, list[str]]:
     """
     Return a mapping of stub_path -> [relative link strings] for all
@@ -170,16 +167,10 @@ def collect_references() -> dict[Path, list[str]]:
     refs: dict[Path, list[str]] = {}
 
     # Scan issue syntheses: docs/research/*.md (exclude OPEN_RESEARCH.md and README.md)
-    issue_syntheses = [
-        p for p in RESEARCH_DIR.glob("*.md")
-        if p.name not in ("OPEN_RESEARCH.md", "README.md")
-    ]
+    issue_syntheses = [p for p in RESEARCH_DIR.glob("*.md") if p.name not in ("OPEN_RESEARCH.md", "README.md")]
 
     # Also scan stubs for cross-references between each other
-    all_stubs = [
-        p for p in SOURCES_DIR.glob("*.md")
-        if p.name != "README.md"
-    ]
+    all_stubs = [p for p in SOURCES_DIR.glob("*.md") if p.name != "README.md"]
 
     doc_sources = issue_syntheses + all_stubs
 
@@ -200,9 +191,7 @@ def collect_references() -> dict[Path, list[str]]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Populate ## Referenced By sections in per-source stubs."
-    )
+    parser = argparse.ArgumentParser(description="Populate ## Referenced By sections in per-source stubs.")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -228,9 +217,7 @@ def main() -> int:
 
     changed = 0
     for stub_path, links in sorted(refs.items()):
-        did_change = write_referenced_by(
-            stub_path, links, dry_run=args.dry_run, verbose=args.verbose or args.dry_run
-        )
+        did_change = write_referenced_by(stub_path, links, dry_run=args.dry_run, verbose=args.verbose or args.dry_run)
         if did_change:
             changed += 1
 

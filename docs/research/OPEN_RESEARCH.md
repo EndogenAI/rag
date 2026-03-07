@@ -4,7 +4,7 @@ This document tracks open research questions for the endogenic development metho
 Each section corresponds to a GitHub Issue that should be opened using the **Research** issue template.
 
 > **Action required**: Open each section below as a GitHub Issue in this repository using the
-> [Research template](../.github/ISSUE_TEMPLATE/research.md). Labels: `research`.
+> [Research template](../../.github/ISSUE_TEMPLATE/research.yml). Labels: `research`.
 
 ---
 
@@ -130,27 +130,10 @@ Endogenic development is inspired by biological endogenesis but should stand on 
 
 ## 6. Agent Fleet Design Patterns
 
-**Priority: Low** (improves long-term agent architecture)
+**Status**: ✅ Resolved 2026-03-06
+**Deliverable**: [`docs/research/agent-fleet-design-patterns.md`](agent-fleet-design-patterns.md)
 
-### Research Question
-What are the best design patterns for hierarchical agent fleets? How should executives, sub-agents, and specialist agents be structured for different project types?
-
-### Why This Matters
-The current agent fleet emerged organically from the EndogenAI project. As this repo becomes the authoritative source, we should synthesize and formalize the patterns.
-
-### Areas to Research
-- [ ] Hierarchical multi-agent patterns (executive → sub-agent → specialist)
-- [ ] Context window management strategies for long agent sessions
-- [ ] A2A (Agent-to-Agent) protocol patterns — message envelope, task lifecycle, routing
-- [ ] A2A Agent Card schema — capability advertisement and discovery mechanism (gap flagged by Scout C, 2026-03-06)
-- [ ] ReAct trajectory paper — interleaved reasoning and acting as the foundation for action-oriented agents (Yao et al.; not yet fetched)
-- [ ] https://arxiv.org/html/2512.05470v1 (referenced in AccessiTech/EndogenAI#32)
-- [ ] https://towardsdatascience.com/claude-skills-and-subagents-escaping-the-prompt-engineering-hamster-wheel/
-
-### Gate Deliverables
-- [ ] D1 — Agent fleet pattern catalog in `docs/guides/agents.md`
-- [ ] D2 — Recommendations for when to create new specialist agents vs. extend existing ones
-- [ ] D3 — Updated `.github/agents/README.md` with pattern documentation
+Open follow-up questions are tracked in the **Issue #10 Follow-Up Open Questions** section below.
 
 
 ---
@@ -184,38 +167,12 @@ Identified as a gap in `docs/research/agentic-research-flows.md` (Memory Archite
 
 ## 8. XML-Tagged Agent Instruction Format
 
-**Priority: Very High** (affects every agent file; do before next major fleet expansion)
+**Status**: ✅ Research resolved 2026-03-06 | **Implementation**: Partially complete
+**Deliverable**: [`docs/research/xml-agent-instruction-format.md`](xml-agent-instruction-format.md)
+**Script**: `scripts/migrate_agent_xml.py` (exists; fleet migration not yet run)
 
-### Research Question
-Should EndogenAI `.agent.md` files use XML-tagged section boundaries (`<section_name>...</section_name>`) instead of Markdown headings (`## Section Name`) for structuring agent instructions? What is the correct XML schema for agent instruction files, and what tools, scripts, or validators support it?
-
-### Why This Matters
-The Anthropic cookbook production agents use XML-tagged sections (`<research_process>`, `<delegation_instructions>`, `<subagent_count_guidelines>`) as section delimiters — not Markdown headings. XML tags are machine-unambiguous: they cannot be confused with prose, they parse without regex fallbacks, and they are the format the model has seen most in training for structured instruction following. Our current Markdown-heading format (`## Workflow`, `## Guardrails`) is less parsing-stable and may degrade instruction fidelity for long agent bodies.
-
-Migrating all 15+ agent files is a significant engineering change. It should be fully researched and a migration script written before any file is touched. This cannot be done piecemeal — inconsistency between XML and Markdown formats within the fleet would be worse than either uniform format.
-
-Flagged: 2026-03-06, from `docs/research/agentic-research-flows.md` addendum (Prompt Template and Handoff Format Findings section).
-
-### Resources to Survey
-- [ ] Anthropic cookbook agent source — `research_lead_prompt.py`, `research_subagent_prompt.py` — examine exact XML schema used; https://github.com/anthropics/anthropic-cookbook
-- [ ] Claude prompt engineering docs — XML section format and recommended schema
-- [ ] `.chatagent` format spec — does VS Code Copilot's `.chatagent` format support or prefer XML instruction bodies?
-- [ ] Existing EndogenAI agent files — inventory current Markdown-heading section names to determine XML tag candidates
-- [ ] Prior art: any XML-to-agent-md migration tooling in the wild
-
-### What to Produce (Programmatic-First)
-This research should produce, at minimum:
-- [ ] A documented XML schema for EndogenAI agent instruction files (section tags, nesting rules, required vs. optional sections)
-- [ ] A migration script: `scripts/migrate_agents_to_xml.py --dry-run` — converts Markdown headings to XML tags across all `.agent.md` files
-- [ ] A validation script: `scripts/validate_agent_format.py` — checks each file for required sections, correct tag nesting, no mixed formats
-- [ ] An updated `scaffold_agent.py` that emits XML-format stubs instead of Markdown-heading stubs
-
-### Gate Deliverables
-- [ ] D1 — Documented XML schema for agent instruction files with rationale
-- [ ] D2 — `scripts/migrate_agents_to_xml.py` and `scripts/validate_agent_format.py` written and tested
-- [ ] D3 — All 15+ agent files migrated (via script) and validated
-- [ ] D4 — `scaffold_agent.py` updated to emit XML format
-- [ ] D5 — `docs/guides/agents.md` and `.github/agents/AGENTS.md` updated with XML format documentation
+Open implementation questions tracked in **Issue #12 Follow-Up Open Questions** below.
+Remaining implementation gate deliverables: D3 (fleet migration), D4 (scaffold_agent.py XML output), D5 (guide + AGENTS.md updates).
 
 ---
 
@@ -224,30 +181,16 @@ This research should produce, at minimum:
 Resolved: 2026-03-06. The following questions remain open after the primary research deliverable was completed.
 
 **OQ-12-1 — Language Model API prompt pre-processing**
-Does the VS Code Language Model API (the layer below the Chat Participant API) perform any prompt normalisation, caching, or XML-aware pre-processing before forwarding to the Claude endpoint? Target source: `code.visualstudio.com/api/extension-guides/ai/language-model`. Until confirmed, the conduit finding for XML pass-through is conditional on this layer.
+✅ **RESOLVED 2026-03-07** — VS Code LM API confirmed as verbatim passthrough: `LanguageModelChatMessage.User(string)` forwards content unchanged to the model endpoint. No XML normalisation, caching, or transformation at any documented VS Code layer. Secondary finding: LM API does not support system messages — `.agent.md` bodies are injected as User-role messages. Source: `.cache/sources/code-visualstudio-com-api-extension-guides-ai-language-model.md`. Resolution committed to `docs/research/xml-agent-instruction-format.md`, issue #23 D1 closed.
 
 **OQ-12-2 — Instruction-following fidelity: XML vs. plain Markdown (empirical)**
-Design and run an ablation test using the Research Synthesizer agent in XML-hybrid form vs. its current plain-Markdown form. Measure: completion criteria satisfaction rate, constraint-violation rate, and section-addressing accuracy. Encode the comparison as a script. Results to be committed to `docs/research/`.
+✅ **RESOLVED 2026-03-07** — Secondary evidence surveyed: Anthropic, OpenAI, and Google all prescribe XML structuring but provide no quantitative ablation data; Anthropic notes formatting "likely becoming less important as models become more capable" (moderate effect size). Ablation test protocol designed and documented in `docs/research/xml-agent-instruction-format.md` Section 9.2 (`scripts/eval_xml_fidelity.py` spec). Provisional finding: XML provides moderate, qualitative fidelity benefit for current-generation Claude models. See Section 9.
 
 **OQ-12-3 — Non-Claude model XML degradation**
-How do XML-tagged instruction bodies behave when routed to Ollama-hosted local models or GPT-family cloud models? Is there graceful degradation, neutral pass-through, or active interference with instruction parsing? Must be resolved before the `--model-scope` gate in ADAPT item B2 can be relaxed.
+✅ **RESOLVED 2026-03-07** — Per-family verdicts: GPT (`gpt-*`, `openai/*`) — **beneficial** (OpenAI guide explicitly recommends Markdown+XML hybrid); Gemini (`google/gemini*`) — **beneficial** (Gemini 3 guide uses same XML tag vocabulary); Local models (`ollama/*`, `lmstudio/*`) — **neutral pass-through** (no XML-specific training; Markdown delimiters preferred); MistralAI API — **neutral provisional** (docs unreachable). `migrate_agent_xml.py --model-scope` can safely extend to `all-cloud` (`claude + gpt-* + google/gemini*`). Local model exclusion confirmed correct. See `docs/research/xml-agent-instruction-format.md` Section 10.
 
 **OQ-12-4 — `handoffs: prompt:` field and XML**
 Do YAML `handoffs: prompt:` field values benefit from or tolerate XML structuring when those prompts are complex multi-step instructions? Currently plain prose strings. May be relevant once orchestrator-tier agents are migrated and handoff prompts grow in complexity.
-
----
-
-## Recommended Issue Execution Pairings
-
-Recorded 2026-03-06. Group remaining open issues for efficiency — each pairing shares domain, sources, and guide deliverables.
-
-| Session | Issues | Rationale |
-|---|---|---|
-| Infrastructure | #5 + #6 | Local compute (Ollama/LM Studio) + locally distributed MCP share source domains and feed `docs/guides/local-compute.md` |
-| Cost/Reliability | #7 + #8 | Async process handling + LLM tier strategy are both reliability/cost concerns; small source sets benefit from batching |
-| Memory (deferred) | #9 + #13 + #14 | Methodology lit review, episodic memory, and AIGNE AFS all have prerequisite on #5 (local compute resolved first) |
-
-Issue #10 (agent fleet design patterns) is executed standalone — sources are mostly already cached and the deliverables include guide + README updates.
 
 ---
 
@@ -263,3 +206,46 @@ Section-scoped writes are proposed as the isolation mechanism, enforced through 
 
 **OQ-10-3 — Evaluator-optimizer convergence criteria for synthesis tasks**
 The evaluator-optimizer loop specifies mandatory stopping conditions but does not define them for synthesis (as opposed to code). How reliable is LLM-as-judge evaluation for research synthesis documents, and what constitutes a well-formed stopping condition for the Reviewer agent?
+
+---
+
+## Research Sprint — VS Code Agent Format & Toolset Best Practices
+
+**Added**: 2026-03-07 | **Status**: ✅ D1 resolved 2026-03-07 (b26d188); D2/D3 resolved 2026-03-07 | **Priority**: Medium | **Closes**: [#23](https://github.com/EndogenAI/Workflows/issues/23)
+
+Deep dive on VS Code Copilot custom agent file format: toolset declarations (which tools map to which capabilities), `applyTo` glob patterns, the VS Code Language Model API layer, instruction-following fidelity between XML and Markdown bodies (OQ-12-2), and non-Claude model degradation (OQ-12-3). Closes remaining open questions from issue #12.
+
+**Target deliverable**: Append findings to [`docs/research/xml-agent-instruction-format.md`](xml-agent-instruction-format.md) or create `docs/research/vscode-agent-format.md`
+**GitHub issue**: [#23](https://github.com/EndogenAI/Workflows/issues/23)
+**Prerequisite**: Resolves OQ-12-1, OQ-12-2, OQ-12-3 from Issue #12 Follow-Up Open Questions above
+
+---
+
+## Research Sprint — Context Compaction Best Practices (VS Code Copilot /compact)
+
+**Added**: 2026-03-07 | **Status**: ✅ Complete 2026-03-07 | **Priority**: High | **Closes**: [#24](https://github.com/EndogenAI/Workflows/issues/24)
+
+Research and document best practices for VS Code Copilot Chat's `/compact` slash command and "Compact Conversation" context window button.
+
+**Deliverable**: `docs/guides/session-management.md` — [Context Compaction section](../guides/session-management.md#context-compaction)
+**Encoded in**: All three `AGENTS.md` files (compaction-aware writing guardrail + `gh --body-file` guardrail)
+
+---
+
+## Completed Research
+
+_Items below are resolved. Open follow-up questions are still tracked in the main body (OQ-10, OQ-12 sections)._
+
+| Issue | Title | Deliverable | Closed |
+|---|---|---|---|
+| [#2](https://github.com/EndogenAI/Workflows/issues/2) | Research and document detailed agent workflows | [`agentic-research-flows.md`](agentic-research-flows.md) | 2026-03-07 |
+| [#10](https://github.com/EndogenAI/Workflows/issues/10) | Agent Fleet Design Patterns | [`agent-fleet-design-patterns.md`](agent-fleet-design-patterns.md) | 2026-03-06 |
+| [#12](https://github.com/EndogenAI/Workflows/issues/12) | XML-Tagged Agent Instruction Format _(implementation in progress)_ | [`xml-agent-instruction-format.md`](xml-agent-instruction-format.md) | 2026-03-06 |
+| [#16](https://github.com/EndogenAI/Workflows/issues/16) | Testing Tools & Frameworks | [`testing-tools-and-frameworks.md`](testing-tools-and-frameworks.md) | 2026-03-07 |
+| [#17](https://github.com/EndogenAI/Workflows/issues/17) | Development Workflow Automations | [`dev-workflow-automations.md`](dev-workflow-automations.md) | 2026-03-07 |
+| [#18](https://github.com/EndogenAI/Workflows/issues/18) | OSS Documentation Best Practices | [`oss-documentation-best-practices.md`](oss-documentation-best-practices.md) | 2026-03-07 |
+| [#19](https://github.com/EndogenAI/Workflows/issues/19) | PM & Dev Team Structures | [`pm-and-team-structures.md`](pm-and-team-structures.md) | 2026-03-07 |
+| [#20](https://github.com/EndogenAI/Workflows/issues/20) | Product Research & Design _(seed)_ | [`product-research-and-design.md`](product-research-and-design.md) | 2026-03-07 |
+| [#21](https://github.com/EndogenAI/Workflows/issues/21) | Comms, Marketing & Bizdev _(seed)_ | [`comms-marketing-bizdev.md`](comms-marketing-bizdev.md) | 2026-03-07 |
+| [#22](https://github.com/EndogenAI/Workflows/issues/22) | GitHub Project Management & Automation | [`github-project-management.md`](github-project-management.md) | 2026-03-07 |
+| [#24](https://github.com/EndogenAI/Workflows/issues/24) | Context Compaction Best Practices | [`session-management.md#context-compaction`](../guides/session-management.md) | 2026-03-07 |

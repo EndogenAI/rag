@@ -123,20 +123,22 @@ Executive agents should include handoff buttons that target **themselves** — o
 
 **Why evaluator-optimizer loop**: the executive absorbs the sub-agent's output, evaluates it against gates, and enriches the next prompt with that context before delegating again. The handoff button is the mechanism that enforces the review pause.
 
-### Prompt Enrichment Chain
+### Focus-on-Descent / Compression-on-Ascent
 
-Each delegation level enriches the prompt with progressively denser project context:
+At each delegation boundary, outbound briefs narrow the problem to the minimum needed scope; inbound results compress extensive exploration into a dense ≤ 2,000 token handoff. This is not enrichment — it is contraction.
+
+Each delegation level narrows the problem and scopes the task brief:
 
 ```
 Human (sparse intent)
-  → Executive (reads scratchpad + OPEN_RESEARCH.md + AGENTS.md → richer, grounded prompt)
-    → Sub-agent (reads specialist sources → precisely scoped instruction)
+  → Executive (reads scratchpad + OPEN_RESEARCH.md + AGENTS.md → scoped, grounded task brief)
+    → Sub-agent (receives narrow task brief → explores extensively → returns ≤ 2,000 token summary)
       → Specialist
 ```
 
-This is the endogenous-first principle in practice: context already encoded in the repo is translated into each delegation, so agents do not re-discover it interactively.
+This is the endogenous-first principle in practice: context already encoded in the repo shapes the delegation, so agents do not re-discover it interactively.
 
-**Implication for prompt authoring**: handoff `prompt:` fields on executive agents should leave room for interpretation at the receiving end — specific enough to convey context, general enough that the sub-agent can apply its own encoded knowledge.
+**Implication for prompt authoring**: handoff `prompt:` fields on executive agents should be narrow and task-scoped — dispatch the minimum necessary context. Sub-agents compress extensive exploration into dense results; they do not return raw search histories.
 
 ### Quasi-Encapsulated Sub-Fleets
 
@@ -161,6 +163,44 @@ Every agent body must follow this structure:
 3. **Workflow or checklist**: numbered steps or a role-specific checklist.
 4. **Guardrails section**: explicit list of what the agent must NOT do.
 
+### Hybrid Markdown + XML Schema
+
+All agent files with more than one distinct behavioural subsystem must use the **hybrid schema**: `## Section` headings as the outer document skeleton (for human readability and IDE navigation), with each section's content wrapped in a semantic XML tag.
+
+```markdown
+## Workflow
+
+<instructions>
+Step-by-step process here.
+</instructions>
+
+## Guardrails
+
+<constraints>
+- Do not do X.
+- Do not do Y.
+</constraints>
+```
+
+**Canonical tag map** (see `docs/research/xml-agent-instruction-format.md` §4 for full inventory):
+
+| Heading keyword | XML tag |
+|---|---|
+| Persona, Role | `<persona>` |
+| Instructions, Behavior, Workflow | `<instructions>` |
+| Context, Environment, Endogenous Sources | `<context>` |
+| Examples | `<examples>` / `<example>` |
+| Tools, Tool Guidance | `<tools>` |
+| Constraints, Guardrails, Scope | `<constraints>` |
+| Output Format, Deliverables, Completion Criteria | `<output>` |
+
+**Rules**:
+- XML tags apply **only to the body below the YAML `---` fence**. Never put XML in frontmatter values.
+- Tag names are lowercase.
+- Sections with fewer than 3 lines of body content may omit the XML wrapper.
+- `scripts/scaffold_agent.py` emits XML-tagged stubs by default — new agents start correct.
+- To migrate an existing agent: `uv run python scripts/migrate_agent_xml.py --file <path> --dry-run` (review diff), then without `--dry-run` to apply.
+
 ---
 
 ## Naming Conventions
@@ -182,6 +222,53 @@ Run `find . -name 'AGENTS.md' | grep -v node_modules` to see all narrowing files
 | Workflow agent | `<verb>.agent.md` or `<noun>.agent.md` | `<Verb>` or `<Noun>` |
 
 Use lowercase kebab-case for filenames.
+
+---
+
+## File Writing Guardrail
+
+**Never use heredocs to write agent or Markdown file content.**
+
+Heredocs (`cat >> file << 'EOF'`, Python inline `<< 'PYEOF'`) silently corrupt or truncate content containing backticks, triple-backtick fences, or special characters when executed through the VS Code terminal tool.
+
+| Situation | Correct approach |
+|-----------|------------------|
+| Creating a new agent file | `create_file` tool |
+| Editing an existing agent file | `replace_string_in_file` or `multi_replace_string_in_file` tool |
+| Appending to any Markdown file | `replace_string_in_file` with anchor text |
+| Writing large content blocks | Never heredoc — always use file tools |
+| Writing multi-line `gh issue` body | Write to temp file; use `--body-file <path>` or Python `subprocess` list-args |
+
+**`--body-file` pattern** (avoids shell-quoting hangs with `gh issue create/edit`):
+```python
+import subprocess, pathlib
+body = pathlib.Path('/tmp/issue_body.md')
+body.write_text('## Section\n\nContent here...')
+subprocess.run(['gh','issue','create','--title','My Issue','--body-file',str(body)])
+body.unlink()
+```
+
+---
+
+## GitHub Issue Conventions for Agent-Created Issues
+
+When an agent creates or edits a GitHub issue, the following rules apply:
+
+- **Label every issue**: minimum one `type:` label and one `priority:` label.
+  Full taxonomy: `type:`, `area:`, `priority:`, `status:` — see `docs/guides/github-workflow.md`.
+- **Encode priority as a label**: Copilot reads labels; it does NOT read Projects v2 field values.
+  Always set `priority:` label regardless of whether a project field is also set.
+- **Self-contained body**: Put key facts in the issue body directly.
+  Copilot does not traverse cross-reference links to other issues.
+- **Verify after creating**: `gh issue list --state open --limit 3` immediately after `gh issue create`.
+- **Projects v2 scope** (once per machine before any `gh project` commands):
+  ```bash
+  gh auth refresh -s project
+  gh auth status  # verify "project" appears in scopes
+  ```
+
+See [`docs/guides/github-workflow.md`](../../docs/guides/github-workflow.md) for the full `gh` CLI quick-reference.
+See [`docs/research/github-project-management.md`](../../docs/research/github-project-management.md) for the full synthesis.
 
 ---
 

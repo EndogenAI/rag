@@ -18,7 +18,53 @@ scripts/
   fetch_source.py              # Fetch a URL into .cache/sources/ and maintain a manifest (no re-fetching)
   fetch_all_sources.py         # Batch-fetch all URLs from OPEN_RESEARCH.md + research doc frontmatter
   link_source_stubs.py         # Populate ## Referenced By sections in per-source stubs (bidirectional link graph)
+  validate_synthesis.py        # Quality gate for D3/D4 synthesis documents — run before any Archivist commit (exit 0 = pass, 1 = fail)
+  migrate_agent_xml.py         # Bulk-migrate .agent.md body sections to hybrid Markdown + XML format (--dry-run safe)
+  pr_review_reply.py           # Post replies to PR inline review comments and resolve threads (--reply-to, --resolve, --batch)
+  seed_labels.py               # Idempotent GitHub label seeder — reads data/labels.yml and syncs via gh label create --force (--dry-run, --delete-legacy)
 ```
+
+---
+
+## Testing Scripts
+
+Every script in this directory has automated tests in `tests/`. Tests are a first-class artifact, not an afterthought.
+
+**Run all tests**:
+```bash
+uv run pytest tests/ -v
+```
+
+**Run with coverage**:
+```bash
+uv run pytest tests/ --cov=scripts --cov-report=html
+open htmlcov/index.html
+```
+
+**Run only fast tests** (skip slow + integration):
+```bash
+uv run pytest tests/ -m "not slow and not integration" -v
+```
+
+**Run tests for a single script**:
+```bash
+uv run pytest tests/test_prune_scratchpad.py -v
+```
+
+**Run a specific test**:
+```bash
+uv run pytest tests/test_prune_scratchpad.py::TestPruneScrapbookAnnotation::test_annotate_is_idempotent -v
+```
+
+Tests enforce:
+- **Happy path**: Script works with valid inputs
+- **Error cases**: Invalid inputs produce clear errors (correct exit codes)
+- **Idempotency**: Running a script twice doesn't break things
+- **Exit codes**: Every code path has a documented exit code
+
+Before committing any script changes, verify: `uv run pytest tests/test_<script_name>.py --cov=scripts`
+
+For detailed testing guidance, see [`docs/guides/testing.md`](../docs/guides/testing.md).
 
 ---
 
@@ -27,6 +73,8 @@ scripts/
 **Purpose**: Manage cross-agent scratchpad session files in `.tmp/<branch>/<date>.md`.
 Initialises today's session file, annotates H2 headings with line ranges, and prunes
 completed sections to one-line archive stubs when needed.
+
+**Tests**: [`tests/test_prune_scratchpad.py`](../tests/test_prune_scratchpad.py)
 
 **Usage**:
 
@@ -387,6 +435,227 @@ Also run after adding new links to any issue synthesis or stub.
 **Exit codes**: `0` completed (even if 0 stubs updated); `1` `docs/research/sources/` not found.
 
 **Dependencies**: stdlib only.
+
+---
+
+## scripts/validate_synthesis.py
+
+**Purpose**: Programmatic quality gate for D3 per-source synthesis reports and D4 issue
+synthesis documents. Run before any Research Archivist commit to enforce a minimum quality
+bar — equivalent to Claude Code's `TaskCompleted` hook.
+
+Auto-detects document type:
+- **D3** (file path contains `/sources/`): checks 8 required section headings, URL/cache_path frontmatter
+- **D4** (all other paths under `docs/research/`): checks executive summary, status frontmatter
+
+**Usage**:
+
+```bash
+# Validate a D3 per-source synthesis report
+uv run python scripts/validate_synthesis.py docs/research/sources/<slug>.md
+
+# Validate a D4 issue synthesis
+uv run python scripts/validate_synthesis.py docs/research/<slug>.md
+
+# Use a higher minimum line count
+uv run python scripts/validate_synthesis.py <file> --min-lines 150
+
+# In Archivist workflow — block commit on failure
+uv run python scripts/validate_synthesis.py "$FILE" || exit 1
+```
+
+**Checks (D3)**:
+1. File exists
+2. ≥ 100 non-blank lines (configurable with `--min-lines`)
+3. All 8 required section headings present (Citation, Research Question, Theoretical Framework, Methodology, Key Claims, Critical Assessment, Cross-Source Connections, Project Relevance) — accepts both numbered and unnumbered heading formats
+4. Frontmatter has `slug`, `title`, `url` (or `source_url`), `cache_path`
+
+**Checks (D4)**:
+1. File exists
+2. ≥ 100 non-blank lines
+3. ≥ 4 `##` headings, including Executive Summary and Hypothesis Validation sections
+4. Frontmatter has `title`, `status`
+
+**Exit codes**: `0` = all checks passed; `1` = one or more checks failed (specific gaps listed to stdout).
+
+**Dependencies**: stdlib only.
+
+---
+
+## scripts/migrate_agent_xml.py
+
+**Purpose**: Bulk-migrate `.github/agents/*.agent.md` body sections from plain Markdown prose
+to hybrid Markdown + XML format. Implements the migration spec from
+`docs/research/xml-agent-instruction-format.md` §8.
+
+Maps `## SectionName` headings to canonical XML tag wrappers per the §4 tag inventory:
+`<persona>`, `<instructions>`, `<context>`, `<examples>`, `<tools>`, `<constraints>`, `<output>`.
+YAML frontmatter is never touched.
+
+**Usage**:
+
+```bash
+# Dry-run a single file (prints diff to stdout, no writes)
+uv run python scripts/migrate_agent_xml.py --file .github/agents/executive-researcher.agent.md --dry-run
+
+# Migrate a single file in-place
+uv run python scripts/migrate_agent_xml.py --file .github/agents/executive-researcher.agent.md
+
+# Dry-run all files in .github/agents/
+uv run python scripts/migrate_agent_xml.py --all --dry-run
+
+# Migrate all files (with min-line threshold — skip short agents)
+uv run python scripts/migrate_agent_xml.py --all --min-lines 30
+```
+
+**Flags**:
+
+| Flag | Description |
+|------|-------------|
+| `--file <path>` | Single file to migrate |
+| `--all` | Migrate all `*.agent.md` files in `.github/agents/` |
+| `--dry-run` | Print diff without writing |
+| `--min-lines <int>` | Skip files with fewer instruction lines (default: 30) |
+| `--model-scope <prefix>` | Only migrate files where `model` field begins with given prefix (default: disabled — all files processed) |
+
+**Exit codes**: `0` = success; `1` = parse error or well-formedness failure.
+
+**Dependencies**: stdlib only.
+
+---
+
+## scripts/pr_review_reply.py
+
+**Purpose**: Post replies to GitHub PR inline review comments and resolve review threads.
+Automates the post-review response loop — after fixing issues, post a reply on each inline
+comment (referencing the fix commit) and mark the thread as resolved, without the manual
+click-through on GitHub's UI.
+
+Three modes:
+- **Single reply**: `--reply-to <comment-id> --body <text>`
+- **Single resolve**: `--resolve <thread-node-id>`
+- **Batch**: `--batch <json-file>` — reply + resolve in one pass from a JSON array
+
+**Usage**:
+
+```bash
+# Reply to a single comment
+uv run python scripts/pr_review_reply.py --reply-to 2899252947 --body "Fixed in abc1234."
+
+# Resolve a single thread
+uv run python scripts/pr_review_reply.py --resolve PRRT_kwDORfkAR85yvrwz
+
+# Batch from a JSON file (reply + resolve in one pass)
+uv run python scripts/pr_review_reply.py --batch .tmp/review-replies.json
+
+# Explicit repo and PR number (defaults auto-detect from gh CLI)
+uv run python scripts/pr_review_reply.py --pr 15 --repo EndogenAI/Workflows --batch .tmp/review-replies.json
+```
+
+**Batch JSON format**:
+
+```json
+[
+  {"reply_to": 2899252947, "body": "Fixed in abc1234.", "resolve": "PRRT_kwDORfkAR85yvrwz"},
+  {"resolve": "PRRT_kwDORfkAR85yvrw6"},
+  {"reply_to": 2899252960, "body": "Removed dead variable."}
+]
+```
+
+Each entry may have any combination of `reply_to`+`body` (post a reply) and `resolve` (resolve the thread).
+
+**Getting comment IDs and thread node IDs**:
+
+```bash
+# Comment database IDs
+gh api repos/<owner>/<repo>/pulls/<num>/comments --jq '.[] | {id: .id, path: .path, line: .line}'
+
+# Thread node IDs
+gh api graphql -f query='{
+  repository(owner:"<owner>",name:"<repo>") {
+    pullRequest(number:<num>) {
+      reviewThreads(first:20) {
+        nodes { id isResolved comments(first:1) { nodes { databaseId } } }
+      }
+    }
+  }
+}'
+```
+
+**Flags**:
+
+| Flag | Description |
+|------|-------------|
+| `--pr <num>` | PR number (default: auto-detect from `gh pr view`) |
+| `--repo <owner/repo>` | Repository (default: auto-detect from `gh repo view`) |
+| `--reply-to <id>` | Comment database ID to reply to |
+| `--body <text>` | Reply body text (required with `--reply-to`) |
+| `--resolve <id>` | GraphQL node ID of the thread to resolve |
+| `--batch <file>` | JSON file with array of reply/resolve operations |
+
+**Exit codes**: `0` = all operations succeeded; `1` = one or more failures.
+
+**Dependencies**: stdlib only; requires `gh` CLI authenticated.
+
+---
+
+## scripts/seed_labels.py
+
+**Purpose**: Idempotent GitHub label seeder. Reads `data/labels.yml` (or a custom path) and
+creates or updates every label via `gh label create --force`. Optionally deletes the legacy
+GitHub default labels (`bug`, `documentation`, etc.) listed in the `legacy_labels` section.
+Designed to bootstrap a fresh fork or keep namespace labels in sync whenever the manifest
+changes.
+
+**Tests**: [`tests/test_seed_labels.py`](../tests/test_seed_labels.py)
+
+**Usage**:
+
+```bash
+# Preview all actions without making API calls
+uv run python scripts/seed_labels.py --dry-run
+
+# Create/update all namespace labels in the current repo
+uv run python scripts/seed_labels.py
+
+# Create/update labels AND delete legacy GitHub defaults
+uv run python scripts/seed_labels.py --delete-legacy
+
+# Dry-run including legacy deletion
+uv run python scripts/seed_labels.py --dry-run --delete-legacy
+
+# Target a specific repo
+uv run python scripts/seed_labels.py --repo myorg/myrepo
+
+# Use a custom manifest path
+uv run python scripts/seed_labels.py --labels-file path/to/labels.yml
+```
+
+**Flags**:
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `--labels-file PATH` | no | `data/labels.yml` | Path to the labels YAML manifest |
+| `--delete-legacy` | no | `False` | Delete labels listed in `legacy_labels` section |
+| `--dry-run` | no | `False` | Print planned actions without making gh API calls |
+| `--repo OWNER/REPO` | no | current repo | Target repository |
+
+**YAML manifest format** (`data/labels.yml`):
+
+```yaml
+labels:
+  - name: "effort:xs"
+    color: "c2e0c6"          # 6-digit hex without leading #
+    description: "< 30 min"
+
+legacy_labels:
+  - "bug"
+  - "documentation"
+```
+
+**Exit codes**: `0` success; `1` validation/auth error; `2` labels file not found.
+
+**Dependencies**: stdlib + `pyyaml`; requires `gh` CLI authenticated (`gh auth login`).
 
 ---
 
