@@ -12,7 +12,7 @@ These constraints govern all agent behavior. They derive from three core axioms 
 2. **Algorithms Before Tokens** — prefer deterministic, encoded solutions over interactive token burn
 3. **Local Compute-First** — minimize token usage; run locally whenever possible
 
-**Encoding Inheritance Chain**: Values flow through five layers — `MANIFESTO.md` (foundational axioms) → `AGENTS.md` (operational constraints) → agent files (specific implementation) → `SKILL.md` files (reusable tactical knowledge) → session prompts (enacted behavior). Each layer is a re-encoding of the layer above it. Agents must minimise lossy re-encoding: prefer direct quotation or explicit citation over paraphrase when invoking a foundational principle. Cross-reference density (back-references to `MANIFESTO.md` in your output) is a proxy for encoding fidelity. Low density signals likely drift. See [`docs/research/values-encoding.md`](docs/research/values-encoding.md) for the cross-sectoral evidence base.
+**Encoding Inheritance Chain**: Values flow through six layers — `MANIFESTO.md` (foundational axioms) → `AGENTS.md` (operational constraints) → subdirectory `AGENTS.md` files (narrowing constraints for specific scopes) → custom agent files (`.agent.md`, specific role implementation) → `SKILL.md` files (reusable tactical knowledge) → session prompts (enacted behavior). Each layer is a re-encoding of the layer above it. Agents must minimise lossy re-encoding: prefer direct quotation or explicit citation over paraphrase when invoking a foundational principle. Cross-reference density (back-references to `MANIFESTO.md` in your output) is a proxy for encoding fidelity. Low density signals likely drift. See [`docs/research/values-encoding.md`](docs/research/values-encoding.md) for the cross-sectoral evidence base.
 
 **Session-Start Encoding Checkpoint**: At the start of every session, the first sentence of `## Session Start` in the scratchpad must name the governing axiom and one primary endogenous source. See [`docs/guides/session-management.md` → Session-Start Encoding Checkpoint](docs/guides/session-management.md#session-start-encoding-checkpoint) for format and examples.
 
@@ -362,6 +362,18 @@ When proceeding under ambiguity, **document the assumption inline** (code commen
 ## Agent Fleet Overview
 
 See [`.github/agents/README.md`](.github/agents/README.md) for the full agent catalog.
+
+### VS Code Customization Taxonomy
+
+The three first-class primitives in this repository's customization stack:
+
+| Primitive | File Format | Encodes | Decision Rule |
+|-----------|------------|---------|---------------|
+| Fleet constraints | `AGENTS.md` files | *What all agents must do* — universal behaviours, guardrails, operational conventions | Use for any constraint that would appear identically in every agent file |
+| **Custom agents** | `.agent.md` in `.github/agents/` | *Who does a task* — role-specific persona, posture, tool restrictions, endogenous sources, handoff graph | Use for anything exclusively about a single agent's identity and capabilities |
+| **Agent Skills** | `SKILL.md` in `.github/skills/<name>/` | *How a task is done* — reusable workflow procedures loadable on demand | Use when a procedure could benefit more than one agent or AI tool without needing a specific agent's posture |
+
+**Boundary decision rule**: Content belongs in an `.agent.md` body when it is exclusively about that agent's role. Content belongs in a `SKILL.md` when it describes how a task is performed and at least one other agent or tool could benefit from it. If the same procedure appears in two agent bodies, extract it to a skill before writing a third copy (Programmatic-First applied to instruction prose). See `docs/research/agent-taxonomy.md` for the full decision tree.
 
 Key agents for this repo:
 

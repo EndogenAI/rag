@@ -174,14 +174,15 @@ The directory name must exactly match the `name` field in the frontmatter.
 
 ### Encoding Inheritance and AGENTS.md Requirement
 
-Skills extend the encoding inheritance chain to five layers:
+Skills extend the encoding inheritance chain to six layers (subdirectory `AGENTS.md` files are the fourth tier):
 
 ```
-MANIFESTO.md       → foundational axioms
-AGENTS.md          → operational constraints
-.agent.md files    → specific functional implementations
-SKILL.md files     → reusable tactical knowledge
-Session behaviour  → observable output
+MANIFESTO.md              ← foundational axioms
+AGENTS.md (root)          ← operational constraints
+AGENTS.md (subdirectory)  ← narrowing constraints (docs/, .github/agents/)
+.agent.md files           ← role-specific custom agents
+SKILL.md files            ← reusable tactical knowledge
+session behaviour         ← enacted output
 ```
 
 Every `SKILL.md` body **must reference [`AGENTS.md`](../../AGENTS.md) as its governing constraint**. This anchors skills to the encoding inheritance chain and makes fidelity auditable via CI. The governing axiom citation must appear in the first substantive section of the body.

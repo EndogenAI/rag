@@ -15,13 +15,14 @@ The VS Code customization stack has three first-class primitives: always-on inst
 
 **Agent Skills** (agentskills.io open standard, developed by Anthropic) address both problems. Skills are `SKILL.md` files stored in `.github/skills/` and discovered automatically by GitHub Copilot. Only the `name` and `description` frontmatter (~100 tokens per skill) are loaded at startup; the full skill body loads only when relevant. The spec is cross-ecosystem and agent-agnostic — the same `SKILL.md` works in GitHub Copilot, Copilot CLI, and Claude Code (via `.claude/skills/`).
 
-Skills extend the encoding inheritance chain from four layers to five:
+Skills extend the encoding inheritance chain from four layers to six (adding both the subdirectory AGENTS.md tier and the SKILL.md tier):
 
 | Layer | Format | Role |
 |-------|--------|------|
 | `MANIFESTO.md` | Constitution | Foundational axioms |
-| `AGENTS.md` | Operational constraints | Behavioural translation |
-| `.agent.md` files | Agent implementations | Specific functional implementations |
+| `AGENTS.md` (root) | Operational constraints | Behavioural translation |
+| **`AGENTS.md` (subdirectory)** | **Narrowing constraints** | **Scope-specific rules for `docs/`, `.github/agents/`, etc.** |
+| `.agent.md` files | Custom agents | Role-specific persona and capabilities |
 | **`SKILL.md` files** | **Skill procedures** | **Reusable tactical knowledge** |
 | Session behaviour | Enactment | Observable output |
 
