@@ -21,6 +21,8 @@ Rather than prompting an agent from zero context and hoping for the best — the
 
 The name comes from biology: an endogenous process is one that originates from within the organism. Like all living systems, our endogenic substrate is built from inherited knowledge (standing on giants' shoulders) and continuous synthesis of external wisdom (tools, frameworks, best practices). We grow from within, but we do not grow alone.
 
+**Intellectual heritage**: Endogenic development synthesizes several established traditions: Engelbart's augmentation framework (1962) supplies the Augmentive Partnership principle; Turing's morphogenesis (1952) and Maturana & Varela's autopoiesis (1972) supply the biological substrate metaphors; Knuth's literate programming (1984) and Martraire's living documentation (2019) supply the encode-once-reuse-many strategy; and Alexander's Pattern Language (1977) supplies the interconnected-principles architecture. The endogenic contribution is the synthesis of these traditions specifically for AI-assisted development, where LLM agents re-read the encoded substrate to orient each new session. See [`docs/research/methodology-review.md`](docs/research/methodology-review.md) for the full prior art survey.
+
 For a deeper exploration of these metaphors and how they guide all endogenous practice, see [`docs/guides/mental-models.md`](docs/guides/mental-models.md).
 
 ### The Balance: Inside Out, Not Inside Only
@@ -48,6 +50,8 @@ Endogenic development is not about agent autonomy or reducing human involvement.
 - Neither works without the other — they form a unified cognitive system
 - The goal is to **amplify human judgment**, not replace it
 
+This principle is a direct descendant of Douglas Engelbart's augmentation framework ("Augmenting Human Intellect", 1962), updated for the LLM context. Engelbart's NLS required continuous human steering at every step; the endogenic fleet enforces this through phase gates and review checkpoints rather than through UI design.
+
 This partnership is why we encode knowledge, minimize token burn, and enforce governance. Every axiom and principle serves this partnership. The system grows smarter so the human can make better decisions — not to work autonomously.
 
 ---
@@ -67,6 +71,8 @@ Before writing any new agent, script, or document:
 4. Encode the synthesized knowledge back into the project so the next session starts richer — update your DNA with what you've learned
 
 **The inheritance principle**: Just as DNA carries billions of years of evolutionary wisdom, your project carries the accumulated knowledge of its external sources. Every adopted tool, every synthesized best practice, every documented convention is genetic material that makes the system stronger. You stand on the shoulders of giants by encoding what they've built into your own substrate.
+
+This inheritance principle has a precise biological grounding in Maturana and Varela's autopoiesis (1972): a system is autopoietic if it produces and maintains its own components. An endogenic project is autopoietic — each session produces scripts, guides, and agent files that maintain the substrate, so future sessions start richer than the ones that preceded them.
 
 **Anti-pattern (isolationism)**: Refusing to adopt an existing open-source tool because "we should build it ourselves." If a well-maintained external tool solves a problem correctly, the DNA principle says: absorb it, document it, and encode its usage patterns into the project's scripts and agents.
 
