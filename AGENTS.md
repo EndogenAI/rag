@@ -415,6 +415,29 @@ are in scope, or URLs are passed to scripts.
 
 ## Guardrails
 
+**Run these checks before every `git commit` / `git push`:**
+
+```bash
+# Lint + format (also enforced by pre-commit hook)
+uv run ruff check scripts/ tests/
+uv run ruff format --check scripts/ tests/
+
+# Tests (fast subset — skip slow/integration)
+uv run pytest tests/ -x -m "not slow and not integration" -q
+
+# Agent file compliance (if any .github/agents/*.agent.md changed)
+uv run python scripts/validate_agent_files.py --all
+
+# Research doc compliance (if any docs/research/*.md changed)
+uv run python scripts/validate_synthesis.py docs/research/<changed-file>.md
+```
+
+Pre-commit hooks (`uv run pre-commit install` once per clone) automate ruff, validate-synthesis, and validate-agent-files on every `git commit`. Install them; do not skip with `--no-verify`.
+
+**CI must pass before requesting or re-requesting Copilot review.** After every push, run `gh run list --limit 3` and wait for green before reviewing.
+
+---
+
 **Never do these without explicit instruction:**
 
 - Edit any lockfile by hand

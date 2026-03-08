@@ -281,7 +281,7 @@ Write `## Session Start` to the scratchpad. First sentence must name the governi
 
 ---
 
-## Phase Gating
+## Workflow
 
 **Each phase must complete and be confirmed before the next begins.**
 
@@ -299,7 +299,7 @@ Write `## Session Start` to the scratchpad. First sentence must name the governi
 
 ---
 
-## Core Constraints
+## Guardrails
 
 - **Endogenous-first**: always run `scan_research_links.py` and check `.cache/sources/` before any web fetch
 - **Fetch-before-act**: run `fetch_all_sources.py --manifest <path>` before any synthesis sprint
