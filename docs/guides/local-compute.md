@@ -112,13 +112,40 @@ curl http://localhost:11434/api/generate -d '{"model": "codellama", "prompt": "h
 
 ---
 
+## Strategy E: Tier Routing — Which Task Gets Which Model
+
+Not all tasks require a frontier model. Explicitly classifying tasks before dispatching them
+to a model is the highest-leverage cost-reduction practice after script encoding.
+
+| Task Category | Min Tier | Recommended |
+|---|---|---|
+| Synthesis, architecture planning, PR review | Frontier | Claude Sonnet 3.7, o3 |
+| Code generation, code review | Mid | GPT-4o, Gemini 2.0 Flash |
+| Structured editing (YAML, JSON, frontmatter) | Mid / Local | GPT-4o-mini, 13B local |
+| Boilerplate generation, test stubs | Local / Free | Codellama 13B, DeepSeek-Coder |
+| File search, grep, context gathering | Local / Free | Any 7B+ |
+
+**Target allocation**: aim for ~45% of agent turns at Local/Free tier, ~35% Mid, ~20%
+Frontier. Shifting even a small percentage of turns from Frontier to Local meaningfully
+reduces monthly cost and rate-limit pressure.
+
+**GitHub Copilot tiers at a glance** (Q1 2026 — verify current quotas at GitHub docs):
+- **Free**: ~50 chat messages/month, mid-tier models only
+- **Pro (~$10/month)**: unlimited chat, all models including frontier; premium models
+  (o1, o3, Claude 3.7) are rate-limited even on Pro
+- **Local (Ollama/LM Studio)**: zero marginal cost for the tasks listed above
+
+For the full rationale, model capability map, and lazy escalation pattern, see the
+[LLM Tier Strategy research doc](../research/llm-tier-strategy.md).
+
+---
+
 ## Open Research Tasks
 
 The following are open questions tracked as GitHub Issues:
 
-- [ ] Exact VS Code Copilot local model configuration steps
-- [ ] Optimal model selection for different agent task types
-- [ ] Secure local network distribution of MCP frameworks
+- [ ] Exact VS Code Copilot local model configuration steps (issue #5)
+- [ ] Secure local network distribution of MCP frameworks (issue #6)
 - [ ] Benchmarking token usage: local vs. cloud for common agent workflows
 
 See the [GitHub Issues](https://github.com/EndogenAI/Workflows/issues?q=label%3Aresearch) for current status.
