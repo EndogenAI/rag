@@ -167,7 +167,7 @@ def write_trigger(trigger_dir: Path, repo: str, issue: int, meta: dict) -> Path:
     """Write the trigger file and return its path."""
     trigger_dir.mkdir(parents=True, exist_ok=True)
     path = trigger_dir / trigger_filename(repo, issue)
-    path.write_text(format_trigger_content(repo, issue, meta))
+    path.write_text(format_trigger_content(repo, issue, meta), encoding="utf-8")
     return path
 
 

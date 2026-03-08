@@ -26,8 +26,8 @@ Outputs
 -------
 JSON report to stdout or --output path:
 {
-  "scanned": 3,
-  "total_urls": 142,
+  "scanned_files": 3,
+  "total_url_occurrences": 142,
   "unique_urls": 87,
   "urls": [
     {
