@@ -193,7 +193,7 @@ Franchise Constitution (MANIFESTO.md: why we exist)
     ↓
 Restaurant Operations Manual (AGENTS.md: how everyone behaves)
     ↓
-Role Descriptions (Custom Agents in .agent.md files: specialized responsibilities)
+Role Descriptions (Roles in .agent.md files: specialized responsibilities)
     ↓
 Technique Cards (SKILL.md files: reusable procedures all roles reference)
     ↓

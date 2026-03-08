@@ -1,12 +1,12 @@
 ---
-title: "Agent Taxonomy: Custom Agents, Skills, and Fleet Constraints"
+title: "Agent Taxonomy: Roles, Skills, and Fleet Constraints"
 status: Final
 ---
 
-# Agent Taxonomy: Custom Agents, Skills, and Fleet Constraints
+# Agent Taxonomy: Roles, Skills, and Fleet Constraints
 
 > **Status**: Final
-> **Research Question**: What is the principled taxonomy of VS Code customization primitives — custom agents (`.agent.md`), Agent Skills (`SKILL.md`), and fleet constraints (`AGENTS.md`) — and what decision rules govern what belongs where?
+> **Research Question**: What is the principled taxonomy of VS Code customization primitives — Roles (`.agent.md`; VS Code: Custom Agents), Agent Skills (`SKILL.md`), and fleet constraints (`AGENTS.md`) — and what decision rules govern what belongs where?
 > **Date**: 2026-03-07
 > **Branch**: `feature/skills-research-and-adaption`
 > **Related**: [`AGENTS.md`](../../AGENTS.md) (guiding constraints), [`MANIFESTO.md`](../../MANIFESTO.md) (foundational axioms), [`ADR-006`](../decisions/ADR-006-agent-skills-adoption.md) (skills adoption), [`docs/research/agent-skills-integration.md`](./agent-skills-integration.md) (prior Phase 1 synthesis)
@@ -15,7 +15,7 @@ status: Final
 
 ## Executive Summary
 
-The VS Code customization stack has three first-class primitives with non-overlapping roles: **custom agents** (`.agent.md`) encode *who does a task* — role-specific persona, posture, tool restrictions, and handoff graph; **Agent Skills** (`SKILL.md`) encode *how a task is done* — reusable workflow procedures and resources loadable on demand across any skills-compatible AI tool; and **fleet constraints** (`AGENTS.md`) encode *what all agents must do* — universal behaviours enforced across the entire fleet. The canonical VS Code term for `.agent.md` files is **"custom agents"** (since VS Code 1.106; previously "custom chat modes"), and this term is the correct endogenic label for this repository's fleet. The boundary between these three layers has a precise formulation: custom agent bodies retain only what is role-exclusive, while anything a second agent or non-VS-Code tool could use becomes a skill, and anything every agent must do goes into `AGENTS.md`. The central risk is **boundary erosion** — agent bodies that accumulate skill-level procedures (too thick) or that delegate so much they lose distinct persona identity (too thin) — and this synthesis provides decision rules to prevent both failure modes. The prior Phase 1 synthesis ([`agent-skills-integration.md`](./agent-skills-integration.md)) established the composition rule; this document formalises the full three-way taxonomy with pattern catalogs and actionable decision trees.
+The VS Code customization stack has three first-class primitives with non-overlapping roles: **Roles** (`.agent.md`; VS Code: Custom Agents) encode *who does a task* — role-specific persona, posture, tool restrictions, and handoff graph; **Agent Skills** (`SKILL.md`) encode *how a task is done* — reusable workflow procedures and resources loadable on demand across any skills-compatible AI tool; and **fleet constraints** (`AGENTS.md`) encode *what all agents must do* — universal behaviours enforced across the entire fleet. The VS Code upstream term for `.agent.md` files is **"Custom Agents"** (since VS Code 1.106; previously "custom chat modes"); the EndogenAI project term is **"Roles"**, reflecting the conceptual purpose of these files as defined roles in the fleet. The boundary between these three layers has a precise formulation: role bodies retain only what is role-exclusive, while anything a second agent or non-VS-Code tool could use becomes a skill, and anything every agent must do goes into `AGENTS.md`. The central risk is **boundary erosion** — role bodies that accumulate skill-level procedures (too thick) or that delegate so much they lose distinct persona identity (too thin) — and this synthesis provides decision rules to prevent both failure modes. The prior Phase 1 synthesis ([`agent-skills-integration.md`](./agent-skills-integration.md)) established the composition rule; this document formalises the full three-way taxonomy with pattern catalogs and actionable decision trees.
 
 ---
 
@@ -25,32 +25,32 @@ This section addresses the six research questions from the linked sprint.
 
 ---
 
-### Q1 — Naming: "Custom Agents" vs Internal Terms
+### Q1 — Naming: "Roles" as the Endogenous Term
 
-**Question**: Should we use "custom agents" (VS Code canonical) or another internal term for `.agent.md` files?
+**Question**: Should we use "custom agents" (VS Code canonical) or an endogenous project term for `.agent.md` files?
 
 **Evidence**:
 
 - VS Code documentation (v1.106+) uses "custom agents" throughout: *"Custom agents enable you to configure the AI to adopt different personas tailored to specific development roles and tasks."* (`.cache/sources/code-visualstudio-com-docs-copilot-customization-custom-agen.md`)
 - Prior to VS Code 1.106, these were called "custom chat modes" — that term is now deprecated.
-- The `.github/agents/AGENTS.md` at line 1 uses "VS Code Copilot custom agents (`.agent.md` files)" as its governing description.
-- `docs/guides/agents.md` opens with "VS Code Copilot custom agents (`.agent.md` files)" — already aligned.
+- The `.github/agents/AGENTS.md` now uses "Roles (`.agent.md` files — VS Code: Custom Agents)" as its governing description.
+- `docs/guides/agents.md` opens with "Roles (`.agent.md` files — VS Code: Custom Agents)" — updated to align.
 - Root `AGENTS.md` uses "agent" colloquially throughout but does not formally define the VS Code term; this is the only documentation gap.
 
-**Verdict: RESOLVED** — The internal term and VS Code canonical term are already substantively aligned. The only cleanup needed is replacing any residual references to "custom chat modes" (none found in current docs) and ensuring the formal definition appears in root `AGENTS.md`'s Fleet Overview section.
+**Verdict: DECIDED** — The project endogenous term is **Roles**. While VS Code uses "Custom Agents" as the upstream label for `.agent.md` files (since v1.106), EndogenAI uses "Roles" to emphasise the conceptual purpose — these files define *who does a task* and *what role they play* in the fleet. "Custom Agents" remains appropriate when referring specifically to the VS Code tooling mechanism. "Roles" is the canonical term in all EndogenAI project documentation.
 
 **Mapping table** (VS Code canonical → EndogenAI endogenic usage):
 
 | VS Code Term | EndogenAI Endogenic Usage | File Format |
 |---|---|---|
-| Custom agent | Custom agent / "agent" (shorthand) | `.agent.md` |
+| Custom Agent | **Role** / "agent" (informal shorthand) | `.agent.md` |
 | Agent Skills | Agent Skills / "skill" (shorthand) | `SKILL.md` in `.github/skills/<name>/` |
 | Custom instructions (always-on) | Fleet constraints / "AGENTS.md layer" | `AGENTS.md`, `.instructions.md`, `copilot-instructions.md` |
 | Prompt files | Prompt files (not yet in active use) | `.prompt.md` |
 
 ---
 
-### Q2 — Boundary: Custom Agent Body vs SKILL.md
+### Q2 — Boundary: Role Body vs SKILL.md
 
 **Question**: What is the principled line between what belongs in an `.agent.md` body vs a `SKILL.md`?
 
@@ -191,7 +191,7 @@ See the [Pattern Catalog](#pattern-catalog) section below.
 
 ## Pattern Catalog
 
-### Custom Agent (`.agent.md`) — Canonical Patterns
+### Role (`.agent.md`) — Canonical Patterns
 
 **Pattern CA-1: Minimal Valid Agent**
 
@@ -236,7 +236,7 @@ Agents operating within a specific directory (e.g., agents that only write docs)
 
 ---
 
-### Custom Agent — Anti-Patterns
+### Role — Anti-Patterns
 
 | Anti-Pattern | Problem | Fix |
 |---|---|---|
@@ -333,11 +333,11 @@ Subdirectory `AGENTS.md` files carry directory-local rules that (a) narrow root 
 
 ## Recommendations
 
-**R1 — Canonical Name: Use "custom agents" for `.agent.md` files**
+**R1 — Canonical Name: Use 'Roles' for `.agent.md` files**
 
-Adopt "custom agents" as the single authoritative term fleet-wide, matching VS Code canonical terminology since v1.106. Use "agent" as informal shorthand in prose. Retire any residual "custom chat mode" references (none currently found). Update root `AGENTS.md` Fleet Overview section to include the formal definition: *"Custom agents (`.agent.md` files) configure the AI to adopt a specific persona with defined tool access, posture, and handoff logic."* This aligns the endogenic vocabulary with the VS Code upstream term, reducing cognitive overhead when onboarding contributors who have read VS Code documentation.
+Adopt **'Roles'** as the endogenous project term for `.agent.md` files, reflecting the conceptual purpose of these files — they define *who does a task* and encode a specific role in the fleet. Use 'agent' as informal shorthand in prose. The VS Code upstream term 'Custom Agents' is appropriate when referring specifically to the tooling mechanism, but 'Roles' is the preferred term in EndogenAI documentation. Retire any residual 'custom chat mode' references (none currently found). The root `AGENTS.md` VS Code Customization Taxonomy table has been updated to list 'Roles' as the primitive, with a note that this maps to VS Code Custom Agents.
 
-**R2 — Custom Agent Body vs SKILL.md: The Two-Test Rule**
+**R2 — Role Body vs SKILL.md: The Two-Test Rule**
 
 Apply these two tests in order:
 
@@ -362,10 +362,10 @@ If the content can be stated as a single compliance rule ("always X", "never Y")
 
 No file renames are required to implement these recommendations. The following documentation updates are recommended for the Executive Docs agent as Phase 2:
 
-1. Root `AGENTS.md` § Fleet Overview: add formal definition of "custom agent" and the six-layer encoding chain (see Q3 above)
-2. `docs/guides/agents.md`: ensure "custom agents" is the term used in first paragraph; add cross-reference to this taxonomy doc
-3. `.github/agents/AGENTS.md`: ensure first paragraph uses "custom agents" formally; no current gap found
-4. `docs/decisions/ADR-006-agent-skills-adoption.md`: confirm the five-layer chain in ADR-006 is consistent with the six-layer formulation here (subdirectory AGENTS.md as explicit intermediate tier)
+1. Root `AGENTS.md` § Fleet Overview: updated VS Code Customization Taxonomy table with 'Roles' as the primitive and the six-layer encoding chain (see Q3 above)
+2. `docs/guides/agents.md`: updated to use 'Roles (VS Code: Custom Agents)' in first paragraph
+3. `.github/agents/AGENTS.md`: Naming Conventions section updated to 'Roles' as canonical; VS Code Custom Agents noted
+4. `docs/decisions/ADR-006-agent-skills-adoption.md`: updated to 'Roles'; six-layer chain confirmed consistent
 
 ---
 

@@ -6,6 +6,7 @@ tools:
   - read
   - edit
   - write
+  - web
   - execute
   - terminal
   - usages

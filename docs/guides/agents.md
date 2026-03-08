@@ -6,7 +6,7 @@ A guide to authoring, using, and extending the VS Code Copilot agent fleet.
 
 ## What Are Agents?
 
-VS Code Copilot custom agents (`.agent.md` files) are reusable, governed AI personas that appear in the Copilot Chat dropdown. Each agent:
+Roles (`.agent.md` files — VS Code: Custom Agents) are reusable, governed AI personas that appear in the Copilot Chat dropdown. Each agent:
 
 - Has a **defined scope and posture** (what it can do and what tools it can use)
 - Reads **endogenous sources** before acting (project docs, existing scripts, session scratchpad)
@@ -223,7 +223,7 @@ Skills extend the encoding inheritance chain to six layers (subdirectory `AGENTS
 MANIFESTO.md              ← foundational axioms
 AGENTS.md (root)          ← operational constraints
 AGENTS.md (subdirectory)  ← narrowing constraints (docs/, .github/agents/)
-.agent.md files           ← role-specific custom agents
+.agent.md files           ← Roles (VS Code: Custom Agents)
 SKILL.md files            ← reusable tactical knowledge
 session behaviour         ← enacted output
 ```

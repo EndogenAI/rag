@@ -1,7 +1,7 @@
 ---
 name: agent-file-authoring
 description: |
-  Encodes the conventions for authoring .agent.md files in .github/agents/: YAML frontmatter requirements, required section headings, relative path rules, cross-reference density, and CI validation. USE FOR: creating or modifying .agent.md custom agent files; diagnosing validate_agent_files.py CI failures; verifying a draft agent file before committing; scaffolding a new agent from template. DO NOT USE FOR: skill authoring (SKILL.md files use a different format — see the agent-customization skill); general VS Code settings questions; MCP server configuration.
+  Encodes the conventions for authoring .agent.md files in .github/agents/: YAML frontmatter requirements, required section headings, relative path rules, cross-reference density, and CI validation. USE FOR: creating or modifying .agent.md role files (VS Code: Custom Agents); diagnosing validate_agent_files.py CI failures; verifying a draft role file before committing; scaffolding a new role from template. DO NOT USE FOR: skill authoring (SKILL.md files use a different format — see the agent-customization skill); general VS Code settings questions; MCP server configuration.
 argument-hint: "role slug for the agent (e.g. executive-docs)"
 ---
 

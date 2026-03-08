@@ -27,7 +27,7 @@ This is the **fetch-before-act** posture. Scouts read cached `.md` files via `re
 
 ## Purpose
 
-This file governs the authoring, review, and maintenance of VS Code Copilot custom agents (`.agent.md` files) in this directory. Every agent in the fleet must comply with both the root `AGENTS.md` and the rules below.
+This file governs the authoring, review, and maintenance of Roles (`.agent.md` files — VS Code: Custom Agents) in this directory. Every agent in the fleet must comply with both the root `AGENTS.md` and the rules below.
 
 ---
 
@@ -232,7 +232,7 @@ Step-by-step process here.
 
 ## Naming Conventions
 
-**Canonical term**: Files in this directory are **custom agents** — the VS Code upstream term since v1.106 (previously "custom chat modes"). Use "custom agents" in all documentation; never "chat modes" or "personas" as a standalone term. The full three-primitive taxonomy (fleet constraints / custom agents / Agent Skills) is defined in the [root `AGENTS.md` → VS Code Customization Taxonomy](../../AGENTS.md#vs-code-customization-taxonomy) section.
+**Canonical term**: Files in this directory are **Roles** — the EndogenAI endogenous term for VS Code Custom Agents (`.agent.md` files, the VS Code upstream term since v1.106, previously "custom chat modes"). Use **"Roles"** in project documentation. When referring specifically to the VS Code tooling mechanism, "Custom Agents" is also correct. Never use "chat modes" or "personas" as standalone terms. The full three-primitive taxonomy (fleet constraints / Roles / Agent Skills) is defined in the [root `AGENTS.md` → VS Code Customization Taxonomy](../../AGENTS.md#vs-code-customization-taxonomy) section.
 
 ### Convention Propagation Rule
 

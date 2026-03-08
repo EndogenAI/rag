@@ -8,7 +8,7 @@
 
 ## Context
 
-The VS Code customization stack has three first-class primitives: always-on instructions (`.instructions.md`), custom agents (`.agent.md`), and skills (`SKILL.md`). This repository has deployed agents and always-on instructions but has not adopted skills, leaving the fleet with a three-primitive gap. Workflow procedures — session management, research sprint orchestration, conventional commit conventions — are currently embedded in agent bodies or distributed across `docs/guides/`. This creates two problems:
+The VS Code customization stack has three first-class primitives: always-on instructions (`.instructions.md`), Roles (`.agent.md`; VS Code: Custom Agents), and skills (`SKILL.md`). This repository has deployed agents and always-on instructions but has not adopted skills, leaving the fleet with a three-primitive gap. Workflow procedures — session management, research sprint orchestration, conventional commit conventions — are currently embedded in agent bodies or distributed across `docs/guides/`. This creates two problems:
 
 1. **Duplication and drift**: A procedure embedded in an agent body cannot be reused by another agent or by a non-VS-Code tool (Copilot CLI, Claude Code) without copying. When the procedure changes, every copy must be updated.
 2. **Token inefficiency**: Procedures carried in always-on instructions or large agent bodies are loaded on every request, regardless of relevance. This violates the *Algorithms Before Tokens* axiom from [`MANIFESTO.md`](../../MANIFESTO.md): interactive token burn for knowledge that could be encoded once and loaded on demand.
@@ -22,7 +22,7 @@ Skills extend the encoding inheritance chain from four layers to six (adding bot
 | `MANIFESTO.md` | Constitution | Foundational axioms |
 | `AGENTS.md` (root) | Operational constraints | Behavioural translation |
 | **`AGENTS.md` (subdirectory)** | **Narrowing constraints** | **Scope-specific rules for `docs/`, `.github/agents/`, etc.** |
-| `.agent.md` files | Custom agents | Role-specific persona and capabilities |
+| `.agent.md` files | Roles (VS Code: Custom Agents) | Role-specific persona and capabilities |
 | **`SKILL.md` files** | **Skill procedures** | **Reusable tactical knowledge** |
 | Session behaviour | Enactment | Observable output |
 
