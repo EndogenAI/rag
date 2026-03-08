@@ -15,15 +15,15 @@ Clarify the three-entity taxonomy of the VS Code customization stack — `AGENTS
 
 ## Phase Plan
 
-### Phase 1 — Targeted Research Sprint ⬜
+### Phase 1 — Targeted Research Sprint ✅
 **Agent**: Executive Researcher
 **Deliverables**:
-- `docs/research/agent-taxonomy.md` (Status: Final)
-- Recommendation on naming: what to call `.agent.md` VS Code custom agents (e.g. "custom agents", "personas", "modes", "cv-agents")
-- Clarity on the AGENTS.md vs .agent.md vs SKILL.md boundary
+- `docs/research/agent-taxonomy.md` (Status: Final) — commit `2a5c875` ✅
+- Recommendation on naming: **"custom agents"** is the canonical VS Code term ✅
+- Clarity on the AGENTS.md vs .agent.md vs SKILL.md boundary ✅
 **Depends on**: nothing
 **Gate**: Phase 2 does not start until research doc committed and Status: Final
-**Status**: ⬜ Not started
+**Status**: ✅ Complete — 2026-03-07
 
 ### Phase 2 — Documentation Update ⬜
 **Agent**: Executive Docs
