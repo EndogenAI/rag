@@ -218,6 +218,7 @@ Rules:
 - The **Executive is the sole integration point** — it alone reads the full scratchpad to synthesise findings across all agents. Subagents do not read laterally.
 - The executive **reads today's session file first** before delegating to avoid re-discovering context another agent already gathered.
 - At session end, the executive writes a `## Session Summary` section so the next session starts with an orientation point.
+- At session end, the executive **posts a progress comment** on every GitHub issue that was actively worked during the session — summarising what phase completed, what was committed, and what comes next. Use `gh issue comment <num> --body-file <path>`. This is a non-negotiable close step, same as writing the Session Summary.
 - Use the active session file for inter-agent handoff notes, gap reports, and aggregated sub-agent results.
 
 ### Focus-on-Descent / Compression-on-Ascent
@@ -269,6 +270,7 @@ Any command that creates or modifies a remote side effect must be immediately fo
 | `gh issue close` | `gh issue view <number>` |
 | `gh issue edit <num>` | `gh issue view <num> --json labels,milestone` |
 | milestone create via API | `gh api repos/:owner/:repo/milestones` |
+| `gh issue comment` (session-end update) | `gh issue view <num> --json comments -q '.comments[-1].body[:80]'` |
 
 **Zero error output is not confirmation of success.** Output truncation, network timeouts, and silent API failures all produce clean exits. Always verify.
 
