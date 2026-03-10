@@ -204,6 +204,56 @@ gh api graphql -f query='
 
 ---
 
+## GitHub Actions Runs
+
+For agents waiting on CI completion after a `git push` or similar, use the dedicated polling script instead of manual bash loops:
+
+```bash
+# Simple case: wait for most recent run on current branch
+uv run python scripts/wait_for_github_run.py $(gh run list --limit 1 -q '.[0].databaseId')
+
+# With explicit timeout (default: 150s = 2.5 minutes)
+uv run python scripts/wait_for_github_run.py 22890618155 --timeout-secs 300
+
+# Custom repo
+uv run python scripts/wait_for_github_run.py 12345 --repo other/repo
+```
+
+**Exit codes**:
+- `0` — Run completed with conclusion="success"
+- `1` — Run completed with conclusion="failure" or timeout reached
+- `2` — Run not found or invalid run ID
+
+**Why the script?** Manual polling via shell loops is error-prone (exit code capture, JSON parsing, timeout handling). The [`scripts/wait_for_github_run.py`](../../scripts/wait_for_github_run.py) script encodes:
+- Robust JSON parsing via `gh run view --json`
+- Configurable timeout and polling interval
+- Clear progress reporting
+- Correct exit code semantics (success=0, failure=1, not found=2)
+
+**Polling internals** (for debugging):
+
+```bash
+# Get run status directly
+gh run view <run-id> --json status,conclusion
+
+# Watch logs in real-time (alternative to scripting)
+gh run view <run-id> --log
+
+# List runs on a branch
+gh run list --branch <branch-name> --limit 5
+```
+
+### Known Failure Modes — Runs
+
+| Mode | Symptom | Fix |
+|------|---------|-----|
+| `databaseId` vs `number` confusion | Script returns "not found" | Use `databaseId` (internal GitHub ID) not `number` (user-facing ID) |
+| Timeout too short for cold starts | Timeout reached before run completes | Increase `--timeout-secs` (default 150s safe for most tests) |
+| Manual polling loses progress | No record of poll attempts | Use the script to get timestamped progress output |
+| Zero exit code implies success | Script exited cleanly but run failed | Always check `gh run view` conclusion after script returns |
+
+---
+
 ## Setup Checklist (New Contributor / New Machine)
 
 - [ ] `gh auth login`

@@ -194,7 +194,8 @@ Long-running terminal operations (model downloads, container startup, test suite
 | Container startup (with healthcheck) | poll health check | 30 × 5 s |
 | Ollama model pull (3B–8B) | poll | 15 min total |
 | Ollama daemon startup | poll health check | 10 × 3 s |
-| `gh` CLI operations | blocking | 30 s |
+| `gh` CLI operations (quick) | blocking | 30 s |
+| GitHub Actions run polling | poll | 2.5–10 min (use [`scripts/wait_for_github_run.py`](scripts/wait_for_github_run.py)) |
 
 ### Service Readiness Checks
 
@@ -214,7 +215,9 @@ After launching a service, verify health via its status API — do not treat a z
 - **Surface to user** with: command that failed, exit code or "timeout", last output lines, suggested next step.
 - **Never** silently swallow a failure and proceed to the next step.
 
-For a full pattern reference including polling algorithms, observable status APIs, and a script candidate spec for `wait_for_service.py`, see [`docs/research/async-process-handling.md`](docs/research/async-process-handling.md).
+**Canonical example — GitHub Actions run polling**: [`scripts/wait_for_github_run.py`](scripts/wait_for_github_run.py) encodes the full polling pattern for CI runs. After `git push`, use this script to wait for the run to complete instead of ad-hoc bash polling. Exit codes are semantically clean: 0 = success, 1 = failure or timeout, 2 = run not found.
+
+For a full pattern reference including polling algorithms, observable status APIs, and detailed timeout guidance, see [`docs/research/async-process-handling.md`](docs/research/async-process-handling.md).
 
 ---
 
