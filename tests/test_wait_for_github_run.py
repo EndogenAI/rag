@@ -1,10 +1,9 @@
 """Tests for wait_for_github_run.py."""
 
-import pytest
-from unittest.mock import patch, MagicMock
+import os
 import subprocess
 import sys
-import os
+from unittest.mock import MagicMock, patch
 
 # Add scripts directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
@@ -68,8 +67,6 @@ class TestGetRunStatus:
     @patch("subprocess.run")
     def test_get_run_status_timeout(self, mock_run):
         """Test handling of timeout during status fetch."""
-        import subprocess
-
         mock_run.side_effect = subprocess.TimeoutExpired("cmd", 10)
         status, conclusion = get_run_status("12345", "owner/repo")
         assert status is None
