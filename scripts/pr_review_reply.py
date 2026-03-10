@@ -61,9 +61,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+from scripts.capability_gate import requires_capability, set_agent_context
 
 # ---------------------------------------------------------------------------
 # GitHub API helpers
@@ -90,6 +93,7 @@ def detect_repo() -> str:
     return out
 
 
+@requires_capability("github_api")
 def post_reply(repo: str, pr: int, comment_id: int, body: str) -> bool:
     """Post a reply to an inline review comment. Returns True on success."""
     payload = json.dumps({"in_reply_to": comment_id, "body": body})
@@ -109,6 +113,7 @@ def post_reply(repo: str, pr: int, comment_id: int, body: str) -> bool:
     return False
 
 
+@requires_capability("github_api")
 def resolve_thread(thread_node_id: str) -> bool:
     """Resolve a PR review thread by its GraphQL node ID. Returns True on success."""
     mutation = json.dumps(
@@ -200,6 +205,12 @@ def main() -> None:
         default=None,
         help="Repository in owner/repo format. Defaults to current repo.",
     )
+    parser.add_argument(
+        "--agent",
+        metavar="<name>",
+        default=None,
+        help="Agent context (derives from COPILOT_AGENT_ID env var if not set).",
+    )
 
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument(
@@ -227,6 +238,16 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    # Set agent context from env var or argument; error if neither provided
+    agent_context = args.agent or os.environ.get("COPILOT_AGENT_ID")
+    if not agent_context:
+        print(
+            "Error: Agent context not provided. Set --agent or COPILOT_AGENT_ID env var.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    set_agent_context(agent_context)
 
     # Resolve repo and PR
     repo = args.repo or detect_repo()
