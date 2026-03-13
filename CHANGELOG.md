@@ -1,45 +1,133 @@
-# Changelog
+# 0.1.0 (2026-03-13)
 
-All notable changes to this project will be documented in this file.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-This project does not yet use semantic versioning — entries are date-grouped until a v1.0 tag is established.
+### Bug Fixes
 
----
+* add endogenous sources to shifting-constraints-from-tokens.md ([34628d8](https://github.com/EndogenAI/dogma/commit/34628d8fac7d8c97c5ac599fc5c7b185d53dd1d5))
+* add required YAML frontmatter to specialist agents (tools, handoffs) ([3b2aee6](https://github.com/EndogenAI/dogma/commit/3b2aee6ee37164a62504501c6792a2000b3b1885))
+* address 10 review comments from PR [#153](https://github.com/EndogenAI/dogma/issues/153) ([70b3a4c](https://github.com/EndogenAI/dogma/commit/70b3a4cab64e736df32f20c4a9c474cae5da4d45))
+* address Copilot review comments and CI failures on PR [#199](https://github.com/EndogenAI/dogma/issues/199) ([aad53d4](https://github.com/EndogenAI/dogma/commit/aad53d4b76cd5682ac87643f6d32e2ce3ce9ed5a)), closes [#2920271870](https://github.com/EndogenAI/dogma/issues/2920271870) [#2920271912](https://github.com/EndogenAI/dogma/issues/2920271912) [#2920272032](https://github.com/EndogenAI/dogma/issues/2920272032) [#2920272078](https://github.com/EndogenAI/dogma/issues/2920272078) [#2920272059](https://github.com/EndogenAI/dogma/issues/2920272059) [#2920271974](https://github.com/EndogenAI/dogma/issues/2920271974) [#292027](https://github.com/EndogenAI/dogma/issues/292027) [#292027](https://github.com/EndogenAI/dogma/issues/292027)
+* address Copilot review comments and CI failures on PR [#58](https://github.com/EndogenAI/dogma/issues/58) ([dfafaaa](https://github.com/EndogenAI/dogma/commit/dfafaaaa6cf71a2a8cb6b5c47bd15a4169708fce))
+* address Copilot review feedback on PR [#141](https://github.com/EndogenAI/dogma/issues/141) — consolidate Session History, add metaphor citation, add client-values context, fix BDI heading hierarchy ([7684b5a](https://github.com/EndogenAI/dogma/commit/7684b5ad8a094470b4cdbbf66c37707f0df3f19b))
+* address ruff E501 line-too-long in test_remaining_scripts.py ([37d4883](https://github.com/EndogenAI/dogma/commit/37d48830ed50e9c6d849fc09293b58be63888122))
+* **agents:** address Copilot review — standardise Review Output heading, fix per-phase sequence, YAML block scalar, gate summary, title casing ([71d0593](https://github.com/EndogenAI/dogma/commit/71d0593fd26fa8e5b8815422d8bbad79fa0131fd))
+* **agents:** address PR [#46](https://github.com/EndogenAI/dogma/issues/46) review comments ([c86c259](https://github.com/EndogenAI/dogma/commit/c86c2592dd1dacb5dce259e9f5aa64020b6dc1e0))
+* **agents:** address review 3911940826 — 5 guardrail/label corrections ([4444ecf](https://github.com/EndogenAI/dogma/commit/4444ecf21a67656bf04c4d4b27c49e4bd065b571))
+* **agents:** fleet audit fixes — orchestrator tools normalised, review.agent.md path corrected ([0258d5e](https://github.com/EndogenAI/dogma/commit/0258d5e73d619b86782ac29791894c016de0ec7b)), closes [#64](https://github.com/EndogenAI/dogma/issues/64)
+* **ci:** add theatlantic.com As-We-May-Think to lycheeignore (503 from CI runners) ([3fed803](https://github.com/EndogenAI/dogma/commit/3fed80360409cedc1fb0339df639e27f42b403c6))
+* **ci:** address PR [#110](https://github.com/EndogenAI/dogma/issues/110) Copilot review — lint, broken links, axiom refs, drift advisory ([26a3764](https://github.com/EndogenAI/dogma/commit/26a3764728a38387c66cd774a6556dedcf73959c))
+* **ci:** enforce pre-commit checks before commit; fix CI failures ([82e6812](https://github.com/EndogenAI/dogma/commit/82e6812cdc7939266eb49a6b1740cf859b6059db))
+* **ci:** PR [#244](https://github.com/EndogenAI/dogma/issues/244) review remediation — lychee, gitignore, weave_links parser, stale messages, label-sync format, release-drafter, export --fields, fleet governs: annotations ([d51b131](https://github.com/EndogenAI/dogma/commit/d51b13132a376b2e8a375e0cafe1ec971576678a)), closes [#245](https://github.com/EndogenAI/dogma/issues/245) [#245](https://github.com/EndogenAI/dogma/issues/245) [#245](https://github.com/EndogenAI/dogma/issues/245)
+* **ci:** resolve ruff W291/I001/F401 linting errors in capability_gate + pr_review_reply ([b01133a](https://github.com/EndogenAI/dogma/commit/b01133ab98ca54c5ccc9dde0f8f46ac357c57f22))
+* **ci:** ruff format test_capability_gate.py ([a257c83](https://github.com/EndogenAI/dogma/commit/a257c83c93b524ab0f46e95c2fdf642ed9eb4448))
+* clean up unused imports in test_wait_for_github_run.py ([7ae2b46](https://github.com/EndogenAI/dogma/commit/7ae2b46364026cd181a252052bc33574e3cd27da))
+* correct rationale_summary regex pattern in handoff permeability script ([d1ff419](https://github.com/EndogenAI/dogma/commit/d1ff419502814b5a1508434673559e2b1afee213))
+* correct relative links in research frontmatter references ([66fbe83](https://github.com/EndogenAI/dogma/commit/66fbe835b36f2d69969aa79bedfc5fef880d765b))
+* correct relative links in session-checkpoint-and-safeguard-patterns.md ([2397f3a](https://github.com/EndogenAI/dogma/commit/2397f3a96450558719ea112c10e33db70cfc319f))
+* correct signal detection patterns and test fixtures for Phase 3b ([591a695](https://github.com/EndogenAI/dogma/commit/591a69566e4b2a4d23ee6a1bc5e0e3194c832f5b))
+* correct type hint from callable to Callable in validate_handoff_permeability.py ([ab2068e](https://github.com/EndogenAI/dogma/commit/ab2068ee5d145dec3a24902711e22fabb515899e))
+* **docs:** correct broken relative paths for .github/ refs in new docs ([cc06f9a](https://github.com/EndogenAI/dogma/commit/cc06f9a13ed109a382019a0fba3cede2e55c6993)), closes [#63](https://github.com/EndogenAI/dogma/issues/63)
+* **docs:** correct Endogenous-First F4 gate status in [4,1] audit ([7f9f089](https://github.com/EndogenAI/dogma/commit/7f9f08961b8cdb06389b6a8836266b0f12c4522c)), closes [#53](https://github.com/EndogenAI/dogma/issues/53)
+* **docs:** correct grep alternation syntax for UTF-8 validation ([68c73fb](https://github.com/EndogenAI/dogma/commit/68c73fba5f4b0e0fc822ef03661113265109b769))
+* **generate_sweep_table:** time-relative recency; fix workflows.md CLI example ([0a914d6](https://github.com/EndogenAI/dogma/commit/0a914d68d83f0181e0fb0f2d818b9230877fee20)), closes [#208](https://github.com/EndogenAI/dogma/issues/208)
+* **manifesto,plans:** address PR [#89](https://github.com/EndogenAI/dogma/issues/89) review comments ([ba96148](https://github.com/EndogenAI/dogma/commit/ba96148961a72f9602e64cb28dd091a21f474b6b))
+* **plans:** restore missing Phase 6 heading in value-encoding-fidelity workplan ([7563765](https://github.com/EndogenAI/dogma/commit/756376510d6f93602ccd23db31205814c4c7c6d6))
+* **pr-review:** address Copilot review [#3911133661](https://github.com/EndogenAI/dogma/issues/3911133661) on PR [#63](https://github.com/EndogenAI/dogma/issues/63) ([fc85411](https://github.com/EndogenAI/dogma/commit/fc854111694aeff18e73ad7fc338dccfd00ce174))
+* **research:** [#190](https://github.com/EndogenAI/dogma/issues/190) — correct section numbering (gaps & duplicates) ([7c873ac](https://github.com/EndogenAI/dogma/commit/7c873ace138b84a0f352fb1f3bf2a99ead0edb42))
+* **research:** [#190](https://github.com/EndogenAI/dogma/issues/190) — correct section numbering D4 compliance ([c1cb560](https://github.com/EndogenAI/dogma/commit/c1cb560d46e13dd271331c7a85b95f9175f7bb40))
+* **research:** [#191](https://github.com/EndogenAI/dogma/issues/191) — add MANIFESTO axiom citations + expand substrate inventory ([568700f](https://github.com/EndogenAI/dogma/commit/568700ff9917b28dbcf6a35f42ea7799b57535e7))
+* **research:** [#191](https://github.com/EndogenAI/dogma/issues/191) — correct section numbering (duplicate § 3) ([127c4ca](https://github.com/EndogenAI/dogma/commit/127c4cab32eced2dbe4cf32f95a51d836a1f6b29))
+* **research:** add canonical example + anti-pattern to dogma-neuroplasticity Pattern Catalog [[#82](https://github.com/EndogenAI/dogma/issues/82)] ([e598582](https://github.com/EndogenAI/dogma/commit/e5985826534985422d38f863cc4f5555dd53f946))
+* **research:** address PR [#111](https://github.com/EndogenAI/dogma/issues/111) review comments — manifest metric operationalize, validate_session CI target, shell injection guard, workplan session note ([0eedb4d](https://github.com/EndogenAI/dogma/commit/0eedb4ddc76f067074bf2041ac13e56acf0ef5e8))
+* **research:** address PR [#87](https://github.com/EndogenAI/dogma/issues/87) review comments ([226361a](https://github.com/EndogenAI/dogma/commit/226361a154796751edec68789669c50dc8e1b1ca))
+* resolve broken links in six-layer-topological-extension.md ([a2b3eed](https://github.com/EndogenAI/dogma/commit/a2b3eed953bfd9b6e179000e4a69d0b2f211daaa))
+* resolve linting errors in seed_action_items.py ([e16e257](https://github.com/EndogenAI/dogma/commit/e16e257533efcbb988cb59fa8388e3420e0edc2f))
+* resolve regex error in validate_handoff_permeability verdict pattern ([3899da9](https://github.com/EndogenAI/dogma/commit/3899da9696346bdc5aeab8355e43a0cc2d63f3db))
+* **review:** address Copilot PR [#109](https://github.com/EndogenAI/dogma/issues/109) comments — remove unused import, add output error handling, gate env-specific test, align doc/README to actual behavior [[#82](https://github.com/EndogenAI/dogma/issues/82)] ([bcc96c8](https://github.com/EndogenAI/dogma/commit/bcc96c8339b527c83b9c818b2b4902a8b0b39ea4))
+* **review:** address Copilot review comments on PR [#92](https://github.com/EndogenAI/dogma/issues/92) — threshold, grep scope, FSM guards, AGENTS.md column label, workplan headings ([898c2f1](https://github.com/EndogenAI/dogma/commit/898c2f1fadaa21040b39dccf2ce844393f452fdf))
+* **review:** address PR [#61](https://github.com/EndogenAI/dogma/issues/61) Copilot review comments ([d0ef94e](https://github.com/EndogenAI/dogma/commit/d0ef94e62210666a7fd34f4362e48f1089584b58))
+* **review:** address PR [#63](https://github.com/EndogenAI/dogma/issues/63) review findings — CI skills gate, 5-layer chain, D4 headings, metric alignment, CLI test [#60](https://github.com/EndogenAI/dogma/issues/60) ([19a2a2c](https://github.com/EndogenAI/dogma/commit/19a2a2c11f842ef3d0eb35e519d41dc1c7636967))
+* ruff format pass and correct GitHub MCP server URL ([8c94dcc](https://github.com/EndogenAI/dogma/commit/8c94dcce62d28cf4d8cffb42bc17499f84614866))
+* ruff lint violations in scripts/ and tests/ — 108 errors resolved ([0e929d4](https://github.com/EndogenAI/dogma/commit/0e929d4638a7e64f70ffd2989655b30d0a2e3267))
+* **scripts,agents:** address Copilot PR [#77](https://github.com/EndogenAI/dogma/issues/77) review comments ([357f85a](https://github.com/EndogenAI/dogma/commit/357f85a8f60c133f47057d9dd0279dad9efffe6a))
+* **scripts:** add MANIFESTO.md citations and [@pytest](https://github.com/pytest).mark.io to capability_gate ([ce38f4e](https://github.com/EndogenAI/dogma/commit/ce38f4eddabdc1326c5f972ac4c76f013fdfdb12))
+* **scripts:** address Copilot review comments on PR [#91](https://github.com/EndogenAI/dogma/issues/91) ([ab4e31c](https://github.com/EndogenAI/dogma/commit/ab4e31c788964a0ceb0a4c75c4dd81c39e249f0a))
+* **scripts:** address PR [#90](https://github.com/EndogenAI/dogma/issues/90) Copilot review — 8 issues across 4 files ([84cb9c0](https://github.com/EndogenAI/dogma/commit/84cb9c033e84bd2030a64911c282081f534d38bb))
+* **scripts:** address Review security blockers in weave_links.py ([b11e26c](https://github.com/EndogenAI/dogma/commit/b11e26c5720ad2444ad8a0a46ed6a5448823ecf9))
+* **scripts:** correct _resolve_safe docstring; mark Phase 1A complete in workplan ([20b9270](https://github.com/EndogenAI/dogma/commit/20b9270bc75fa8b38ea040f837ff7051d1374174))
+* **scripts:** skip links inside inline code spans in check_doc_links.py ([9546088](https://github.com/EndogenAI/dogma/commit/9546088cfe2ef7c17783b0c5f88bbf7ed9d36155))
+* sort imports in pr_review_reply.py for ruff compliance ([f6d207a](https://github.com/EndogenAI/dogma/commit/f6d207a5cc7ac9b46ec7c29f60ae382df73c1429))
+* **test:** remove unused pytest import in test_scan_research_links ([#59](https://github.com/EndogenAI/dogma/issues/59)) ([551a240](https://github.com/EndogenAI/dogma/commit/551a24000c004c8e19de98c179b3a8a6615d9771))
+* **tests:** add missing [@pytest](https://github.com/pytest).mark.io to fixture-based file I/O tests ([50d4656](https://github.com/EndogenAI/dogma/commit/50d46566f67b6767876231639ae22c269920d124))
+* **tests:** add missing [@pytest](https://github.com/pytest).mark.io/[@pytest](https://github.com/pytest).mark.integration markers; align T2 requires_adr in spec [[#82](https://github.com/EndogenAI/dogma/issues/82)] ([d52e1f6](https://github.com/EndogenAI/dogma/commit/d52e1f61a7aa1cb39156e3475338c48fb3b61a4d))
 
-## [Unreleased]
 
-### Added
+### Features
 
-- Research sprint deliverables: testing tools & frameworks, dev workflow automations, OSS documentation best practices, PM & team structures (issues #16–#19)
-- Research seed deliverables: product research & design methodologies, comms/marketing/bizdev (issues #20–#21)
-- `validate_synthesis.py` — D4 validation gate for research synthesis documents
-- `migrate_agent_xml.py` — batch XML-format migration for agent instruction files
-- `scaffold_agent.py` — scaffold new agent files from template
-- `scaffold_workplan.py` — scaffold structured workplan docs
-- `pr_review_reply.py` — generalized PR review reply and resolve script
-- Scratchpad isolation pattern: branch-slug subdirectories under `.tmp/`
-- Comprehensive pytest suite with CI/CD gating (`tests/`)
-- Heredoc guardrail encoded in all `AGENTS.md` files
-- This `CHANGELOG.md`
+* **#119:** extend query_docs.py with toolchain and skills scopes + tests ([c183198](https://github.com/EndogenAI/dogma/commit/c183198e89591c9f06e974f17f45a185fd3a3db9)), closes [#119](https://github.com/EndogenAI/dogma/issues/119)
+* **#120:** complete weave_links.py with --dry-run, idempotency guard, and --scope-filter ([3daf045](https://github.com/EndogenAI/dogma/commit/3daf045acab10699750bf53851e876517bf94cd4)), closes [#120](https://github.com/EndogenAI/dogma/issues/120)
+* **#127:** add Core Layer Impermeability citation-order check to validate_agent_files.py ([2d5f2d5](https://github.com/EndogenAI/dogma/commit/2d5f2d559fd7fcfa098b50103d4aaa1648648e1d)), closes [#127](https://github.com/EndogenAI/dogma/issues/127)
+* add phase-3 deliverables — strategic roadmap, 90-day workplan, specialist agents ([3110e0e](https://github.com/EndogenAI/dogma/commit/3110e0e2af1d852e0cba8f6844e125a47d5f459c))
+* add wait_for_github_run.py polling script with async test suite ([cd688f6](https://github.com/EndogenAI/dogma/commit/cd688f647d9ca0c5ac153344f74e5d9f11c7c65f)), closes [#150](https://github.com/EndogenAI/dogma/issues/150)
+* **agents:** add B5, D5, A5, D4 agent files — implements [#67](https://github.com/EndogenAI/dogma/issues/67), [#68](https://github.com/EndogenAI/dogma/issues/68), unblocked A5+D4 ([d416bf9](https://github.com/EndogenAI/dogma/commit/d416bf9ed893b19ca0835a0732ccd98c338301e7))
+* **agents:** add context window alert protocol to executive orchestrator ([27d220d](https://github.com/EndogenAI/dogma/commit/27d220d3900bf8d673434b8aa0d9065f5aea30c5))
+* **agents:** add delegation-routing and phase-gate-sequence skills; research docs for Phase 6 [[#79](https://github.com/EndogenAI/dogma/issues/79) [#81](https://github.com/EndogenAI/dogma/issues/81) [#72](https://github.com/EndogenAI/dogma/issues/72)] ([c533869](https://github.com/EndogenAI/dogma/commit/c53386904658a21bffca31646b330e15d3e58393))
+* **agents:** add Executive Orchestrator, Planner, Fleet, and PM agents ([69c921c](https://github.com/EndogenAI/dogma/commit/69c921ca27773445f53ccf380972427c89dea7c1))
+* **agents:** add inter-phase Review gate to orchestration workflow ([e5d92b5](https://github.com/EndogenAI/dogma/commit/e5d92b5ece1ecd45b07be8a9aa07ee3234749276))
+* **agents:** add Phase A adopt-now fleet agents (A1, A2, B1, D1) ([5d601c5](https://github.com/EndogenAI/dogma/commit/5d601c53b10970d2b7ca9a3177ac07ea53ee2c69)), closes [#33](https://github.com/EndogenAI/dogma/issues/33) [#41](https://github.com/EndogenAI/dogma/issues/41) [#42](https://github.com/EndogenAI/dogma/issues/42) [#44](https://github.com/EndogenAI/dogma/issues/44)
+* **agents:** add Phase B investigate-tier fleet agents (A3, A4, B2-B4, C1-C2, D2-D3) ([56a8658](https://github.com/EndogenAI/dogma/commit/56a86583420355a5755909ba87d29973a79a9b5a)), closes [#41](https://github.com/EndogenAI/dogma/issues/41) [#42](https://github.com/EndogenAI/dogma/issues/42) [#43](https://github.com/EndogenAI/dogma/issues/43) [#44](https://github.com/EndogenAI/dogma/issues/44)
+* **agents:** add pre-review grep sweep step to executive-orchestrator per-phase sequence ([7337d9a](https://github.com/EndogenAI/dogma/commit/7337d9ae4f3c86ffe9299486b49c7c529f494d79))
+* **agents:** add research fleet, docs executive, review, github, and scaffold script ([c19931f](https://github.com/EndogenAI/dogma/commit/c19931fd0adffcafd7aebc6660b6b9f2e38f7dff))
+* **agents:** add runtime capability gates and audit logging ([9e3af73](https://github.com/EndogenAI/dogma/commit/9e3af73c2c16ec535e7994144e6e3cc25c8a9b8f)), closes [#155](https://github.com/EndogenAI/dogma/issues/155)
+* **agents:** implement Tier 2 skills backlog — 5 SKILL.md files closes [#62](https://github.com/EndogenAI/dogma/issues/62) ([204403c](https://github.com/EndogenAI/dogma/commit/204403cced881bbd6635730650901b135b02f63b))
+* **agents:** Phase 2 taxonomy codification — .github/agents/AGENTS.md, skill-authoring skill, fleet README, scaffold_agent, issue discipline guide ([9c6445f](https://github.com/EndogenAI/dogma/commit/9c6445ffa1b14400e838c9c6337d41dbd5e40ac4)), closes [#64](https://github.com/EndogenAI/dogma/issues/64)
+* **agents:** scaffold 3 SKILL.md files and extend validate_agent_files --skills — Phase 3 [#60](https://github.com/EndogenAI/dogma/issues/60) ([be4d7c0](https://github.com/EndogenAI/dogma/commit/be4d7c0132ac75fb7978567f1d249d09db13a44d))
+* **agents:** strengthen orchestrator delegation-first and compaction discipline ([5017000](https://github.com/EndogenAI/dogma/commit/5017000be59a7a3138b334f3b8bc25dd3df854d5))
+* **ci:** add check_doc_links pre-commit hook to catch broken relative paths ([bd26610](https://github.com/EndogenAI/dogma/commit/bd266102bc79e41a66b1d738e0ad75163deffe05))
+* **ci:** add Governor B runtime heredoc governor — .envrc + setup guide (closes [#159](https://github.com/EndogenAI/dogma/issues/159)) ([21a3c52](https://github.com/EndogenAI/dogma/commit/21a3c52dc1815202f69c7be5e969412b82e33489))
+* **ci:** add no-heredoc-writes pre-commit governor hook ([b0dc37c](https://github.com/EndogenAI/dogma/commit/b0dc37c93793186cca7fb3a741b2369492965b70))
+* **ci:** add unblock-issues workflow; add wave1 workplan ([a2f95b3](https://github.com/EndogenAI/dogma/commit/a2f95b3f36fc27c4f709d7d070b9b90d33b18896)), closes [#60](https://github.com/EndogenAI/dogma/issues/60) [#60](https://github.com/EndogenAI/dogma/issues/60)
+* **ci:** enable audit-provenance workflow on pull requests ([00fa6f6](https://github.com/EndogenAI/dogma/commit/00fa6f604e7c1e30543a8fd54982d21673b57528))
+* **ci:** implement GitHub automation workflows — label-sync, changelog, release-drafter, stale fix ([#215](https://github.com/EndogenAI/dogma/issues/215) [#216](https://github.com/EndogenAI/dogma/issues/216) [#217](https://github.com/EndogenAI/dogma/issues/217) [#219](https://github.com/EndogenAI/dogma/issues/219) [#220](https://github.com/EndogenAI/dogma/issues/220)) ([b557e61](https://github.com/EndogenAI/dogma/commit/b557e61c6fdc4a21781f84e6736bbefc1cf12150))
+* **ci:** implement GitHub PM setup (issue [#22](https://github.com/EndogenAI/dogma/issues/22) R1-R6) ([#28](https://github.com/EndogenAI/dogma/issues/28)) ([ced0d18](https://github.com/EndogenAI/dogma/commit/ced0d18ca7e20c8b285144fb6652d1d91c7bb05e)), closes [#1](https://github.com/EndogenAI/dogma/issues/1) [#4](https://github.com/EndogenAI/dogma/issues/4) [#1](https://github.com/EndogenAI/dogma/issues/1) [-#3](https://github.com/-/issues/3) [#29](https://github.com/EndogenAI/dogma/issues/29) [#30](https://github.com/EndogenAI/dogma/issues/30) [#29](https://github.com/EndogenAI/dogma/issues/29) [#30](https://github.com/EndogenAI/dogma/issues/30)
+* **docs:** expand toolchain substrate to uv, ruff, git, pytest ([#35](https://github.com/EndogenAI/dogma/issues/35)) ([8e271c2](https://github.com/EndogenAI/dogma/commit/8e271c2b1a612cd425c53963ec28d64127fe947f))
+* **docs:** toolchain API docs substrate — gh CLI reference + automation ([9cbd92e](https://github.com/EndogenAI/dogma/commit/9cbd92eaa21687cbf83093be597d5d2fb19aa55e)), closes [#34](https://github.com/EndogenAI/dogma/issues/34)
+* **fleet:** finalize executive privilege model and interconnections ([641b6c6](https://github.com/EndogenAI/dogma/commit/641b6c69a1db44c39c9a0450c22478d7142390e1))
+* implement research findings sprint — closes [#23](https://github.com/EndogenAI/dogma/issues/23), [#27](https://github.com/EndogenAI/dogma/issues/27), [#25](https://github.com/EndogenAI/dogma/issues/25) R1-R6 ([88425fc](https://github.com/EndogenAI/dogma/commit/88425fca2267250d25b7c87c227c2a3dae400c41))
+* initial repo structure with manifesto, agents, scripts, and docs ([12f8382](https://github.com/EndogenAI/dogma/commit/12f8382bf74e514be69953642a92a5fb17d2692d))
+* **plans:** Add issue [#192](https://github.com/EndogenAI/dogma/issues/192) to Phase 4 — Workflow Formula Encoding DSL (Phase 4→5 bridge) ([e470e4e](https://github.com/EndogenAI/dogma/commit/e470e4e1bad86e04405f79e8f1bbabacb0d94694))
+* **plans:** Phase 4 research planning — foundational theory topics ([#189](https://github.com/EndogenAI/dogma/issues/189) [#190](https://github.com/EndogenAI/dogma/issues/190) [#191](https://github.com/EndogenAI/dogma/issues/191)) ([d16e260](https://github.com/EndogenAI/dogma/commit/d16e26061758af48203b20456049ec24a26bfa0b))
+* **research:** Phase 0 infrastructure — manifest scripts, bibliography, deep-research workflow ([#59](https://github.com/EndogenAI/dogma/issues/59)) ([db6be8a](https://github.com/EndogenAI/dogma/commit/db6be8a59905adc1045287595e9ac364df02d28a))
+* **research:** Phase 2a values encoding empirics ([#179](https://github.com/EndogenAI/dogma/issues/179) [#169](https://github.com/EndogenAI/dogma/issues/169) [#178](https://github.com/EndogenAI/dogma/issues/178)) ([2fda3cc](https://github.com/EndogenAI/dogma/commit/2fda3cc2f6db5431140951639890319b800a7c70))
+* **research:** Phase 2b conflict resolution framework + hermeneutics guide ([#177](https://github.com/EndogenAI/dogma/issues/177) [#176](https://github.com/EndogenAI/dogma/issues/176)) ([d079a83](https://github.com/EndogenAI/dogma/commit/d079a839110717e74f208b48f514d0f93dfa712d))
+* **research:** Phase 3a foundational theory — HBT, topology, pressure ([#188](https://github.com/EndogenAI/dogma/issues/188) [#170](https://github.com/EndogenAI/dogma/issues/170) [#183](https://github.com/EndogenAI/dogma/issues/183)) ([5a61f5a](https://github.com/EndogenAI/dogma/commit/5a61f5aa340a26659243481956c25e7bb3412bca))
+* **research:** Phase 3c — six-layer topological extension ([#185](https://github.com/EndogenAI/dogma/issues/185)) ([1b19c87](https://github.com/EndogenAI/dogma/commit/1b19c874aaef775ef4cf37015b74082a3347c8cf)), closes [#56](https://github.com/EndogenAI/dogma/issues/56) [#177](https://github.com/EndogenAI/dogma/issues/177) [#179](https://github.com/EndogenAI/dogma/issues/179) [#184](https://github.com/EndogenAI/dogma/issues/184)
+* **scripts,ci:** add export_project_state.py and GitHub automation workflows ([#221](https://github.com/EndogenAI/dogma/issues/221)) ([47b8caf](https://github.com/EndogenAI/dogma/commit/47b8caf61304efb8e8e4fb5f3e1bc3315ba3f1a0)), closes [#216](https://github.com/EndogenAI/dogma/issues/216) [#217](https://github.com/EndogenAI/dogma/issues/217)
+* **scripts:** [#112](https://github.com/EndogenAI/dogma/issues/112) — validate_session.py post-commit scratchpad audit ([54cdb47](https://github.com/EndogenAI/dogma/commit/54cdb471003c2ec684057a4879c7cd13f4a29181))
+* **scripts:** [#118](https://github.com/EndogenAI/dogma/issues/118) — generate_agent_manifest documentation + CI validation pattern ([432f198](https://github.com/EndogenAI/dogma/commit/432f19823209b7eb92a57026ba9a163beee96e40))
+* **scripts:** [#121](https://github.com/EndogenAI/dogma/issues/121) — propose_dogma_edit tier enforcement + ADR output ([1a4ecc3](https://github.com/EndogenAI/dogma/commit/1a4ecc31dd5eb304830ebc7fa7adb38394083869))
+* **scripts:** [#122](https://github.com/EndogenAI/dogma/issues/122) — validate_skill_files.py 5-check gate ([8234a1e](https://github.com/EndogenAI/dogma/commit/8234a1e461280b83f4e8805e4459d320323e9a29))
+* **scripts:** [#138](https://github.com/EndogenAI/dogma/issues/138) — delegation routing + session state FSM validators ([9216fdf](https://github.com/EndogenAI/dogma/commit/9216fdf50a08abc5f94727dd1887783b7cca10fa))
+* **scripts:** add --ci and --issues flags to scaffold_workplan ([ab112fb](https://github.com/EndogenAI/dogma/commit/ab112fbc7ad61d5e7b4974b28088e59c27915525))
+* **scripts:** add audit_provenance.py — value signal provenance tracing ([#78](https://github.com/EndogenAI/dogma/issues/78)) ([2e8bb70](https://github.com/EndogenAI/dogma/commit/2e8bb70587fd8a54c6574fc542217bc824882ed2))
+* **scripts:** add detect_drift.py — watermark-phrase drift detection ([#71](https://github.com/EndogenAI/dogma/issues/71)) ([cf0d0d0](https://github.com/EndogenAI/dogma/commit/cf0d0d0cc1f7e95b4872695c1fadb58607760aa3))
+* **scripts:** add Fetch-before-check and Phase-N-Review-Output checks to validate_agent_files ([ba977f4](https://github.com/EndogenAI/dogma/commit/ba977f4cf4f42b4639986bed0eec9333166524c0))
+* **scripts:** add ruff rule for terminal file I/O output redirection ([d089063](https://github.com/EndogenAI/dogma/commit/d089063b46e2f69b985893fcb271b99ce7b91dbe)), closes [#154](https://github.com/EndogenAI/dogma/issues/154) [#151](https://github.com/EndogenAI/dogma/issues/151) [#154](https://github.com/EndogenAI/dogma/issues/154)
+* **scripts:** add scaffold_workplan, --append-summary, and corruption detection ([4938f50](https://github.com/EndogenAI/dogma/commit/4938f502cfe32ffe8db87de4df0e7f939a6457fb))
+* **scripts:** add wait_for_unblock.py — poll GitHub issue until status:blocked removed ([64ddfe4](https://github.com/EndogenAI/dogma/commit/64ddfe4ea8a53fb52985a80ce083d3276c4fca55))
+* **scripts:** BM25 query_docs CLI + tests — retrieve-on-demand corpus querying ([#80](https://github.com/EndogenAI/dogma/issues/80)) ([b5716a1](https://github.com/EndogenAI/dogma/commit/b5716a1775d0d06bc1ab8dccc168dce457bdb5d3))
+* **scripts:** extend generate_agent_manifest with cross-reference density score ([#54](https://github.com/EndogenAI/dogma/issues/54)) ([b0b3ebd](https://github.com/EndogenAI/dogma/commit/b0b3ebd6dc2ba64b217804fb5450ac91618a8513))
+* **scripts:** extend generate_agent_manifest.py with posture, capabilities, and handoffs fields ([a624dc5](https://github.com/EndogenAI/dogma/commit/a624dc5acff235767d660d921322a7753b53c9d4))
+* **scripts:** generate_sweep_table.py — programmatic corpus sweep table with Doc Type + Synthesises + Status columns ([#165](https://github.com/EndogenAI/dogma/issues/165) [#212](https://github.com/EndogenAI/dogma/issues/212)) ([b00f705](https://github.com/EndogenAI/dogma/commit/b00f7053ef03ea697eea9ba003de5f9dd0a64d4a))
+* **scripts:** governs: annotation script + link_registry audit ([#243](https://github.com/EndogenAI/dogma/issues/243)) ([a9afdc6](https://github.com/EndogenAI/dogma/commit/a9afdc60fd4aa4d385d0ca70e48765a3f910bcb9))
+* **scripts:** non-interactive default for scaffold_workplan.py; add --interactive flag ([ddd7b97](https://github.com/EndogenAI/dogma/commit/ddd7b9779ea70b47402efb0fc313aad10013993c)), closes [#212](https://github.com/EndogenAI/dogma/issues/212) [#221](https://github.com/EndogenAI/dogma/issues/221) [#239](https://github.com/EndogenAI/dogma/issues/239) [#240](https://github.com/EndogenAI/dogma/issues/240)
+* **scripts:** Phase 3b operationalization — handoff validation + CI provenance audit ([#181](https://github.com/EndogenAI/dogma/issues/181) [#182](https://github.com/EndogenAI/dogma/issues/182)) ([0303c5a](https://github.com/EndogenAI/dogma/commit/0303c5aa892291205e3b391d5a5ed75e576e633d)), closes [#1](https://github.com/EndogenAI/dogma/issues/1) [#184](https://github.com/EndogenAI/dogma/issues/184) [#184](https://github.com/EndogenAI/dogma/issues/184) [#184](https://github.com/EndogenAI/dogma/issues/184) [#184](https://github.com/EndogenAI/dogma/issues/184) [#170](https://github.com/EndogenAI/dogma/issues/170) [#184](https://github.com/EndogenAI/dogma/issues/184)
+* **scripts:** propose_dogma_edit.py + tests ≥80% [[#82](https://github.com/EndogenAI/dogma/issues/82)] ([e8e9ced](https://github.com/EndogenAI/dogma/commit/e8e9ced1a17f54c9ba79d25d8f34af47432c2664))
+* **scripts:** validate_agent_files.py — encoding fidelity gate ([#52](https://github.com/EndogenAI/dogma/issues/52)) ([9b5f7dd](https://github.com/EndogenAI/dogma/commit/9b5f7ddf7616c4b15ec483ccdf3fbfdb9bcb97af))
+* **scripts:** weave_links.py + link_registry — citation interweb weaving ([#84](https://github.com/EndogenAI/dogma/issues/84)) ([fd21441](https://github.com/EndogenAI/dogma/commit/fd21441bfcb7d788b9d2c3067536484833ce898d))
+* **skills:** add research-epic-planning skill ([40470dd](https://github.com/EndogenAI/dogma/commit/40470dd54dde12b0474539316c10f53453a6d584)), closes [#7](https://github.com/EndogenAI/dogma/issues/7)
+* **skills:** add session-retrospective skill — insight discovery and substrate encoding ([ba71ac8](https://github.com/EndogenAI/dogma/commit/ba71ac844a26fe5e07f930960b0dba3e46d3c8cb)), closes [#82](https://github.com/EndogenAI/dogma/issues/82)
+* **terminology:** rename 'custom agents' → 'Roles' as endogenous project term ([84432c9](https://github.com/EndogenAI/dogma/commit/84432c90afaf19bc34fe014af46435dba5089624)), closes [#63](https://github.com/EndogenAI/dogma/issues/63) [#2901498118](https://github.com/EndogenAI/dogma/issues/2901498118) [#2901499889](https://github.com/EndogenAI/dogma/issues/2901499889) [#2901498926](https://github.com/EndogenAI/dogma/issues/2901498926)
 
-### Changed
 
-- All executive agent files updated with research-derived recommendations
-- `docs/guides/testing.md` updated with testing research R1–R6
-- `docs/guides/workflows.md` PM workflow section updated
-- `CONTRIBUTING.md` expanded with dev-env setup and idempotency checklist
 
----
-
-## [Earlier work — 2026-03-06]
-
-### Added
-
-- Initial agent fleet: 14 agents across executive, research, and utility tiers
-- `docs/guides/` — workflows, agents, session management, programmatic-first, local compute, testing, mental models guides
-- `docs/research/` — agent fleet design patterns, agentic research flows, XML agent instruction format
-- `scripts/` — prune_scratchpad, watch_scratchpad, fetch_source, fetch_all_sources, generate_agent_manifest, link_source_stubs
-- `MANIFESTO.md`, `AGENTS.md`, `CONTRIBUTING.md`, `README.md`
-- `docs/plans/` — workplan files for agent fleet design, formalize workflows, implement research findings, XML agent instruction format, research expansion sprint
-- GitHub issue templates and PR template
