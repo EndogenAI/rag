@@ -61,3 +61,10 @@ repos:
         types: [shell]
         exclude: scripts/validate_agent_files\.py|tests/test_validate_agent_files\.py
         pass_filenames: true
+      - id: stale-github-repo-urls
+        name: Block stale GitHub repo URLs from pre-rename fork (EndogenAI/Workflows)
+        language: pygrep
+        entry: 'EndogenAI/Workflows'
+        types_or: [markdown, python, yaml]
+        exclude: '^\.(pre-commit-config\.yaml|lycheeignore)$'
+        pass_filenames: true
