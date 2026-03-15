@@ -136,14 +136,19 @@ Adding these 5 phrases raises the detectable surface without requiring embedding
 ## Recommendations
 
 1. **R1 — Raise `detect_drift.py` into CI as a non-blocking T1 job** (scripting sprint): Add `detect_drift.py --format summary --fail-below 0.2` as a CI step in `tests.yml`. The 0.2 threshold (1.2/6 phrases) is a minimal floor that catches completely axiom-free files without over-flagging specialized scripts. Raises `detect_drift.py` from T3 advisory to T1 enforcement.
+   → *Not yet implemented — tracked in Phase 10 scripting sprint (#197).*
 
 2. **R2 — Extend `WATERMARK_PHRASES`** (Pattern SD3, XS effort): Add 5 phrases to `detect_drift.py` constants. Requires updating `tests/test_detect_drift.py` to cover new phrases.
+   → *Not yet implemented — tracked in Phase 10 scripting sprint (#197).*
 
 3. **R3 — D4 watermark validation in `validate_synthesis.py`** (T3 enforcement, XS effort): Add assertion: each D4 document must contain at least one of {"Endogenous-First", "Algorithms Before Tokens", "Local Compute-First"} in the document body. Already identified in `values-enforcement-tier-mapping.md` §H2 as feasible and prioritized.
+   → *Not yet implemented — tracked in Phase 10 scripting sprint (#197).*
 
 4. **R4 — Embedding similarity proof-of-concept** (research sprint, M effort): Implement `scripts/measure_semantic_drift.py` using a local embedding model (sentence-transformers). Compute similarity scores for all current `.agent.md` files vs. MANIFESTO.md §1–§3. Produce distribution report. No CI integration in first pass — observation only. This fulfills the calibration corpus requirement in Pattern SD2.
+   → *Not yet implemented — requires dedicated Phase 10 research sprint (#197).*
 
 5. **R5 — Calibration corpus** (Phase 2 prerequisite for R4): Identify positive and negative reference sets from the current fleet and recent Review agent outputs. Document the sets in `docs/research/semantic-drift-detection.md` (this file) before running the similarity experiment.
+   → *Not yet implemented — Phase 2 prerequisite for R4, tracked in #197.*
 
 ---
 

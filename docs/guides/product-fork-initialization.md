@@ -45,7 +45,17 @@ This runs interactively, prompts for `project_name`, `domain`, `team_size`, `ci`
 `AGENTS.md`, `client-values.yml`, `pyproject.toml`, and CI workflow stubs. After generation,
 continue from Step 2 to complete the Deployment Layer configuration.
 
-> **Anti-pattern**: Stopping here. A raw fork or template copy contains no `client-values.yml`, no Deployment Layer comment, and no axiom emphasis. Agents will operate against dogma's own Core Layer defaults rather than your project's specialized priorities. The `validate-agent-files` pre-commit hook will fail on first commit. *This step alone is insufficient.*
+> **Anti-pattern**: Stopping here without completing Step 2.
+> - **Raw GitHub fork or `gh repo create --template` copy**: contains no `client-values.yml`,
+>   no Deployment Layer comment, and no axiom emphasis. Agents operate against dogma's
+>   own Core Layer defaults rather than your project's priorities. The `validate-agent-files`
+>   pre-commit hook will fail on first commit.
+> - **`uvx cookiecutter gh:EndogenAI/dogma` output**: *does* generate `client-values.yml`
+>   and the template stubs, but those stubs are empty placeholders — `mission`, `priorities`,
+>   and `axiom_emphasis` are all blank. Agents still have no project-specific values to act on
+>   until Step 2 populates them.
+>
+> *In both cases, Step 2 is required before the fork is usable.*
 
 ---
 

@@ -106,16 +106,22 @@ Boundaries with $\Delta\tau_{ij}$ > 0.5 (normalized) require explicit membrane p
 ## Recommendations
 
 1. **R1 — Empirical joint coherence measurement** (Phase 2): Run `scripts/measure_cross_reference_density.py` and `git log --follow --diff-filter=M` against all substrate files; produce a joint table of CRD × mutation_frequency with Pattern TT3 overlay. This closes the empirical gap in H1 and H4.
+   → *Not yet implemented — tracked in Phase 10 scripting sprint (#196).*
 
 2. **R2 — Temporal pressure differential metric** (Phase 2): Extend `scripts/detect_drift.py` or `scripts/audit_provenance.py` to compute $\Delta\tau_{ij}$ for each edge in the substrate topology graph (`topological-audit-substrate.md` §Edge list). Output boundaries exceeding the 0.5 normalized threshold as warnings.
+   → *Not yet implemented — tracked in Phase 10 scripting sprint (#196).*
 
 3. **R3 — ADR as permeability certificate** (operationalize now): The existing `docs/decisions/` ADR corpus already functions as permeability certificates for T1 boundary crossings. Formalize this in AGENTS.md: every T1 mutation requires a new ADR entry that explicitly names the boundary crossed and the evidence tier.
+   → *Not yet implemented — tracked in Phase 10 scripting sprint (#196).*
 
 4. **R4 — Pressure Stability Index (PSI)** (research): Define and validate PSI = pressure_metric × (1 / mutation_frequency_normalized) as a joint metric combining `laplace-pressure-empirical-validation.md` scores with temporal velocity. Validate R² against system health outcomes over a 30-day observation window.
+   → *Not yet implemented — requires dedicated Phase 10 research sprint (#196).*
 
 5. **R5 — T3 pre-commit joint check** (scripting sprint): Implement a pre-commit hook that fails if any modified file has CRD < CRD_critical (0.02) AND has been modified > 3 times in the last 7 days. This catches the anti-pattern in Pattern TT1 at commit time.
+   → *Not yet implemented — tracked in Phase 10 scripting sprint (#196).*
 
 6. **R6 — Phase 2 integration with detect_drift.py** (scripting sprint): Extend `scripts/detect_drift.py` to accept a `--temporal` flag that reads `git log` mutation frequency per file and includes the PSI metric (Pattern TT4, R4) alongside the existing drift score in the JSON output.
+   → *Not yet implemented — depends on R4 PSI definition, tracked in #196.*
 
 ---
 

@@ -5,6 +5,10 @@ Purpose:
     from AGENTS.md. Given a task-type keyword, returns the amplified axiom
     name and expression hint for the session encoding checkpoint.
 
+    The amplification table is loaded at startup from
+    ``data/amplification-table.yml`` — update that file when AGENTS.md adds,
+    removes, or renames rows. No code changes are required.
+
 Inputs:
     Positional argument: task-type keyword (e.g. "research", "commit", "script")
     OR --list to print the full table.
@@ -27,43 +31,26 @@ Exit codes:
 import argparse
 import json
 import sys
+from pathlib import Path
+
+import yaml
 
 # ---------------------------------------------------------------------------
-# Amplification table — hardcoded from AGENTS.md § Context-Sensitive Amplification
+# Amplification table — loaded from data/amplification-table.yml
+# (canonical source: AGENTS.md § Context-Sensitive Amplification)
+# Update data/amplification-table.yml when the AGENTS.md table changes.
 # ---------------------------------------------------------------------------
 
-AMPLIFICATION_TABLE: list[dict[str, str]] = [
-    {
-        "keywords": "research|survey|scout|synthesize",
-        "keyword_list": ["research", "survey", "scout", "synthesize"],
-        "amplify": "Endogenous-First",
-        "expression_hint": "Read prior docs and cached sources before reaching outward",
-    },
-    {
-        "keywords": "commit|push|review|merge|pr",
-        "keyword_list": ["commit", "push", "review", "merge", "pr"],
-        "amplify": "Documentation-First",
-        "expression_hint": "Every changed workflow/agent/script must have accompanying docs",
-    },
-    {
-        "keywords": "script|automate|encode|ci",
-        "keyword_list": ["script", "automate", "encode", "ci"],
-        "amplify": "Programmatic-First",
-        "expression_hint": "If done twice interactively → encode as script before third time",
-    },
-    {
-        "keywords": "agent|skill|authoring|fleet",
-        "keyword_list": ["agent", "skill", "authoring", "fleet"],
-        "amplify": "Endogenous-First + Minimal Posture",
-        "expression_hint": "Read existing fleet before spawning; carry only required tools",
-    },
-    {
-        "keywords": "local|inference|model|cost",
-        "keyword_list": ["local", "inference", "model", "cost"],
-        "amplify": "Local Compute-First",
-        "expression_hint": "Prefer local model invocation; document when external API is required",
-    },
-]
+_TABLE_PATH = Path(__file__).parent.parent / "data" / "amplification-table.yml"
+
+
+def _load_table() -> list[dict[str, str]]:
+    """Load the amplification table from data/amplification-table.yml."""
+    with open(_TABLE_PATH, encoding="utf-8") as fh:
+        return yaml.safe_load(fh)
+
+
+AMPLIFICATION_TABLE: list[dict[str, str]] = _load_table()
 
 
 def find_match(keyword: str) -> dict[str, str] | None:

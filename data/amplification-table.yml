@@ -1,0 +1,37 @@
+# amplification-table.yml — Context-Sensitive Axiom Amplification Table
+#
+# Source of truth for scripts/amplify_context.py.
+# Mirrors the table in AGENTS.md § Context-Sensitive Amplification.
+# Update this file when AGENTS.md adds or removes rows — amplify_context.py
+# reads it at startup.
+#
+# Fields per row:
+#   keywords     : pipe-delimited keyword list (matched case-insensitively)
+#   keyword_list : list form of the same keywords (used for O(1) lookup)
+#   amplify      : name of the amplified principle to display
+#   expression_hint : one-line hint for the encoding checkpoint sentence
+
+- keywords: "research|survey|scout|synthesize"
+  keyword_list: [research, survey, scout, synthesize]
+  amplify: "Endogenous-First"
+  expression_hint: "Read prior docs and cached sources before reaching outward"
+
+- keywords: "commit|push|review|merge|pr"
+  keyword_list: [commit, push, review, merge, pr]
+  amplify: "Documentation-First"
+  expression_hint: "Every changed workflow/agent/script must have accompanying docs"
+
+- keywords: "script|automate|encode|ci"
+  keyword_list: [script, automate, encode, ci]
+  amplify: "Programmatic-First"
+  expression_hint: "If done twice interactively → encode as script before third time"
+
+- keywords: "agent|skill|authoring|fleet"
+  keyword_list: [agent, skill, authoring, fleet]
+  amplify: "Endogenous-First + Minimal Posture"
+  expression_hint: "Read existing fleet before spawning; carry only required tools"
+
+- keywords: "local|inference|model|cost"
+  keyword_list: [local, inference, model, cost]
+  amplify: "Local Compute-First"
+  expression_hint: "Prefer local model invocation; document when external API is required"

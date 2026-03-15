@@ -43,7 +43,8 @@ Flags
 -----
 --input PATH          JSON or YAML file containing the operation list.
                       Omit to read JSON from stdin.
---dry-run             Print planned commands; make no gh calls. Exit 0.
+--dry-run             Print planned commands; make no gh calls. Exit 0 on valid
+                      input; exit 2 on parse/validation errors even in dry-run mode.
 --rate-limit-delay N  Seconds to sleep between operations. Default: 0.5.
 --help                Show this help and exit.
 
@@ -104,7 +105,10 @@ def _build_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         default=False,
-        help="Print planned commands without executing any gh calls. Exit 0.",
+        help=(
+            "Print planned commands without executing any gh calls. "
+            "Exit 0 on valid input; exit 2 on parse/validation errors even in dry-run mode."
+        ),
     )
     parser.add_argument(
         "--rate-limit-delay",

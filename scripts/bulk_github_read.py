@@ -203,9 +203,11 @@ def _fetch_pr(number: int, fields: list[str]) -> dict[str, Any]:
     if result.returncode != 0:
         raise FetchError(f"PR #{number}: {result.stderr.strip() or result.stdout.strip()}")
     data = json.loads(result.stdout)
-    # Normalise 'assignees' → 'assignee' so downstream field filtering is uniform
+    # gh pr view returns 'assignees' (plural list). Normalise so downstream
+    # field filtering is uniform: preserve the full list as 'assignees' AND
+    # add 'assignee' (first item) as a convenience field for single-assignee use.
     if "assignees" in data and "assignee" not in data:
-        assignees = data.pop("assignees")
+        assignees = data["assignees"]
         data["assignee"] = assignees[0] if assignees else None
     return _filter_record(data, fields)
 

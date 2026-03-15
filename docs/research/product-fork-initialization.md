@@ -212,6 +212,9 @@ and the adopt_wizard.py implementation sprint.
    first commit referencing the dogma version. This guide should cross-reference
    `scripts/adopt_wizard.py` as the canonical entry point and `client-values.yml`
    as the Deployment Layer contract. Audience: external teams adopting dogma.
+   → *Partially implemented: `docs/guides/product-fork-initialization.md` delivered
+   as the canonical 5-step guide — closes #204 (commit `9ef3873`). A standalone
+   `adoption-playbook.md` with TLDR summary may be a follow-up.*
 
 2. **Add `--track` flag to `adopt_wizard.py` to write `.dogma.json`** — At
    initialization, write a `.dogma.json` file containing the upstream dogma
@@ -220,6 +223,8 @@ and the adopt_wizard.py implementation sprint.
    upstream to report governance drift. This implements Pattern 3 (Living-Link
    Fork) without requiring full copier adoption. Modelled on cruft's
    `.cruft.json` approach.
+   → *Not yet implemented — tracked as a follow-up to closes #57 (adopt_wizard.py
+   initial delivery, commit `4f8559c`).*
 
 3. **Produce a GitHub template repository from dogma's main branch** — Mark the
    dogma repo as a GitHub template repository (Settings → "Template repository").
@@ -228,6 +233,9 @@ and the adopt_wizard.py implementation sprint.
    friction entry point. The template initialization is then followed by
    `adopt_wizard.py` to complete the Deployment Layer configuration. The two
    steps together implement Patterns 2 + 1 in sequence.
+   → *Cookiecutter scaffold delivered as the Greenfield entry point — closes #57
+   (commit `4f8559c`). Marking the repo as a GitHub Template is a follow-up
+   configuration step (no code change required).*
 
 4. **Evaluate copier as the Greenfield pathway engine** — Copier's
    `.copier-answers.yml` + `copier update` lifecycle is a superset of
@@ -238,6 +246,8 @@ and the adopt_wizard.py implementation sprint.
    copier template definition file (`copier.yml`) for dogma. This should be
    gated on Phase 5 docs completion so the template definitions are stable before
    they are published.
+   → *Not yet implemented — open research item for a dedicated Phase 10 copier
+   evaluation sprint.*
 
 ---
 

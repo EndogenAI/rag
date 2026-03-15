@@ -29,7 +29,5 @@ uv run pytest tests/ -m "not slow and not integration" -q
 - `AGENTS.md` — operational constraints for all AI agents in this repo
 - `client-values.yml` — Deployment Layer configuration (mission, priorities, axiom emphasis)
 
-For the full initialization and adoption workflow, see  
-[docs/guides/product-fork-initialization.md](docs/guides/product-fork-initialization.md)  
-or the upstream guide at  
+For the full initialization and adoption workflow, see the upstream guide at  
 <https://github.com/EndogenAI/dogma/blob/main/docs/guides/product-fork-initialization.md>.
