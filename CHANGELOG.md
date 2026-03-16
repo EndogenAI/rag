@@ -1,3 +1,24 @@
+# [0.7.0](https://github.com/EndogenAI/dogma/compare/v0.6.0...v0.7.0) (2026-03-16)
+
+
+### Bug Fixes
+
+* **docs:** address PR review comments on Sprint 12 research docs ([0d6a3fe](https://github.com/EndogenAI/dogma/commit/0d6a3fea20c4ef6ff2477994b1e07dd752b93c4c))
+* **research:** [#276](https://github.com/EndogenAI/dogma/issues/276) add Wave 1 substrate-atlas cross-reference — Wave 4 review gate fix ([de704f2](https://github.com/EndogenAI/dogma/commit/de704f2626e9d3a8881324217e75ad0e77befd9d))
+
+
+### Features
+
+* **research:** [#269](https://github.com/EndogenAI/dogma/issues/269) local inference & RAG — D4 synthesis [closes [#269](https://github.com/EndogenAI/dogma/issues/269)] ([a02b24d](https://github.com/EndogenAI/dogma/commit/a02b24d2aeb9e209805ca2db2eec50179a2ee139))
+* **research:** [#270](https://github.com/EndogenAI/dogma/issues/270) platform agnosticism — D4 synthesis [closes [#270](https://github.com/EndogenAI/dogma/issues/270)] ([f6a6740](https://github.com/EndogenAI/dogma/commit/f6a674077d9e6253b04e106ff6100ab63f461e18))
+* **research:** [#271](https://github.com/EndogenAI/dogma/issues/271) greenfield repo candidates — D4 synthesis [closes [#271](https://github.com/EndogenAI/dogma/issues/271)] ([99d634a](https://github.com/EndogenAI/dogma/commit/99d634a7abb49065b36592344e9b64bc008b63aa))
+* **research:** [#272](https://github.com/EndogenAI/dogma/issues/272) agent-to-agent communication protocol — D4 synthesis [closes [#272](https://github.com/EndogenAI/dogma/issues/272)] ([b240a9e](https://github.com/EndogenAI/dogma/commit/b240a9e7d85c1a130e3951256833abb4cabc7074))
+* **research:** [#273](https://github.com/EndogenAI/dogma/issues/273) biological evolution dogma propagation — D4 synthesis [closes [#273](https://github.com/EndogenAI/dogma/issues/273)] ([01a1c95](https://github.com/EndogenAI/dogma/commit/01a1c95dd8f97c3f0ee12202e0410d10cc1493f6))
+* **research:** [#277](https://github.com/EndogenAI/dogma/issues/277) semantic encoding modes and contextual routing — D4 synthesis [closes [#277](https://github.com/EndogenAI/dogma/issues/277)] ([a4401bf](https://github.com/EndogenAI/dogma/commit/a4401bfc8d93c6a4a0bd272b705f14b347bfc74b))
+* **research:** intelligence-architecture-synthesis.md — Sprint 12 cross-cutting synthesis ([1720904](https://github.com/EndogenAI/dogma/commit/172090495184ca143fc24dfcd49c6f227331553a)), closes [#264](https://github.com/EndogenAI/dogma/issues/264) [#265](https://github.com/EndogenAI/dogma/issues/265) [#266](https://github.com/EndogenAI/dogma/issues/266) [#267](https://github.com/EndogenAI/dogma/issues/267) [#268](https://github.com/EndogenAI/dogma/issues/268) [#269](https://github.com/EndogenAI/dogma/issues/269) [#270](https://github.com/EndogenAI/dogma/issues/270) [#271](https://github.com/EndogenAI/dogma/issues/271) [#272](https://github.com/EndogenAI/dogma/issues/272) [#273](https://github.com/EndogenAI/dogma/issues/273) [#274](https://github.com/EndogenAI/dogma/issues/274) [#275](https://github.com/EndogenAI/dogma/issues/275) [#276](https://github.com/EndogenAI/dogma/issues/276) [#277](https://github.com/EndogenAI/dogma/issues/277) [#230](https://github.com/EndogenAI/dogma/issues/230) [#232](https://github.com/EndogenAI/dogma/issues/232)
+
+
+
 # [0.6.0](https://github.com/EndogenAI/dogma/compare/v0.5.0...v0.6.0) (2026-03-16)
 
 
