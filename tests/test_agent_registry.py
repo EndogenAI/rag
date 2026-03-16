@@ -89,6 +89,32 @@ tools:
 ---
 """
 
+FLOW_SEQUENCE_AGENT = """\
+---
+name: Flow Agent
+description: An agent whose tools are declared as an indented flow sequence.
+tools:
+  [execute/runInTerminal, read/readFile, search/textSearch, agent/runSubagent]
+tier: executive
+area: orchestration
+---
+Body.
+"""
+
+SCOPED_TOOLS_AGENT = """\
+---
+name: Scoped Agent
+description: An agent with scoped tool IDs only.
+tools:
+  - execute/runTests
+  - read/getNotebookSummary
+  - edit/createFile
+tier: specialist
+area: scripts
+---
+Body.
+"""
+
 
 # ---------------------------------------------------------------------------
 # Helper
@@ -458,3 +484,71 @@ def test_main_error_returns_1(tmp_path):
     write_agents(tmp_path, {"valid.agent.md": MINIMAL_AGENT, "bad.agent.md": BAD_FRONTMATTER})
     rc = agent_registry.main(["--list", "--agents-dir", str(tmp_path)])
     assert rc == 1
+
+
+# ---------------------------------------------------------------------------
+# Flow-sequence YAML and scoped tool ID tests (comments 1, 2, 5 from review)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.io
+def test_parse_flow_sequence_tools(tmp_path):
+    """parse_simple_yaml must handle tools declared as an indented [a, b] line."""
+    write_agents(tmp_path, {"flow.agent.md": FLOW_SEQUENCE_AGENT})
+    entries, had_errors = agent_registry.load_registry(tmp_path)
+    assert not had_errors
+    assert len(entries) == 1
+    tools = entries[0]["tools"]
+    assert "execute/runInTerminal" in tools
+    assert "read/readFile" in tools
+    assert len(tools) == 4
+
+
+@pytest.mark.io
+def test_flow_sequence_posture_is_full(tmp_path):
+    """An agent with execute/runInTerminal in a flow sequence must get full posture."""
+    write_agents(tmp_path, {"flow.agent.md": FLOW_SEQUENCE_AGENT})
+    entries, _ = agent_registry.load_registry(tmp_path)
+    assert entries[0]["posture"] == "full"
+
+
+def test_derive_posture_scoped_execute():
+    """Scoped tool id execute/runTests must derive 'full' posture."""
+    assert agent_registry.derive_posture(["execute/runTests", "read/readFile"]) == "full"
+
+
+def test_derive_posture_scoped_edit():
+    """Scoped tool id edit/createFile must derive 'creator' posture."""
+    assert agent_registry.derive_posture(["edit/createFile", "read/readFile"]) == "creator"
+
+
+def test_derive_posture_scoped_read_only():
+    """Scoped read-only tool ids must derive 'readonly' posture."""
+    assert agent_registry.derive_posture(["read/readFile", "search/textSearch"]) == "readonly"
+
+
+@pytest.mark.io
+def test_filter_tool_scoped_prefix(tmp_path):
+    """--filter-tool execute must match agents that declare execute/runTests."""
+    write_agents(tmp_path, {"scoped.agent.md": SCOPED_TOOLS_AGENT})
+    entries, _ = agent_registry.load_registry(tmp_path)
+    filtered = agent_registry.apply_filters(entries, filter_tool="execute")
+    assert len(filtered) == 1
+    assert filtered[0]["name"] == "Scoped Agent"
+
+
+@pytest.mark.io
+def test_filter_tool_full_scoped_id(tmp_path):
+    """--filter-tool with a full scoped ID like execute/runTests must also match."""
+    write_agents(tmp_path, {"scoped.agent.md": SCOPED_TOOLS_AGENT})
+    entries, _ = agent_registry.load_registry(tmp_path)
+    filtered = agent_registry.apply_filters(entries, filter_tool="execute/runTests")
+    assert len(filtered) == 1
+
+
+@pytest.mark.io
+def test_scoped_tools_full_posture(tmp_path):
+    """An agent with execute/runTests must get full posture even when other tools use scoped IDs."""
+    write_agents(tmp_path, {"scoped.agent.md": SCOPED_TOOLS_AGENT})
+    entries, _ = agent_registry.load_registry(tmp_path)
+    assert entries[0]["posture"] == "full"  # execute/runTests → full wins

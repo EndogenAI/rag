@@ -41,7 +41,7 @@ Constraints in AGENTS.md.
 ### Phase 2 — GitHub Actions Caching Research (#221) ⬜
 **Agent**: Executive Researcher → Research Scout → Synthesizer
 **Deliverables**:
-- `docs/research/ci/github-actions-caching-patterns.md` (D4 format, status: Draft)
+- `docs/research/ci/github-actions-caching-patterns.md` (D4 format, status: Final)
 - Summary of canonical caching patterns for Orchestrator orientation + PM snapshot workflows
 - Committed: `docs(research): GitHub Actions marketplace caching patterns (#221)`
 
@@ -59,7 +59,7 @@ Constraints in AGENTS.md.
 ### Phase 3 — Behavioral Observability Baseline (#231) ⬜
 **Agent**: Executive Researcher → Research Scout
 **Deliverables**:
-- `docs/research/methodology/encode-before-act-baseline.md` (D4 format, status: Draft)
+- `docs/research/methodology/encode-before-act-baseline.md` (D4 format, status: Final)
 - A/B comparison data: encode-before-act vs. reactive reconstruction (H1 hypothesis)
 - Committed: `docs(research): H1 empirical baseline encode-before-act (#231)`
 

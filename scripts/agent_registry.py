@@ -93,8 +93,16 @@ def parse_simple_yaml(yaml_text: str) -> dict:
                 i += 1
                 while i < len(lines):
                     item_match = re.match(r"^\s+-\s+(.*)", lines[i])
+                    flow_match = re.match(r"^\s+\[(.*)\]\s*$", lines[i])
                     if item_match:
                         items.append(item_match.group(1).strip().strip("\"'"))
+                        i += 1
+                    elif flow_match:
+                        # Indented flow sequence: `  [tool1, tool2, ...]`
+                        for t in flow_match.group(1).split(","):
+                            t = t.strip().strip("\"'")
+                            if t:
+                                items.append(t)
                         i += 1
                     elif not lines[i].strip():
                         i += 1
@@ -116,6 +124,24 @@ _FULL_TOOLS = frozenset({"execute", "terminal", "agent", "run", "browser"})
 _CREATOR_TOOLS = frozenset({"edit", "write", "create", "notebook"})
 
 
+def _normalize_tools(tools: list[str]) -> frozenset[str]:
+    """
+    Normalize a list of tool IDs into a flat set for matching.
+
+    Scoped IDs like ``execute/runTests`` contribute both the full ID
+    (``execute/runtests``) and the bare prefix (``execute``) so that
+    posture derivation and ``--filter-tool execute`` both work correctly
+    on real fleet agents that use VS Code-style scoped tool names.
+    """
+    normalized: set[str] = set()
+    for t in tools:
+        lower = t.lower()
+        normalized.add(lower)
+        if "/" in lower:
+            normalized.add(lower.split("/", 1)[0])
+    return frozenset(normalized)
+
+
 def derive_posture(tools: list[str]) -> str:
     """
     Derive agent posture from its declared tools list.
@@ -125,7 +151,7 @@ def derive_posture(tools: list[str]) -> str:
         "creator"  — tools include edit / write / create / notebook (but not full)
         "readonly" — tools are read/search only, or list is empty
     """
-    tool_set = {t.lower() for t in tools}
+    tool_set = _normalize_tools(tools)
     if tool_set & _FULL_TOOLS:
         return "full"
     if tool_set & _CREATOR_TOOLS:
@@ -206,7 +232,7 @@ def load_registry(agents_dir: Path) -> tuple[list[dict], bool]:
                 "description": data.get("description", "").strip(),
                 "tools": tools,
                 "posture": derive_posture(tools),
-                "file": str(path),
+                "file": _relativize_path(path),
             }
         )
 
@@ -216,6 +242,14 @@ def load_registry(agents_dir: Path) -> tuple[list[dict], bool]:
 # ---------------------------------------------------------------------------
 # Filtering
 # ---------------------------------------------------------------------------
+
+
+def _relativize_path(path: Path) -> str:
+    """Return path relative to the repo root, falling back to str(path)."""
+    try:
+        return str(path.relative_to(find_repo_root()))
+    except ValueError:
+        return str(path)
 
 
 def apply_filters(
@@ -228,7 +262,7 @@ def apply_filters(
     result = entries
     if filter_tool:
         ft = filter_tool.lower()
-        result = [e for e in result if any(ft == t.lower() for t in e["tools"])]
+        result = [e for e in result if ft in _normalize_tools(e["tools"])]
     if filter_tier:
         ft = filter_tier.lower()
         result = [e for e in result if e["tier"].lower() == ft]
