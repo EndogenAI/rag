@@ -1,3 +1,23 @@
+# [0.8.0](https://github.com/EndogenAI/dogma/compare/v0.7.0...v0.8.0) (2026-03-16)
+
+
+### Bug Fixes
+
+* address Copilot PR review — schema validation, delta mode, drift CI gate, HGT acronym ([bf41280](https://github.com/EndogenAI/dogma/commit/bf41280fb7710207aef8c23f4c20fe9d8671dad5))
+
+
+### Features
+
+* **ci:** validate_adr.py — ADR structure validator + pre-commit hook ([30a684c](https://github.com/EndogenAI/dogma/commit/30a684c1be69bb87c277dc58eec6348c6ec3e49a)), closes [#281](https://github.com/EndogenAI/dogma/issues/281)
+* **data:** substrate-atlas.yml — 23-substrate registry + health check integration ([1857897](https://github.com/EndogenAI/dogma/commit/18578979fb9b90b5b5a30be76d6948e1ecd85c6a)), closes [#279](https://github.com/EndogenAI/dogma/issues/279)
+* **scripts:** assess_doc_quality.py — composite readability/structure/completeness scorer ([917b969](https://github.com/EndogenAI/dogma/commit/917b969bf14f24f22aaa3454d515d47d687eac41))
+* **scripts:** check_divergence.py — cookiecutter template drift detector ([400cc26](https://github.com/EndogenAI/dogma/commit/400cc268e6e015be94c8f94a597603b01b810489)), closes [#293](https://github.com/EndogenAI/dogma/issues/293)
+* **scripts:** check_glossary_coverage.py — bold-term glossary scanner ([1a97239](https://github.com/EndogenAI/dogma/commit/1a97239ee0c0e39916e17e0786da4ceb9d32caf9))
+* **scripts:** parse_fsm_to_graph.py — FSM-to-NetworkX path analysis + CI invariant check ([539757a](https://github.com/EndogenAI/dogma/commit/539757adb9e5febdc7c53b50e14002a9c8135d54))
+* **scripts:** validate_session_state.py — YAML phase-status block parsing ([6a5b74d](https://github.com/EndogenAI/dogma/commit/6a5b74dd31d59a8489b0fc8453b0967d41b7c6b5))
+
+
+
 # [0.7.0](https://github.com/EndogenAI/dogma/compare/v0.6.0...v0.7.0) (2026-03-16)
 
 
