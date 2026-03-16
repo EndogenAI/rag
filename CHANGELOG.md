@@ -1,3 +1,20 @@
+# [0.6.0](https://github.com/EndogenAI/dogma/compare/v0.5.0...v0.6.0) (2026-03-16)
+
+
+### Bug Fixes
+
+* **research:** [#268](https://github.com/EndogenAI/dogma/issues/268) substrate atlas — add second MANIFESTO axiom citation (Algorithms Before Tokens §2) ([d38d291](https://github.com/EndogenAI/dogma/commit/d38d291f92356b42be894b3e3e3c95d3107d83e6))
+* **research:** add MANIFESTO.md axiom citations to Wave 1 docs — pass D4 review criterion 4 ([4da838b](https://github.com/EndogenAI/dogma/commit/4da838bd1c49f420790da4202fbb074afca9ac55))
+
+
+### Features
+
+* **research:** [#264](https://github.com/EndogenAI/dogma/issues/264) MCP state architecture — D4 synthesis [closes [#264](https://github.com/EndogenAI/dogma/issues/264)] ([9fa06cf](https://github.com/EndogenAI/dogma/commit/9fa06cf6fb585b0756b39b675507148db755714b))
+* **research:** [#265](https://github.com/EndogenAI/dogma/issues/265) custom agent service modules — D4 synthesis [closes [#265](https://github.com/EndogenAI/dogma/issues/265)] ([e0a2885](https://github.com/EndogenAI/dogma/commit/e0a28852d254733d4db00b5fa2aef2aa089df9ce))
+* **research:** [#268](https://github.com/EndogenAI/dogma/issues/268) substrate atlas — D4 synthesis [closes [#268](https://github.com/EndogenAI/dogma/issues/268)] ([8af8ac0](https://github.com/EndogenAI/dogma/commit/8af8ac099f4424a1b3be2cad02138ab04e2094f9))
+
+
+
 # [0.5.0](https://github.com/EndogenAI/dogma/compare/v0.4.0...v0.5.0) (2026-03-16)
 
 
