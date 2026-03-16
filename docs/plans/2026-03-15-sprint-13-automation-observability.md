@@ -34,7 +34,7 @@ Constraints in AGENTS.md.
 
 **Depends on**: nothing
 **CI**: n/a
-**Status**: Not started
+**Status**: Complete
 
 ---
 
@@ -47,12 +47,12 @@ Constraints in AGENTS.md.
 
 **Depends on**: Phase 1 ✅
 **CI**: Tests, Auto-validate
-**Status**: Not started
+**Status**: Complete
 
 **Acceptance criteria**:
-- [ ] D4 doc exists with `title`, `status`, Executive Summary, Pattern Catalog, Recommendations
-- [ ] At least 3 canonical caching patterns documented with `**Canonical example**:` labels
-- [ ] Closes #221 reference in PR body
+- [x] D4 doc exists with `title`, `status`, Executive Summary, Pattern Catalog, Recommendations
+- [x] At least 3 canonical caching patterns documented with `**Canonical example**:` labels
+- [x] Closes #221 reference in PR body
 
 ---
 
@@ -65,12 +65,12 @@ Constraints in AGENTS.md.
 
 **Depends on**: Phase 1 ✅
 **CI**: Tests, Auto-validate
-**Status**: Not started
+**Status**: Complete
 
 **Acceptance criteria**:
-- [ ] D4 doc exists with measurable H1 hypothesis validation or falsification
-- [ ] At least 1 `**Anti-pattern**:` and 1 `**Canonical example**:` in Pattern Catalog
-- [ ] Closes #231 reference in PR body
+- [x] D4 doc exists with measurable H1 hypothesis validation or falsification
+- [x] At least 1 `**Anti-pattern**:` and 1 `**Canonical example**:` in Pattern Catalog
+- [x] Closes #231 reference in PR body
 
 ---
 
@@ -84,13 +84,13 @@ Constraints in AGENTS.md.
 
 **Depends on**: Phase 2 ✅ (caching/orientation patterns inform detection concepts), Phase 3 ✅ (observability baseline informs detection thresholds)
 **CI**: Tests, Auto-validate
-**Status**: Not started
+**Status**: Complete
 
 **Acceptance criteria**:
-- [ ] `uv run pytest tests/test_token_spin*.py -q` passes
-- [ ] `uv run pytest tests/test_preexec*.py -q` passes (or existing governor tests updated)
-- [ ] Both scripts have docstrings with purpose, inputs, outputs, usage example
-- [ ] Closes #156 and #157 references in PR body
+- [x] `uv run pytest tests/test_token_spin*.py -q` passes
+- [x] `uv run pytest tests/test_preexec*.py -q` passes (or existing governor tests updated)
+- [x] Both scripts have docstrings with purpose, inputs, outputs, usage example
+- [x] Closes #156 and #157 references in PR body
 
 ---
 
@@ -104,13 +104,13 @@ Constraints in AGENTS.md.
 
 **Depends on**: Phase 1 ✅, Phase 2 ✅ (GH Actions caching patterns inform registry capability model)
 **CI**: Tests, Auto-validate
-**Status**: Not started
+**Status**: Complete
 
 **Acceptance criteria**:
-- [ ] Registry script runs without error: `uv run python scripts/agent_registry.py --list`
-- [ ] Output includes at minimum: agent name, tier, tools, area for each fleet member
-- [ ] Tests pass with ≥80% coverage
-- [ ] Closes #158 reference in PR body
+- [x] Registry script runs without error: `uv run python scripts/agent_registry.py --list`
+- [x] Output includes at minimum: agent name, tier, tools, area for each fleet member
+- [x] Tests pass with ≥80% coverage
+- [x] Closes #158 reference in PR body
 
 ---
 
@@ -124,22 +124,22 @@ Constraints in AGENTS.md.
 
 **Depends on**: Phases 2–5 ✅
 **CI**: Tests, Auto-validate
-**Status**: Not started
+**Status**: Complete
 
 **Acceptance criteria**:
-- [ ] `gh milestone view 13` shows 5/5 issues closed
-- [ ] CI green before review request
-- [ ] CHANGELOG has entries for #221, #231, #156, #157, #158
+- [x] `gh milestone view 13` shows 5/5 issues closed
+- [x] CI green before review request
+- [x] CHANGELOG has entries for #221, #231, #156, #157, #158
 
 ---
 
 ## Acceptance Criteria (Sprint-Level)
 
-- [ ] All 6 phases complete and committed
-- [ ] All 5 sprint milestone issues closed (gh milestone view 13)
-- [ ] CI green: `uv run pytest tests/ -x -m "not slow and not integration" -q`
-- [ ] CHANGELOG.md updated with all sprint additions
-- [ ] PR opened against `main` with all `Closes #NNN` lines
+- [x] All 6 phases complete and committed
+- [x] All 5 sprint milestone issues closed (gh milestone view 13)
+- [x] CI green: `uv run pytest tests/ -x -m "not slow and not integration" -q`
+- [x] CHANGELOG.md updated with all sprint additions
+- [x] PR opened against `main` with all `Closes #NNN` lines
 
 ## PR Description Template
 
