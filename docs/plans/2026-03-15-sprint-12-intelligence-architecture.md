@@ -14,7 +14,7 @@ This sprint sequences 16 open research issues across the Intelligence & Architec
 
 ## Phase Plan
 
-### Phase 1 — Wave 1 Research ⬜
+### Phase 1 — Wave 1 Research ✅
 **Agent**: Executive Researcher
 **Issues**: #264, #265, #268
 **Deliverables**:
@@ -23,16 +23,16 @@ This sprint sequences 16 open research issues across the Intelligence & Architec
 - `docs/research/substrate-atlas.md` (Status: Final, committed) — closes #268
 **Depends on**: nothing
 **Gate**: Wave 1 Review Gate does not start until all Wave 1 deliverables committed
-**Status**: ⬜ Not started
+**Status**: ✅ Complete — commits 9fa06cf, e0a2885, 8af8ac0 (+ fixes 4da838b, d38d291)
 
 ---
 
-### Phase 2 — Wave 1 Review Gate ⬜
+### Phase 2 — Wave 1 Review Gate ✅
 **Agent**: Review
 **Deliverables**: `## Wave 1 Review Output` in scratchpad, verdict: APPROVED
 **Depends on**: Phase 1 deliverables committed
 **Gate**: Wave 2 does not start until APPROVED
-**Status**: ⬜ Not started
+**Status**: ✅ Complete — APPROVED (2026-03-15)
 
 ---
 
@@ -119,10 +119,10 @@ This sprint sequences 16 open research issues across the Intelligence & Architec
 
 ## Acceptance Criteria
 
-- [ ] #264 — `docs/research/mcp-state-architecture.md` committed (Status: Final)
-- [ ] #265 — `docs/research/custom-agent-service-modules.md` committed (Status: Final)
-- [ ] #268 — `docs/research/substrate-atlas.md` committed (Status: Final)
-- [ ] Wave 1 Review Gate APPROVED recorded in scratchpad
+- [x] #264 — `docs/research/mcp-state-architecture.md` committed (Status: Final)
+- [x] #265 — `docs/research/custom-agent-service-modules.md` committed (Status: Final)
+- [x] #268 — `docs/research/substrate-atlas.md` committed (Status: Final)
+- [x] Wave 1 Review Gate APPROVED recorded in scratchpad
 - [ ] #269 — `docs/research/local-inference-rag.md` committed (Status: Final)
 - [ ] #270 — `docs/research/platform-agnosticism.md` committed (Status: Final)
 - [ ] #271 — `docs/research/greenfield-repo-candidates.md` committed (Status: Final)
