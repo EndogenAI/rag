@@ -12,13 +12,16 @@
 
 Sprint 13 advances two parallel tracks. The first track hardens behavioral observability
 infrastructure: a GitHub Actions caching research sprint (#221, effort xl) establishes
-the canonical patterns for token-efficient Orchestrator orientation, and a paired empirical
-baseline study (#231, effort m) produces measured A/B data on encode-before-act vs.
-reactive reconstruction. The second track converts those findings into shipped code: the
-PREEXEC governor gains subshell audit logging (#157, effort s) and token-spinning detection
-(#156, effort s), while a capability-aware agent registry (#158, effort m) provides a
-queryable index of fleet tool scopes. Research phases (2, 3) gate their respective
-implementation phases (4, 5) per the Sprint Phase Ordering Constraints in AGENTS.md.
+the canonical patterns for token-efficient Orchestrator orientation and PM workflows, and
+is cross-cutting — it informs both Phase 4 (token-spinning detection thresholds and
+PREEXEC audit logging concepts) and Phase 5 (capability-aware agent registry design). A
+paired empirical baseline study (#231, effort m) produces measured A/B data on
+encode-before-act vs. reactive reconstruction and gates Phase 4 specifically. The second
+track converts those findings into shipped code: the PREEXEC governor gains subshell audit
+logging (#157) and token-spinning detection (#156), while a capability-aware agent registry
+(#158) provides a queryable index of fleet tool scopes. Phase 2 (cross-cutting) and Phase
+3 (phase-specific, gates Phase 4) both gate implementation, per Sprint Phase Ordering
+Constraints in AGENTS.md.
 
 ---
 
@@ -79,7 +82,7 @@ implementation phases (4, 5) per the Sprint Phase Ordering Constraints in AGENTS
 - Tests covering happy path, error cases, exit codes (≥80% coverage each)
 - Committed: `feat(scripts): PREEXEC subshell audit logging and token-spin detection (#156, #157)`
 
-**Depends on**: Phase 3 ✅ (observability research informs detection thresholds)
+**Depends on**: Phase 2 ✅ (caching/orientation patterns inform detection concepts), Phase 3 ✅ (observability baseline informs detection thresholds)
 **CI**: Tests, Auto-validate
 **Status**: Not started
 
@@ -99,7 +102,7 @@ implementation phases (4, 5) per the Sprint Phase Ordering Constraints in AGENTS
 - Tests (≥80% coverage)
 - Committed: `feat(agents): capability-aware agent registry design (#158)`
 
-**Depends on**: Phase 1 ✅ (parallel with Phase 4)
+**Depends on**: Phase 1 ✅, Phase 2 ✅ (GH Actions caching patterns inform registry capability model)
 **CI**: Tests, Auto-validate
 **Status**: Not started
 
