@@ -1,3 +1,16 @@
+## [Unreleased]
+
+### Features
+
+* **ci:** GitHub Actions caching patterns research — date-keyed cache, artifact-as-snapshot, centralized producer/consumer, multi-factor lockfile-hash key ([#221](https://github.com/EndogenAI/dogma/issues/221))
+* **scripts:** preexec_audit_log.py — audit bash -c subshell invocations with structured log and `--summary` mode ([#157](https://github.com/EndogenAI/dogma/issues/157))
+* **scripts:** token_spin_detector.py — detect N≥5 repeated-invocation spinning within configurable window; `--check` exits 0/2 ([#156](https://github.com/EndogenAI/dogma/issues/156))
+* **agents:** agent_registry.py — capability-aware filterable fleet registry; queryable by tool, tier, and area; `--list`/`--json`/`--filter-*` flags ([#158](https://github.com/EndogenAI/dogma/issues/158))
+* **research:** encode-before-act baseline D4 synthesis — directionally supported; A/B experiment design in R1 ([#231](https://github.com/EndogenAI/dogma/issues/231))
+* **skills:** sprint-planning skill and fleet wiring for Executive PM + Planner
+
+---
+
 # [0.4.0](https://github.com/EndogenAI/dogma/compare/v0.3.1...v0.4.0) (2026-03-15)
 
 

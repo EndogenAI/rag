@@ -42,6 +42,10 @@ handoffs:
     agent: Executive Docs
     prompt: "Community health files updated. Please review for consistency."
     send: false
+  - label: "🗓 Plan Next Sprint"
+    agent: Executive PM
+    prompt: "Run the sprint-planning skill: review all open issues, cluster by theme and priority, propose a sprint milestone with must-have and should-have issues, scaffold the workplan via scaffold_workplan.py, and return the Sprint Proposal under '## Sprint Proposal' in the scratchpad. Use the sprint-planning skill at .github/skills/sprint-planning/SKILL.md."
+    send: false
 governs:
   - endogenous-first
   - documentation-first
