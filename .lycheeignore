@@ -90,3 +90,22 @@ https://github.com/EndogenAI/dogma/issues/3911133661
 # producing a nonsensical github.com/MANIFESTO.md/... URL.
 https://github.com/MANIFESTO.md/issues/3
 https://github.com/../../MANIFESTO.md/issues/3
+
+# AutoGen agentchat tool-use guide — 404; page moved in autogen v0.4+ restructure.
+# Referenced in docs/research/custom-agent-service-modules.md and
+# docs/research/mcp-state-architecture.md as per-capability tool registration docs.
+https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/tool-use.html
+https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/memory.html
+
+# Stack Overflow Developer Survey 2024 — connection failures from GitHub Actions
+# CI runners (intermittent network error). Canonical survey source; referenced
+# in docs/research/platform-agnosticism.md (73.6% VS Code market share stat).
+https://survey.stackoverflow.com/2024/
+
+# GitHub Blog AI coding tools survey — 404; blog post URL moved/removed.
+# Referenced in docs/research/platform-agnosticism.md.
+https://github.blog/2024-06-20-survey-reveals-ai-coding-tools-are-in-wide-use/
+
+# Zed AI improvement docs — 404; Zed docs restructured after Sprint 12 research.
+# Referenced in docs/research/platform-agnosticism.md as platform coverage data.
+https://zed.dev/docs/assistant/ai-improvement
