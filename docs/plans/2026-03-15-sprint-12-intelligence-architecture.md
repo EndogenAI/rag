@@ -58,25 +58,25 @@ This sprint sequences 16 open research issues across the Intelligence & Architec
 
 ---
 
-### Phase 5 — Wave 3 Research ⬜
+### Phase 5 — Wave 3 Research ✅
 **Agent**: Executive Researcher
 **Issues**: #272, #273, #277
 **Deliverables**:
-- `docs/research/agent-to-agent-communication-protocol.md` (Status: Final, committed) — closes #272
-- `docs/research/biological-evolution-dogma-propagation.md` (Status: Final, committed) — closes #273
-- `docs/research/semantic-encoding-modes-contextual-routing.md` (Status: Final, committed) — closes #277
-**Depends on**: Wave 2 Review Gate APPROVED
+- `docs/research/agent-to-agent-communication-protocol.md` (Status: Final, committed) — closes #272 — `b240a9e`
+- `docs/research/biological-evolution-dogma-propagation.md` (Status: Final, committed) — closes #273 — `01a1c95`
+- `docs/research/semantic-encoding-modes-contextual-routing.md` (Status: Final, committed) — closes #277 — `a4401bf`
+**Depends on**: Wave 2 Review Gate APPROVED ✅
 **Gate**: Wave 3 Review Gate does not start until all Wave 3 deliverables committed
-**Status**: ⬜ Not started
+**Status**: ✅ Complete
 
 ---
 
-### Phase 6 — Wave 3 Review Gate ⬜
+### Phase 6 — Wave 3 Review Gate ⏳
 **Agent**: Review
 **Deliverables**: `## Wave 3 Review Output` in scratchpad, verdict: APPROVED
-**Depends on**: Phase 5 deliverables committed
+**Depends on**: Phase 5 deliverables committed ✅
 **Gate**: Wave 4 does not start until APPROVED
-**Status**: ⬜ Not started
+**Status**: ⏳ In progress
 
 ---
 
@@ -127,9 +127,9 @@ This sprint sequences 16 open research issues across the Intelligence & Architec
 - [x] #270 — `docs/research/platform-agnosticism.md` committed (Status: Final)
 - [x] #271 — `docs/research/greenfield-repo-candidates.md` committed (Status: Final)
 - [x] Wave 2 Review Gate APPROVED recorded in scratchpad
-- [ ] #272 — `docs/research/agent-to-agent-communication-protocol.md` committed (Status: Final)
-- [ ] #273 — `docs/research/biological-evolution-dogma-propagation.md` committed (Status: Final)
-- [ ] #277 — `docs/research/semantic-encoding-modes-contextual-routing.md` committed (Status: Final)
+- [x] #272 — `docs/research/agent-to-agent-communication-protocol.md` committed (Status: Final)
+- [x] #273 — `docs/research/biological-evolution-dogma-propagation.md` committed (Status: Final)
+- [x] #277 — `docs/research/semantic-encoding-modes-contextual-routing.md` committed (Status: Final)
 - [ ] Wave 3 Review Gate APPROVED recorded in scratchpad
 - [ ] #266 — `docs/research/classic-programmatic-patterns-dogma-legibility.md` committed (Status: Final)
 - [ ] #267 — `docs/research/glossary-maintenance-strategy.md` committed (Status: Final)
