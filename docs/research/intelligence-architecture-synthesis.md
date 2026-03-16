@@ -65,7 +65,7 @@ governs: [intelligence-architecture, mcp-architecture, substrate-governance, pla
 
 **Canonical example**: `session-management` SKILL.md declares when and why to init/close a scratchpad; `scripts/prune_scratchpad.py` implements the mechanics. Any agent invoking the skill reads the SKILL.md to understand context, then runs the script for execution — no business logic lives in the agent file itself.
 
-**Anti-pattern**: Embedding implementation logic directly in `.agent.md` files (e.g., inline `sed` commands, hardcoded paths). This prevents reuse across agents, fails the Programmatic-First principle, and makes validation impossible.
+**Anti-pattern**: Embedding implementation logic directly in `.agent.md` files (e.g., inline `sed` commands, hardcoded paths). This prevents reuse across agents, fails the Programmatic-First principle (MANIFESTO.md §Programmatic-First), and makes validation impossible.
 
 **Source**: [custom-agent-service-modules.md](custom-agent-service-modules.md)
 
@@ -226,7 +226,7 @@ governs: [intelligence-architecture, mcp-architecture, substrate-governance, pla
 
 **Issues**: #264 (MCP State), #272 (A2A Protocol)
 
-MCP sessions, scratchpads, and git represent three fundamentally different state consistency models that must not be conflated. MCP provides per-connection capability negotiation; scratchpad provides append-only cross-phase context; git provides durable committed artefacts. The Three-Layer State Architecture (Pattern 1) is the correct abstraction, and it renders full A2A adoption unnecessary for current coordination requirements. A2A's JSON-RPC HTTP model introduces a substantial security threat surface (prompt injection, capability spoofing, SSRF) without delivering coordination capabilities that the existing scratchpad + `validate_session_state.py` pattern cannot already provide. The strategic path is MCP-mediated scratchpad query, not peer-to-peer agent messaging.
+MCP sessions, scratchpads, and git represent three fundamentally different state consistency models that must not be conflated. MCP provides per-connection capability negotiation; scratchpad provides append-only cross-phase context; git provides durable committed artefacts. The Endogenous-First axiom (MANIFESTO.md §1) applies directly here: the existing three-layer scratchpad + `validate_session_state.py` pattern is the correct first-resort coordination mechanism before reaching for external protocols. The Three-Layer State Architecture (Pattern 1) renders full A2A adoption unnecessary for current coordination requirements. A2A's JSON-RPC HTTP model introduces a substantial security threat surface (prompt injection, capability spoofing, SSRF) without delivering coordination capabilities that the existing scratchpad + `validate_session_state.py` pattern cannot already provide. The strategic path is MCP-mediated scratchpad query, not peer-to-peer agent messaging.
 
 **Key scripts affected**: `scripts/validate_session_state.py` (extend with FSM phase query); `scripts/prune_scratchpad.py` (Three-Layer anchor)
 
