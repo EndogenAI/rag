@@ -36,7 +36,7 @@ This sprint sequences 16 open research issues across the Intelligence & Architec
 
 ---
 
-### Phase 3 — Wave 2 Research ⬜
+### Phase 3 — Wave 2 Research ✅
 **Agent**: Executive Researcher
 **Issues**: #269, #270, #271
 **Deliverables**:
@@ -45,16 +45,16 @@ This sprint sequences 16 open research issues across the Intelligence & Architec
 - `docs/research/greenfield-repo-candidates.md` (Status: Final, committed) — closes #271
 **Depends on**: Wave 1 Review Gate APPROVED
 **Gate**: Wave 2 Review Gate does not start until all Wave 2 deliverables committed
-**Status**: ⬜ Not started
+**Status**: ✅ Complete — commits a02b24d, f6a6740, 99d634a
 
 ---
 
-### Phase 4 — Wave 2 Review Gate ⬜
+### Phase 4 — Wave 2 Review Gate ✅
 **Agent**: Review
 **Deliverables**: `## Wave 2 Review Output` in scratchpad, verdict: APPROVED
 **Depends on**: Phase 3 deliverables committed
 **Gate**: Wave 3 does not start until APPROVED
-**Status**: ⬜ Not started
+**Status**: ✅ Complete — APPROVED (2026-03-15)
 
 ---
 
@@ -123,10 +123,10 @@ This sprint sequences 16 open research issues across the Intelligence & Architec
 - [x] #265 — `docs/research/custom-agent-service-modules.md` committed (Status: Final)
 - [x] #268 — `docs/research/substrate-atlas.md` committed (Status: Final)
 - [x] Wave 1 Review Gate APPROVED recorded in scratchpad
-- [ ] #269 — `docs/research/local-inference-rag.md` committed (Status: Final)
-- [ ] #270 — `docs/research/platform-agnosticism.md` committed (Status: Final)
-- [ ] #271 — `docs/research/greenfield-repo-candidates.md` committed (Status: Final)
-- [ ] Wave 2 Review Gate APPROVED recorded in scratchpad
+- [x] #269 — `docs/research/local-inference-rag.md` committed (Status: Final)
+- [x] #270 — `docs/research/platform-agnosticism.md` committed (Status: Final)
+- [x] #271 — `docs/research/greenfield-repo-candidates.md` committed (Status: Final)
+- [x] Wave 2 Review Gate APPROVED recorded in scratchpad
 - [ ] #272 — `docs/research/agent-to-agent-communication-protocol.md` committed (Status: Final)
 - [ ] #273 — `docs/research/biological-evolution-dogma-propagation.md` committed (Status: Final)
 - [ ] #277 — `docs/research/semantic-encoding-modes-contextual-routing.md` committed (Status: Final)
