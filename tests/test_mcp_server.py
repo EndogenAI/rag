@@ -18,7 +18,6 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -119,29 +118,28 @@ class TestValidateUrl:
 
 
 class TestValidateAgentFile:
-    def test_valid_file_returns_ok_true(self, tmp_path):
+    def test_valid_file_returns_ok_true(self, tmp_path, mocker):
         from mcp_server.tools.validation import validate_agent_file
 
         dummy = tmp_path / "test.agent.md"
         dummy.write_text("# dummy")
-        with patch("mcp_server.tools.validation._run_script", return_value=_completed(0, "All good")):
-            # Override validate_repo_path to permit tmp_path
-            with patch("mcp_server.tools.validation.validate_repo_path", return_value=dummy):
-                result = validate_agent_file(str(dummy))
+        mocker.patch("mcp_server.tools.validation._run_script", return_value=_completed(0, "All good"))
+        mocker.patch("mcp_server.tools.validation.validate_repo_path", return_value=dummy)
+        result = validate_agent_file(str(dummy))
         assert result["ok"] is True
         assert "file_path" in result
 
-    def test_invalid_file_returns_ok_false_with_errors(self, tmp_path):
+    def test_invalid_file_returns_ok_false_with_errors(self, tmp_path, mocker):
         from mcp_server.tools.validation import validate_agent_file
 
         dummy = tmp_path / "bad.agent.md"
         dummy.write_text("malformed")
-        with patch(
+        mocker.patch(
             "mcp_server.tools.validation._run_script",
             return_value=_completed(1, "", "ERROR: missing frontmatter"),
-        ):
-            with patch("mcp_server.tools.validation.validate_repo_path", return_value=dummy):
-                result = validate_agent_file(str(dummy))
+        )
+        mocker.patch("mcp_server.tools.validation.validate_repo_path", return_value=dummy)
+        result = validate_agent_file(str(dummy))
         assert result["ok"] is False
         assert any("ERROR" in e for e in result["errors"])
 
@@ -154,27 +152,27 @@ class TestValidateAgentFile:
 
 
 class TestValidateSynthesis:
-    def test_valid_synthesis_returns_ok_true(self, tmp_path):
+    def test_valid_synthesis_returns_ok_true(self, tmp_path, mocker):
         from mcp_server.tools.validation import validate_synthesis
 
         dummy = tmp_path / "doc.md"
         dummy.write_text("content")
-        with patch("mcp_server.tools.validation._run_script", return_value=_completed(0, "OK")):
-            with patch("mcp_server.tools.validation.validate_repo_path", return_value=dummy):
-                result = validate_synthesis(str(dummy))
+        mocker.patch("mcp_server.tools.validation._run_script", return_value=_completed(0, "OK"))
+        mocker.patch("mcp_server.tools.validation.validate_repo_path", return_value=dummy)
+        result = validate_synthesis(str(dummy))
         assert result["ok"] is True
 
-    def test_invalid_synthesis_returns_ok_false(self, tmp_path):
+    def test_invalid_synthesis_returns_ok_false(self, tmp_path, mocker):
         from mcp_server.tools.validation import validate_synthesis
 
         dummy = tmp_path / "doc.md"
         dummy.write_text("stub")
-        with patch(
+        mocker.patch(
             "mcp_server.tools.validation._run_script",
             return_value=_completed(1, "FAIL: missing Executive Summary"),
-        ):
-            with patch("mcp_server.tools.validation.validate_repo_path", return_value=dummy):
-                result = validate_synthesis(str(dummy))
+        )
+        mocker.patch("mcp_server.tools.validation.validate_repo_path", return_value=dummy)
+        result = validate_synthesis(str(dummy))
         assert result["ok"] is False
 
     def test_path_traversal_caught(self):
@@ -184,7 +182,7 @@ class TestValidateSynthesis:
         assert result["ok"] is False
         assert any("outside the repository root" in e for e in result["errors"])
 
-    def test_min_lines_passed_to_script(self, tmp_path):
+    def test_min_lines_passed_to_script(self, tmp_path, mocker):
         from mcp_server.tools.validation import validate_synthesis
 
         dummy = tmp_path / "doc.md"
@@ -195,31 +193,31 @@ class TestValidateSynthesis:
             captured_args.extend(args)
             return _completed(0)
 
-        with patch("mcp_server.tools.validation._run_script", side_effect=fake_run):
-            with patch("mcp_server.tools.validation.validate_repo_path", return_value=dummy):
-                validate_synthesis(str(dummy), min_lines=120)
+        mocker.patch("mcp_server.tools.validation._run_script", side_effect=fake_run)
+        mocker.patch("mcp_server.tools.validation.validate_repo_path", return_value=dummy)
+        validate_synthesis(str(dummy), min_lines=120)
 
         assert "--min-lines" in captured_args
         assert "120" in captured_args
 
 
 class TestCheckSubstrate:
-    def test_healthy_substrate_returns_ok_true(self):
+    def test_healthy_substrate_returns_ok_true(self, mocker):
         from mcp_server.tools.validation import check_substrate
 
-        with patch("mcp_server.tools.validation._run_script", return_value=_completed(0, "All checks passed")):
-            result = check_substrate()
+        mocker.patch("mcp_server.tools.validation._run_script", return_value=_completed(0, "All checks passed"))
+        result = check_substrate()
         assert result["ok"] is True
         assert "report" in result
 
-    def test_unhealthy_substrate_returns_ok_false(self):
+    def test_unhealthy_substrate_returns_ok_false(self, mocker):
         from mcp_server.tools.validation import check_substrate
 
-        with patch(
+        mocker.patch(
             "mcp_server.tools.validation._run_script",
             return_value=_completed(1, "BLOCK: missing MANIFESTO.md section"),
-        ):
-            result = check_substrate()
+        )
+        result = check_substrate()
         assert result["ok"] is False
         assert any("BLOCK" in e for e in result["errors"])
 
@@ -230,14 +228,14 @@ class TestCheckSubstrate:
 
 
 class TestScaffoldAgent:
-    def test_valid_scaffold_returns_output_path(self):
+    def test_valid_scaffold_returns_output_path(self, mocker):
         from mcp_server.tools.scaffolding import scaffold_agent
 
-        with patch(
+        mocker.patch(
             "mcp_server.tools.scaffolding._run_script",
             return_value=_completed(0, "Created: .github/agents/test-research.agent.md"),
-        ):
-            result = scaffold_agent("Test Research", "A test agent for research tasks")
+        )
+        result = scaffold_agent("Test Research", "A test agent for research tasks")
         assert result["ok"] is True
         assert result["output_path"] is not None
         assert "agent.md" in result["output_path"]
@@ -256,36 +254,36 @@ class TestScaffoldAgent:
         assert result["ok"] is False
         assert any("posture" in e for e in result["errors"])
 
-    def test_script_failure_returns_ok_false(self):
+    def test_script_failure_returns_ok_false(self, mocker):
         from mcp_server.tools.scaffolding import scaffold_agent
 
-        with patch(
+        mocker.patch(
             "mcp_server.tools.scaffolding._run_script", return_value=_completed(1, "", "ERROR: name already exists")
-        ):
-            result = scaffold_agent("Existing Agent", "Valid description", posture="readonly")
+        )
+        result = scaffold_agent("Existing Agent", "Valid description", posture="readonly")
         assert result["ok"] is False
 
-    def test_valid_postures_accepted(self):
+    def test_valid_postures_accepted(self, mocker):
         from mcp_server.tools.scaffolding import scaffold_agent
 
         for posture in ("readonly", "creator", "full"):
-            with patch(
+            mocker.patch(
                 "mcp_server.tools.scaffolding._run_script",
                 return_value=_completed(0, "Created: .github/agents/x.agent.md"),
-            ):
-                result = scaffold_agent("Agent", "Description", posture=posture)
+            )
+            result = scaffold_agent("Agent", "Description", posture=posture)
             assert result["ok"] is True
 
 
 class TestScaffoldWorkplan:
-    def test_valid_slug_creates_workplan(self):
+    def test_valid_slug_creates_workplan(self, mocker):
         from mcp_server.tools.scaffolding import scaffold_workplan
 
-        with patch(
+        mocker.patch(
             "mcp_server.tools.scaffolding._run_script",
             return_value=_completed(0, "Created: docs/plans/2026-03-17-my-sprint.md"),
-        ):
-            result = scaffold_workplan("my-sprint")
+        )
+        result = scaffold_workplan("my-sprint")
         assert result["ok"] is True
         assert result["output_path"] is not None
 
@@ -296,7 +294,7 @@ class TestScaffoldWorkplan:
         assert result["ok"] is False
         assert result["errors"]
 
-    def test_issues_passed_to_script(self):
+    def test_issues_passed_to_script(self, mocker):
         from mcp_server.tools.scaffolding import scaffold_workplan
 
         captured: list = []
@@ -305,19 +303,19 @@ class TestScaffoldWorkplan:
             captured.extend(args)
             return _completed(0, "Created: docs/plans/2026-03-17-sprint.md")
 
-        with patch("mcp_server.tools.scaffolding._run_script", side_effect=fake_run):
-            scaffold_workplan("sprint", issues="42,43")
+        mocker.patch("mcp_server.tools.scaffolding._run_script", side_effect=fake_run)
+        scaffold_workplan("sprint", issues="42,43")
 
         assert "--issues" in captured
         assert "42,43" in captured
 
-    def test_script_failure_returns_ok_false(self):
+    def test_script_failure_returns_ok_false(self, mocker):
         from mcp_server.tools.scaffolding import scaffold_workplan
 
-        with patch(
+        mocker.patch(
             "mcp_server.tools.scaffolding._run_script", return_value=_completed(1, "", "ERROR: workplan exists")
-        ):
-            result = scaffold_workplan("existing-sprint")
+        )
+        result = scaffold_workplan("existing-sprint")
         assert result["ok"] is False
 
 
@@ -327,38 +325,38 @@ class TestScaffoldWorkplan:
 
 
 class TestRunResearchScout:
-    def test_valid_https_url_succeeds(self):
+    def test_valid_https_url_succeeds(self, mocker):
         from mcp_server.tools.research import run_research_scout
 
-        with patch("mcp_server.tools.research.validate_url", return_value="https://example.com/doc"):
-            with patch(
-                "mcp_server.tools.research._run_script",
-                return_value=_completed(0, "Cached at .cache/sources/example.md"),
-            ):
-                result = run_research_scout("https://example.com/doc")
+        mocker.patch("mcp_server.tools.research.validate_url", return_value="https://example.com/doc")
+        mocker.patch(
+            "mcp_server.tools.research._run_script",
+            return_value=_completed(0, "Cached at .cache/sources/example.md"),
+        )
+        result = run_research_scout("https://example.com/doc")
         assert result["ok"] is True
         assert result["cache_path"] is not None
 
-    def test_invalid_url_returns_ok_false(self):
+    def test_invalid_url_returns_ok_false(self, mocker):
         from mcp_server.tools.research import run_research_scout
 
-        with patch("mcp_server.tools.research.validate_url", side_effect=ValueError("scheme not allowed")):
-            result = run_research_scout("http://evil.local/data")
+        mocker.patch("mcp_server.tools.research.validate_url", side_effect=ValueError("scheme not allowed"))
+        result = run_research_scout("http://evil.local/data")
         assert result["ok"] is False
         assert "scheme" in result["errors"][0]
 
-    def test_fetch_failure_returns_ok_false(self):
+    def test_fetch_failure_returns_ok_false(self, mocker):
         from mcp_server.tools.research import run_research_scout
 
-        with patch("mcp_server.tools.research.validate_url", return_value="https://example.com/doc"):
-            with patch(
-                "mcp_server.tools.research._run_script", return_value=_completed(1, "", "error: network timeout")
-            ):
-                result = run_research_scout("https://example.com/doc")
+        mocker.patch("mcp_server.tools.research.validate_url", return_value="https://example.com/doc")
+        mocker.patch(
+            "mcp_server.tools.research._run_script", return_value=_completed(1, "", "error: network timeout")
+        )
+        result = run_research_scout("https://example.com/doc")
         assert result["ok"] is False
         assert result["errors"]
 
-    def test_force_flag_passed_to_script(self):
+    def test_force_flag_passed_to_script(self, mocker):
         from mcp_server.tools.research import run_research_scout
 
         captured: list = []
@@ -367,7 +365,7 @@ class TestRunResearchScout:
             captured.extend(args)
             return _completed(0, ".cache/sources/example.md")
 
-        with patch("mcp_server.tools.research.validate_url", return_value="https://example.com/doc"):
+        mocker.patch("mcp_server.tools.research.validate_url", return_value="https://example.com/doc")
             with patch("mcp_server.tools.research._run_script", side_effect=fake_run):
                 run_research_scout("https://example.com/doc", force=True)
         assert "--force" in captured
