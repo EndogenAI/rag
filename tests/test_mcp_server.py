@@ -349,9 +349,7 @@ class TestRunResearchScout:
         from mcp_server.tools.research import run_research_scout
 
         mocker.patch("mcp_server.tools.research.validate_url", return_value="https://example.com/doc")
-        mocker.patch(
-            "mcp_server.tools.research._run_script", return_value=_completed(1, "", "error: network timeout")
-        )
+        mocker.patch("mcp_server.tools.research._run_script", return_value=_completed(1, "", "error: network timeout"))
         result = run_research_scout("https://example.com/doc")
         assert result["ok"] is False
         assert result["errors"]
@@ -366,18 +364,18 @@ class TestRunResearchScout:
             return _completed(0, ".cache/sources/example.md")
 
         mocker.patch("mcp_server.tools.research.validate_url", return_value="https://example.com/doc")
-            with patch("mcp_server.tools.research._run_script", side_effect=fake_run):
-                run_research_scout("https://example.com/doc", force=True)
+        mocker.patch("mcp_server.tools.research._run_script", side_effect=fake_run)
+        run_research_scout("https://example.com/doc", force=True)
         assert "--force" in captured
 
 
 class TestQueryDocs:
-    def test_valid_query_returns_results(self):
+    def test_valid_query_returns_results(self, mocker):
         from mcp_server.tools.research import query_docs
 
         fake_results = [{"title": "AGENTS.md", "score": 0.9, "snippet": "Endogenous-First"}]
-        with patch("mcp_server.tools.research._run_script", return_value=_completed(0, json.dumps(fake_results))):
-            result = query_docs("Endogenous-First axiom")
+        mocker.patch("mcp_server.tools.research._run_script", return_value=_completed(0, json.dumps(fake_results)))
+        result = query_docs("Endogenous-First axiom")
         assert result["ok"] is True
         assert len(result["results"]) == 1
 
@@ -388,22 +386,22 @@ class TestQueryDocs:
         assert result["ok"] is False
         assert any("scope" in e.lower() for e in result["errors"])
 
-    def test_valid_scopes_accepted(self):
+    def test_valid_scopes_accepted(self, mocker):
         from mcp_server.tools.research import query_docs
 
         for scope in ("manifesto", "agents", "guides", "research", "toolchain", "skills", "all"):
-            with patch("mcp_server.tools.research._run_script", return_value=_completed(0, "[]")):
-                result = query_docs("test", scope=scope)
+            mocker.patch("mcp_server.tools.research._run_script", return_value=_completed(0, "[]"))
+            result = query_docs("test", scope=scope)
             assert result["ok"] is True
 
-    def test_script_failure_returns_ok_false(self):
+    def test_script_failure_returns_ok_false(self, mocker):
         from mcp_server.tools.research import query_docs
 
-        with patch("mcp_server.tools.research._run_script", return_value=_completed(1, "", "ERROR: index not found")):
-            result = query_docs("something")
+        mocker.patch("mcp_server.tools.research._run_script", return_value=_completed(1, "", "ERROR: index not found"))
+        result = query_docs("something")
         assert result["ok"] is False
 
-    def test_top_n_passed_to_script(self):
+    def test_top_n_passed_to_script(self, mocker):
         from mcp_server.tools.research import query_docs
 
         captured: list = []
@@ -412,8 +410,8 @@ class TestQueryDocs:
             captured.extend(args)
             return _completed(0, "[]")
 
-        with patch("mcp_server.tools.research._run_script", side_effect=fake_run):
-            query_docs("test", top_n=10)
+        mocker.patch("mcp_server.tools.research._run_script", side_effect=fake_run)
+        query_docs("test", top_n=10)
         assert "--top-n" in captured
         assert "10" in captured
 
@@ -424,14 +422,14 @@ class TestQueryDocs:
 
 
 class TestPruneScratchpad:
-    def test_init_creates_file(self):
+    def test_init_creates_file(self, mocker):
         from mcp_server.tools.scratchpad import prune_scratchpad
 
-        with patch("subprocess.run", return_value=_completed(0, "Initialized .tmp/main/2026-03-17.md")):
-            result = prune_scratchpad()
+        mocker.patch("subprocess.run", return_value=_completed(0, "Initialized .tmp/main/2026-03-17.md"))
+        result = prune_scratchpad()
         assert result["ok"] is True
 
-    def test_dry_run_passes_check_only_flag(self):
+    def test_dry_run_passes_check_only_flag(self, mocker):
         from mcp_server.tools.scratchpad import prune_scratchpad
 
         captured_args: list = []
@@ -440,12 +438,12 @@ class TestPruneScratchpad:
             captured_args.extend(args)
             return _completed(0, ".tmp/main/2026-03-17.md already exists, 42 lines")
 
-        with patch("subprocess.run", side_effect=fake_run):
-            result = prune_scratchpad(dry_run=True)
+        mocker.patch("subprocess.run", side_effect=fake_run)
+        result = prune_scratchpad(dry_run=True)
         assert "--check-only" in captured_args
         assert result["ok"] is True
 
-    def test_explicit_branch_passed_through(self):
+    def test_explicit_branch_passed_through(self, mocker):
         from mcp_server.tools.scratchpad import prune_scratchpad
 
         # When branch is provided, no git call is made; subprocess.run receives --init
@@ -457,11 +455,11 @@ class TestPruneScratchpad:
                 return _completed(0, "")  # git call for branch detection
             return _completed(0, ".tmp/feat-my-branch/2026-03-17.md")
 
-        with patch("subprocess.run", side_effect=fake_run):
-            result = prune_scratchpad(branch="feat-my-branch")
+        mocker.patch("subprocess.run", side_effect=fake_run)
+        result = prune_scratchpad(branch="feat-my-branch")
         assert result["ok"] is True
 
-    def test_script_failure_returns_ok_false(self):
+    def test_script_failure_returns_ok_false(self, mocker):
         from mcp_server.tools.scratchpad import prune_scratchpad
 
         def fake_run(args, **kwargs):
@@ -469,8 +467,8 @@ class TestPruneScratchpad:
                 return _completed(0, "main")
             return _completed(1, "", "ERROR: could not create directory")
 
-        with patch("subprocess.run", side_effect=fake_run):
-            result = prune_scratchpad()
+        mocker.patch("subprocess.run", side_effect=fake_run)
+        result = prune_scratchpad()
         assert result["ok"] is False
         assert result["errors"]
 
