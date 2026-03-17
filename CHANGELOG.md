@@ -1,3 +1,19 @@
+# [0.9.0](https://github.com/EndogenAI/dogma/compare/v0.8.0...v0.9.0) (2026-03-17)
+
+
+### Bug Fixes
+
+* **docs:** address PR review — Copilot review comments [#306](https://github.com/EndogenAI/dogma/issues/306) ([2b2d6f7](https://github.com/EndogenAI/dogma/commit/2b2d6f742eee3c7a93e16f728dbd84effea86967)), closes [#129](https://github.com/EndogenAI/dogma/issues/129)
+* **research:** convert MANIFESTO.md plain-text refs to hyperlinks in [#297](https://github.com/EndogenAI/dogma/issues/297) doc ([1fe4bf1](https://github.com/EndogenAI/dogma/commit/1fe4bf118d2fde920491617be80a99d08dc94cd3))
+
+
+### Features
+
+* **agents:** Sprint 16 — PR merge gate, Claude Code hooks integration, print mode policy ([0be0c2b](https://github.com/EndogenAI/dogma/commit/0be0c2bc50d92a215a3dbcfcc23f9d0574400e68)), closes [#307](https://github.com/EndogenAI/dogma/issues/307) [#309](https://github.com/EndogenAI/dogma/issues/309)
+* **scripts:** Candidate C — extend YAML schema in prune_scratchpad --init (closes [#308](https://github.com/EndogenAI/dogma/issues/308)) ([3ab98d8](https://github.com/EndogenAI/dogma/commit/3ab98d8308d719c6a2d5ae51ce0f11b411ec13fb))
+
+
+
 # [0.8.0](https://github.com/EndogenAI/dogma/compare/v0.7.0...v0.8.0) (2026-03-16)
 
 
