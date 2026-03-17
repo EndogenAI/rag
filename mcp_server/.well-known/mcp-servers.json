@@ -1,0 +1,12 @@
+{
+  "servers": [
+    {
+      "name": "dogma-governance",
+      "description": "EndogenAI Workflows governance and validation toolset",
+      "url": "http://localhost:${DOGMA_MCP_PORT:-8000}/mcp",
+      "transport": "stdio",
+      "command": "uv",
+      "args": ["run", "python", "-m", "mcp_server.dogma_server"]
+    }
+  ]
+}

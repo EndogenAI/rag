@@ -1,0 +1,100 @@
+"""mcp_server/_security.py — Path allowlist and SSRF helpers for the dogma MCP server.
+
+All tool implementations must call these helpers before processing any
+user-supplied file path or URL. Failing to do so allows path traversal or
+SSRF attacks from MCP clients.
+
+Usage:
+    from mcp_server._security import validate_repo_path, validate_url
+
+    # For file paths:
+    safe_path = validate_repo_path("/abs/path/to/file")  # raises ValueError on traversal
+
+    # For URLs (run_research_scout):
+    safe_url = validate_url("https://example.com/page")  # raises ValueError on unsafe URL
+"""
+
+from __future__ import annotations
+
+import ipaddress
+import re
+import socket
+import urllib.parse
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).parent.parent
+
+# Allowlist of URL schemes accepted by run_research_scout
+_ALLOWED_SCHEMES: frozenset[str] = frozenset({"https"})
+
+# IPv4 private ranges (RFC 1918 + loopback + link-local + CGNAT)
+_BLOCKED_IPV4_NETWORKS = [
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("100.64.0.0/10"),
+]
+
+
+def validate_repo_path(file_path: str) -> Path:
+    """Validate that *file_path* resolves within REPO_ROOT.
+
+    Raises:
+        ValueError: if the resolved path escapes REPO_ROOT (path traversal).
+    """
+    resolved = Path(file_path).resolve()
+    try:
+        resolved.relative_to(REPO_ROOT)
+    except ValueError:
+        raise ValueError(
+            f"Path '{file_path}' resolves outside the repository root. Only paths within the repo are permitted."
+        )
+    return resolved
+
+
+def validate_url(url: str) -> str:
+    """Validate a URL for the run_research_scout tool.
+
+    Enforces:
+    - https:// scheme only
+    - No private / loopback IPv4 or IPv6 link-local destinations (SSRF)
+    - Hostname must not be a bare IP in a private range
+
+    Raises:
+        ValueError: on scheme mismatch, invalid URL, or SSRF risk.
+    """
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in _ALLOWED_SCHEMES:
+        raise ValueError(f"URL scheme '{parsed.scheme}' is not allowed. Use https://")
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("URL must have a valid hostname.")
+
+    # IPv6 link-local: fe80::/10 (SSRF risk)
+    if re.match(r"^\[?fe80:", hostname, re.IGNORECASE):
+        raise ValueError("IPv6 link-local addresses are not allowed.")
+
+    # Try resolving the hostname to an IP address for SSRF check
+    try:
+        addr_info = socket.getaddrinfo(hostname, None)
+        for _family, _type, _proto, _canonname, sockaddr in addr_info:
+            ip_str = sockaddr[0]
+            try:
+                ip_addr = ipaddress.ip_address(ip_str)
+                if isinstance(ip_addr, ipaddress.IPv4Address):
+                    for blocked in _BLOCKED_IPV4_NETWORKS:
+                        if ip_addr in blocked:
+                            raise ValueError(f"URL resolves to a private/internal IP: {ip_addr}")
+                elif isinstance(ip_addr, ipaddress.IPv6Address):
+                    if ip_addr.is_link_local or ip_addr.is_loopback or ip_addr.is_private:
+                        raise ValueError(f"URL resolves to a private/internal IPv6: {ip_addr}")
+            except ValueError:
+                raise
+    except OSError:
+        # DNS resolution failed — let the downstream fetch fail with a clean error
+        pass
+
+    return url
