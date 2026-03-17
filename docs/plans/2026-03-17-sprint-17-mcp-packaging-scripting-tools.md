@@ -50,7 +50,7 @@ external use* — packaging, discoverability, and fleet intelligence tooling.
 
 ---
 
-### Phase 2 — Implementation: Scripting Tools (#129, #291, #292) ⬜
+### Phase 2 — Implementation: Scripting Tools (#129, #291, #292) ✅
 
 **Agent**: Executive Scripter
 **Issues**: #129, #291, #292
@@ -65,20 +65,20 @@ external use* — packaging, discoverability, and fleet intelligence tooling.
 **Depends on**: Phase 1 (pre-done)
 **Gate**: Phase 2 Review APPROVED before Phase 3 begins
 **CI**: Tests, Auto-validate
-**Status**: Not started
+**Status**: Complete
 
 ---
 
-### Phase 2 Review — Review Gate ⬜
+### Phase 2 Review — Review Gate ✅
 
 **Agent**: Review
 **Deliverables**: `## Phase 2 Review Output` in scratchpad, verdict: APPROVED
 **Depends on**: Phase 2 committed
-**Status**: Not started
+**Status**: Complete — APPROVED
 
 ---
 
-### Phase 3 — Implementation: MCP Server (#303) ⬜
+### Phase 3 — Implementation: MCP Server (#303) ✅
 
 **Agent**: Executive Scripter
 **Issues**: #303
@@ -94,20 +94,20 @@ external use* — packaging, discoverability, and fleet intelligence tooling.
 **Depends on**: Phase 2 Review APPROVED (scratchpad tools require #129 FTS5 index)
 **Gate**: Phase 3 Review APPROVED before Phase 4 begins
 **CI**: Tests, Auto-validate
-**Status**: Not started
+**Status**: Complete
 
 ---
 
-### Phase 3 Review — Review Gate ⬜
+### Phase 3 Review — Review Gate ✅
 
 **Agent**: Review
 **Deliverables**: `## Phase 3 Review Output` in scratchpad, verdict: APPROVED
 **Depends on**: Phase 3 committed
-**Status**: Not started
+**Status**: Complete — APPROVED
 
 ---
 
-### Phase 4 — Implementation: Pre-commit Bundle (#305) ⬜
+### Phase 4 — Implementation: Pre-commit Bundle (#305) ✅
 
 **Agent**: Executive Scripter
 **Issues**: #305
@@ -124,31 +124,20 @@ external use* — packaging, discoverability, and fleet intelligence tooling.
 **Depends on**: Phase 3 Review APPROVED
 **Gate**: Phase 4 Review APPROVED before Phase 5 begins
 **CI**: Tests, Auto-validate
-**Status**: Not started
+**Status**: Complete
 
 ---
 
-### Phase 4 Review — Review Gate ⬜
+### Phase 4 Review — Review Gate ✅
 
 **Agent**: Review
 **Deliverables**: `## Phase 4 Review Output` in scratchpad, verdict: APPROVED
 **Depends on**: Phase 4 committed
-**Status**: Not started
-**CI**: Tests, Auto-validate
-**Status**: Not started
+**Status**: Complete — APPROVED
 
 ---
 
-### Phase 4 Review — Review Gate ⬜
-
-**Agent**: Review
-**Deliverables**: `## Phase 4 Review Output` in scratchpad, verdict: APPROVED
-**Depends on**: Phase 4 committed
-**Status**: Not started
-
----
-
-### Phase 5 — Docs & Sprint Close ⬜
+### Phase 5 — Docs & Sprint Close ✅
 
 **Agent**: Executive Docs
 **Deliverables**:
@@ -160,15 +149,15 @@ external use* — packaging, discoverability, and fleet intelligence tooling.
 **Depends on**: Phase 4 Review APPROVED
 **Gate**: Phase 5 Review APPROVED
 **CI**: Tests, Auto-validate
-**Status**: Not started
+**Status**: Complete
 
 ---
 
-### Phase 5 Review — Review Gate ⬜
+### Phase 5 Review — Review Gate ⏳
 
 **Agent**: Review
 **Deliverables**: `## Phase 5 Review Output` in scratchpad, verdict: APPROVED
-**Status**: Not started
+**Status**: In progress
 
 ---
 
@@ -188,13 +177,13 @@ external use* — packaging, discoverability, and fleet intelligence tooling.
 
 ## Acceptance Criteria
 
-- [ ] #303: MCP server implemented, tested (≥80% coverage), usage guide committed
-- [ ] #305: Pre-commit bundle installable via pip/uv, guide committed
-- [ ] #129: SQLite AFS FTS5 index script implemented and tested
-- [ ] #291: `analyse_fleet_coupling.py` implemented and tested
-- [ ] #292: `suggest_routing.py` implemented and tested (stretch — include if capacity allows)
-- [ ] All scripts have docstring with purpose, inputs, outputs, usage
-- [ ] `CHANGELOG.md` Sprint 17 section added
+- [x] #303: MCP server implemented, tested (≥80% coverage), usage guide committed
+- [x] #305: Pre-commit bundle installable via pip/uv, guide committed
+- [x] #129: SQLite AFS FTS5 index script implemented and tested
+- [x] #291: `analyse_fleet_coupling.py` implemented and tested
+- [x] #292: `suggest_routing.py` implemented and tested (stretch — include if capacity allows)
+- [x] All scripts have docstring with purpose, inputs, outputs, usage
+- [x] `CHANGELOG.md` Sprint 17 section added
 - [ ] CI green on PR
 - [ ] All 5 sprint issues closed via PR merge
 

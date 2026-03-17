@@ -1,3 +1,16 @@
+## Unreleased
+
+### Features
+
+* **scripts:** Sprint 17 scripting delivery — AFS FTS5 index, fleet coupling analysis, and routing suggester [#129](https://github.com/EndogenAI/dogma/issues/129) [#291](https://github.com/EndogenAI/dogma/issues/291) [#292](https://github.com/EndogenAI/dogma/issues/292) ([5ac954c](https://github.com/EndogenAI/dogma/commit/5ac954c))
+* **mcp:** dogma governance MCP server with 8 tools, security guards, and test coverage [#303](https://github.com/EndogenAI/dogma/issues/303) ([22bebea](https://github.com/EndogenAI/dogma/commit/22bebea))
+* **packages:** standalone dogma-governance pre-commit bundle and release workflow [#305](https://github.com/EndogenAI/dogma/issues/305) ([6e67a33](https://github.com/EndogenAI/dogma/commit/6e67a33))
+
+### Bug Fixes
+
+* **mcp:** normalize `mocker.patch` usage in MCP server tests and include `mcp_server` in coverage source ([70971e1](https://github.com/EndogenAI/dogma/commit/70971e1))
+* **scripts:** stricter anti-rate-limit defaults (60s post-delegation, 120s phase-boundary, 15k margin) ([d71f5ad](https://github.com/EndogenAI/dogma/commit/d71f5ad))
+
 # [0.9.0](https://github.com/EndogenAI/dogma/compare/v0.8.0...v0.9.0) (2026-03-17)
 
 
