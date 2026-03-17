@@ -419,7 +419,7 @@ class TestDetectRateLimitCLI:
             capture_output=True,
             text=True,
         )
-        assert result.returncode == 1
+        assert result.returncode == 2  # argparse returns 2 for argument parse errors
 
     @pytest.mark.slow
     def test_cli_missing_phase_cost(self):
