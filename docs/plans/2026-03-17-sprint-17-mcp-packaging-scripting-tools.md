@@ -137,7 +137,7 @@ external use* — packaging, discoverability, and fleet intelligence tooling.
 
 ---
 
-### Phase 5 — Docs & Sprint Close ✅
+### Phase 5 — Docs & Sprint Close ⏳
 
 **Agent**: Executive Docs
 **Deliverables**:
@@ -149,7 +149,7 @@ external use* — packaging, discoverability, and fleet intelligence tooling.
 **Depends on**: Phase 4 Review APPROVED
 **Gate**: Phase 5 Review APPROVED
 **CI**: Tests, Auto-validate
-**Status**: Complete
+**Status**: In progress
 
 ---
 
