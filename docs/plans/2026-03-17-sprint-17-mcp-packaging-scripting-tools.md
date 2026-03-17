@@ -187,6 +187,15 @@ external use* — packaging, discoverability, and fleet intelligence tooling.
 - [ ] CI green on PR
 - [ ] All 5 sprint issues closed via PR merge
 
+---
+
+## Next Sprint Follow-Ups (Rate-Limit Resilience)
+
+- [ ] #322 — fix strict sleep cap/floor conflict in `scripts/detect_rate_limit.py`
+- [ ] #323 — provider-aware rate-limit policy profiles (Claude/GPT)
+- [ ] #324 — adaptive escalation + circuit-breaker for repeated rate limits
+- [ ] #325 — enforce pre-delegation rate-limit gate with audit logging
+
 ## PR Description Template
 
 ```

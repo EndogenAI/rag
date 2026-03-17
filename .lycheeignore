@@ -118,3 +118,8 @@ https://zed.dev/docs/assistant/ai-improvement
 # EndogenAI dogma GitHub Pages site — deploying; may return 404 while Pages
 # build is pending after docs workflow was first introduced in Sprint 14.
 https://endogenai.github.io/dogma/
+
+# GitHub commit pages intermittently returned 503 during PR #321 link checks.
+# URLs are valid commit objects; treat as transient upstream availability.
+https://github.com/EndogenAI/dogma/commit/7684b5ad8a094470b4cdbbf66c37707f0df3f19b
+https://github.com/EndogenAI/dogma/commit/a257c83c93b524ab0f46e95c2fdf642ed9eb4448
