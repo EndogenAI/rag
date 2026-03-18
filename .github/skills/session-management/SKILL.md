@@ -84,6 +84,24 @@ read_file .tmp/<branch-slug>/<today>.md
 
 If there is a workplan (`docs/plans/<date>-<slug>.md`), read it as well. The workplan is the plan of record; the scratchpad is the live inter-agent memory.
 
+### 2.4 MCP Health Check
+
+After the scratchpad is initialised, call `check_substrate` via the MCP server to confirm the repo is in a valid state before any phase begins:
+
+```
+check_substrate()
+```
+
+Log the result summary under `## Session Start` in the scratchpad. A red result is a **blocking issue** — fix the reported violation before delegating any phase. A green result is sufficient to proceed.
+
+**Preferred substitution**: if the MCP server is connected, use `prune_scratchpad(dry_run=true)` in place of the `cat .tmp/...` orientation read in §2.3 — it returns the current scratchpad state as structured output without requiring a separate terminal command.
+
+If the MCP server is not connected (e.g. CI or non-VS Code environment), run the equivalent directly:
+
+```bash
+uv run python scripts/check_substrate_health.py
+```
+
 ---
 
 ## 3. Phase Gate Protocol

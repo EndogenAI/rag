@@ -142,6 +142,45 @@ See [`docs/guides/claude-code-integration.md`](docs/guides/claude-code-integrati
 
 ---
 
+## MCP Toolset
+
+The dogma repository ships a local MCP (Model Context Protocol) server that exposes 8 governance tools to any connected MCP client (VS Code Copilot, Claude Desktop, Cursor). The server is defined in [`mcp_server/dogma_server.py`](mcp_server/dogma_server.py); full setup instructions are in [`mcp_server/README.md`](mcp_server/README.md).
+
+### Available Tools
+
+| Tool | When to use |
+|------|------------|
+| `check_substrate` | **Session open** — run this first to confirm the repo is in a healthy state before any phase begins |
+| `validate_agent_file` | Before committing any `.agent.md` change — same check as CI |
+| `validate_synthesis` | Before archiving any D4 research doc — same check as `validate_synthesis.py` |
+| `scaffold_agent` | Create a new `.agent.md` stub without manually templating |
+| `scaffold_workplan` | Create a new `docs/plans/` skeleton for a multi-phase session |
+| `run_research_scout` | Fetch and cache an external URL (SSRF-safe) during a research phase |
+| `query_docs` | BM25 search over the full docs corpus — use before fetching external sources |
+| `prune_scratchpad` | Initialise or inspect the session scratchpad (preferred over calling the script directly) |
+
+### Session-Start Integration
+
+**All agents** must call `check_substrate` at the start of every session — it is the programmatic equivalent of the orientation read:
+
+```
+check_substrate()
+```
+
+A green result confirms the repo's agent files, synthesis docs, and substrate scripts are valid. A red result surfaces blocking issues before any phase work begins. Log the summary under `## Session Start` in the scratchpad.
+
+**Preferred substitution**: when the MCP server is connected, use `prune_scratchpad(dry_run=true)` in place of `cat .tmp/...` for the orientation read — the tool returns the current scratchpad state as structured output.
+
+### Prerequisites
+
+```bash
+uv sync --extra mcp --extra dev
+```
+
+The server is pre-configured for VS Code in [`.vscode/mcp.json`](.vscode/mcp.json). For Claude Desktop or Cursor, see [`mcp_server/README.md`](mcp_server/README.md) for the config block.
+
+---
+
 ## Testing-First Requirement for Scripts
 
 **Every script committed to `scripts/` must have automated tests before it ships.**

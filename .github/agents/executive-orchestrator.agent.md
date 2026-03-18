@@ -48,6 +48,7 @@ You are the **chief of staff**: you decompose, delegate, and monitor. You do not
 4. [`scripts/prune_scratchpad.py`](../../scripts/prune_scratchpad.py) — session management; run at session start (`--init`) and end (`--force`).
 5. The active session scratchpad (`.tmp/<branch>/<date>.md`) — read **first**, before delegating anything.
 6. [`docs/plans/`](../../docs/plans/) — check for an existing workplan on this branch before creating a new one.
+7. [`mcp_server/README.md`](../../mcp_server/README.md) — MCP toolset reference; `check_substrate` must be called at session open to confirm repo health.
 
 ---
 </context>
@@ -160,6 +161,14 @@ At the start of every session:
 uv run python scripts/prune_scratchpad.py --init
 cat .tmp/<branch>/$(date +%Y-%m-%d).md
 ```
+
+**MCP health check** — if the MCP server is connected, call `check_substrate()` immediately after scratchpad init. A green result confirms the repo is valid before any phase begins; log the summary under `## Session Start`. If the MCP server is not connected, run the equivalent directly:
+
+```bash
+uv run python scripts/check_substrate_health.py
+```
+
+**Preferred substitution**: use `prune_scratchpad(dry_run=true)` via MCP in place of `cat .tmp/...` — it returns structured scratchpad state.
 
 **If returning after a compaction event** (a `<conversation-summary>` block is present in context):
 
