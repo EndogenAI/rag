@@ -59,7 +59,7 @@ def validate_agent_file(file_path: str) -> dict:
         ]
     )
     output_lines = (result.stdout + result.stderr).splitlines()
-    errors = [ln for ln in output_lines if ln.strip()]
+    errors = [ln for ln in output_lines if ln.strip()] if result.returncode != 0 else []
     return {
         "ok": result.returncode == 0,
         "errors": errors,
@@ -91,7 +91,7 @@ def validate_synthesis(file_path: str, min_lines: int = 80) -> dict:
         ]
     )
     output_lines = (result.stdout + result.stderr).splitlines()
-    errors = [ln for ln in output_lines if ln.strip()]
+    errors = [ln for ln in output_lines if ln.strip()] if result.returncode != 0 else []
     return {
         "ok": result.returncode == 0,
         "errors": errors,

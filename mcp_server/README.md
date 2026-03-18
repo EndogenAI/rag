@@ -139,3 +139,42 @@ uv run ruff check mcp_server/
 # Type-check (optional)
 uv run mypy mcp_server/
 ```
+
+---
+
+## Module Reference (Concise)
+
+### `mcp_server/dogma_server.py`
+- `mcp`: FastMCP app instance (`dogma-governance`)
+- Registers 8 tool functions from `mcp_server/tools/*`
+
+### `mcp_server/_security.py`
+- `validate_repo_path(file_path: str) -> Path`
+  - Rejects paths outside repository root (path traversal guard)
+- `validate_url(url: str) -> str`
+  - Enforces https-only and blocks private/loopback/link-local targets (SSRF guard)
+
+### `mcp_server/tools/validation.py`
+- `validate_agent_file(file_path: str) -> dict`
+  - Runs `scripts/validate_agent_files.py` on a repo-scoped path
+- `validate_synthesis(file_path: str, min_lines: int = 80) -> dict`
+  - Runs `scripts/validate_synthesis.py` with line threshold
+- `check_substrate() -> dict`
+  - Runs `scripts/check_substrate_health.py` and returns report summary
+
+### `mcp_server/tools/scaffolding.py`
+- `scaffold_agent(name: str, description: str, area: str = "general", posture: str = "readonly") -> dict`
+  - Wraps `scripts/scaffold_agent.py` with input validation
+- `scaffold_workplan(slug: str, issues: str = "") -> dict`
+  - Wraps `scripts/scaffold_workplan.py` for plan skeleton creation
+
+### `mcp_server/tools/research.py`
+- `run_research_scout(url: str, force: bool = False) -> dict`
+  - URL validation + `scripts/fetch_source.py`
+- `query_docs(query: str, scope: str = "all", top_n: int = 5) -> dict`
+  - Wraps `scripts/query_docs.py` for BM25 search results
+
+### `mcp_server/tools/scratchpad.py`
+- `prune_scratchpad(branch: str = "", dry_run: bool = False) -> dict`
+  - Wraps `scripts/prune_scratchpad.py` (`--init`/`--check-only`)
+  - Supports explicit branch-targeted daily scratchpad path via `--file`

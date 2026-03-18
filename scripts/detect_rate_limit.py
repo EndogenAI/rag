@@ -13,7 +13,7 @@ Inputs (--check mode):
     remaining_tokens   — tokens available in current rate-limit window
     phase_cost_estimate — estimated tokens for the next phase (from historical prior_phase_costs)
     --window-ms        — rate-limit window duration in milliseconds (default: 60000)
-    --safety-margin    — additional token buffer (default: 8000)
+    --safety-margin    — additional token buffer (default: 15000)
 
 Outputs:
     Single line to stdout:
@@ -140,9 +140,8 @@ def detect_rate_limit(
         # Conservative estimate: assume ~500 tokens/second in rate-limited state
         avg_tokens_per_sec = 500
         computed_sleep_ms = max(MIN_SLEEP_MS, int((deficit / avg_tokens_per_sec) * 1000))
-        # Cap at window_ms or slightly less (e.g., 95% of window) to stay within rate-limit bounds
-        computed_sleep_ms = max(computed_sleep_ms, PHASE_BOUNDARY_SLEEP_MS)  # v2: floor at 2 min
-        sleep_ms = min(computed_sleep_ms, int(window_ms * 0.95))
+        # Enforce strict policy floor even when window_ms is smaller.
+        sleep_ms = max(computed_sleep_ms, PHASE_BOUNDARY_SLEEP_MS)
         status = f"SLEEP_REQUIRED_{sleep_ms}"
         return (status, sleep_ms)
 

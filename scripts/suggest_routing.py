@@ -70,6 +70,23 @@ DEFAULT_GATE = DATA_DIR / "delegation-gate.yml"
 DEFAULT_AMPLIFICATION = DATA_DIR / "amplification-table.yml"
 DEFAULT_FSM = DATA_DIR / "phase-gate-fsm.yml"
 
+ROUTE_TO_AGENT = {
+    "Orchestrator": "Executive Orchestrator",
+    "Docs": "Executive Docs",
+    "Researcher": "Executive Researcher",
+    "Scripter": "Executive Scripter",
+    "Automator": "Executive Automator",
+    "PM": "Executive PM",
+    "Fleet": "Executive Fleet",
+    "Planner": "Executive Planner",
+    "Review": "Review",
+    "GitHub": "GitHub",
+    "Issue Triage": "Issue Triage",
+    "CI Monitor": "CI Monitor",
+    "Test Coordinator": "Test Coordinator",
+    "Security Researcher": "Security Researcher",
+}
+
 
 # ---------------------------------------------------------------------------
 # Data loaders
@@ -161,23 +178,74 @@ AGENT_TOPO_ORDER = [
 ]
 
 
-def topo_sort_agents(matched_entries: list[dict]) -> list[dict]:
-    """Sort matched entries by their position in the canonical delegation topology."""
+def _fsm_transition_guard(fsm: dict, state: str, event: str) -> str | None:
+    """Return guard text for a given state/event in data/phase-gate-fsm.yml."""
+    states = fsm.get("fsm", {}).get("states", {})
+    transitions = states.get(state, {}).get("transitions", [])
+    for t in transitions:
+        if t.get("event") == event:
+            guard = (t.get("guard") or "").strip()
+            return guard or None
+    return None
+
+
+def _build_agent_edges(delegation_gate: dict[str, list[str]]) -> list[tuple[str, str]]:
+    """Build DAG edges in full agent names from data/delegation-gate.yml routes."""
+    edges: list[tuple[str, str]] = []
+    for src, targets in delegation_gate.items():
+        src_agent = ROUTE_TO_AGENT.get(src, src)
+        for dst in targets:
+            dst_agent = ROUTE_TO_AGENT.get(dst, dst)
+            edges.append((src_agent, dst_agent))
+    return edges
+
+
+def topo_sort_agents(matched_entries: list[dict], delegation_gate: dict[str, list[str]] | None = None) -> list[dict]:
+    """Sort matched entries using delegation DAG edges; fall back to canonical order."""
     matched_agents = {e["agent"]: e for e in matched_entries}
+    ordered_agents = [a for a in AGENT_TOPO_ORDER if a in matched_agents]
 
-    result = []
-    # First pass: add agents in topological order
-    for agent in AGENT_TOPO_ORDER:
-        if agent in matched_agents:
-            result.append(matched_agents[agent])
+    if not delegation_gate:
+        result = [matched_agents[a] for a in ordered_agents]
+        in_result = {e["agent"] for e in result}
+        for entry in matched_entries:
+            if entry["agent"] not in in_result:
+                result.append(entry)
+        return result
 
-    # Second pass: add any matched agents not in canonical topo order
-    in_result = {e["agent"] for e in result}
-    for entry in matched_entries:
-        if entry["agent"] not in in_result:
-            result.append(entry)
+    matched = set(matched_agents.keys())
+    indegree = {a: 0 for a in matched}
+    graph = {a: [] for a in matched}
+    for src, dst in _build_agent_edges(delegation_gate):
+        if src in matched and dst in matched:
+            graph[src].append(dst)
+            indegree[dst] += 1
 
-    return result
+    # Kahn with canonical order as deterministic tie-breaker.
+    queue = [a for a in AGENT_TOPO_ORDER if a in matched and indegree[a] == 0]
+    seen = set(queue)
+    for a in matched:
+        if indegree[a] == 0 and a not in seen:
+            queue.append(a)
+            seen.add(a)
+
+    sorted_agents: list[str] = []
+    while queue:
+        current = queue.pop(0)
+        sorted_agents.append(current)
+        for nxt in graph.get(current, []):
+            indegree[nxt] -= 1
+            if indegree[nxt] == 0:
+                queue.append(nxt)
+
+    # Cycle safety: append remaining in canonical order.
+    remaining = [a for a in AGENT_TOPO_ORDER if a in matched and a not in sorted_agents]
+    for a in matched:
+        if a not in sorted_agents and a not in remaining:
+            remaining.append(a)
+    sorted_agents.extend(remaining)
+
+    return [matched_agents[a] for a in sorted_agents]
 
 
 # ---------------------------------------------------------------------------
@@ -187,11 +255,19 @@ def topo_sort_agents(matched_entries: list[dict]) -> list[dict]:
 
 def get_fsm_gate(fsm: dict, step_index: int, total_steps: int) -> str:
     """Return the FSM gate requirement relevant to a step in the sequence."""
+    init_guard = _fsm_transition_guard(fsm, "INIT", "plan_committed")
+    review_guard = _fsm_transition_guard(fsm, "GATE_CHECK", "review_approved")
+    close_guard = _fsm_transition_guard(fsm, "COMMIT", "all_phases_complete")
+
+    init_gate = f"plan_committed ({init_guard})" if init_guard else "plan_committed"
+    review_gate = f"review_approved ({review_guard})" if review_guard else "review_approved"
+    close_gate = f"all_phases_complete ({close_guard})" if close_guard else "all_phases_complete"
+
     if step_index == 0:
-        return "plan_committed (workplan_file_exists AND scratchpad_session_start_written)"
+        return init_gate
     if step_index < total_steps - 1:
-        return "review_approved (verdict_equals_APPROVED AND review_section_in_scratchpad)"
-    return "all_phases_complete (workplan_all_phase_statuses_approved)"
+        return review_gate
+    return close_gate
 
 
 # ---------------------------------------------------------------------------
@@ -293,8 +369,34 @@ def main(argv: list[str] | None = None) -> int:
     classifier = load_classifier(classifier_path)
     amplification_table = load_amplification_table(Path(args.amplification_table))
     fsm = load_fsm(Path(args.fsm))
+    delegation_gate = load_delegation_gate(Path(args.delegation_gate))
 
     steps = build_steps(args.task, classifier, amplification_table, fsm, args.all_steps)
+    if steps:
+        sortable = [
+            {
+                "agent": s["agent"],
+                "category": s["category"],
+                "axiom": s["axiom"],
+                "description": s["description"],
+            }
+            for s in steps
+        ]
+        sorted_entries = topo_sort_agents(sortable, delegation_gate)
+        total = len(sorted_entries)
+        rebuilt = []
+        for i, entry in enumerate(sorted_entries):
+            rebuilt.append(
+                {
+                    "step": i + 1,
+                    "agent": entry["agent"],
+                    "category": entry["category"],
+                    "description": entry.get("description", ""),
+                    "axiom": entry["axiom"],
+                    "fsm_gate": get_fsm_gate(fsm, i, total),
+                }
+            )
+        steps = rebuilt
 
     if not steps:
         print(f"No routing steps matched for: '{args.task}'", file=sys.stderr)

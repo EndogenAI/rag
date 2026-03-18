@@ -144,8 +144,8 @@ class TestDetectRateLimitSleepRequired:
             remaining_tokens=-10_000,
             phase_cost_estimate=30_000,
         )
-        # Should be between 1 second and ~60 seconds
-        assert 1000 <= sleep_ms <= 60000, f"Sleep {sleep_ms}ms out of expected range"
+        # Strict v2 floor is 120 seconds at/after budget exhaustion.
+        assert 120000 <= sleep_ms <= 600000, f"Sleep {sleep_ms}ms out of expected range"
 
     def test_sleep_status_includes_duration(self):
         """SLEEP_REQUIRED status should include the duration."""

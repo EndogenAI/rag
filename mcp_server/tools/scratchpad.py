@@ -28,6 +28,8 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+from datetime import date
+from pathlib import Path
 
 from mcp_server._security import REPO_ROOT
 
@@ -68,6 +70,13 @@ def prune_scratchpad(branch: str = "", dry_run: bool = False) -> dict:
 
     script = str(REPO_ROOT / "scripts" / "prune_scratchpad.py")
     args = [sys.executable, script]
+
+    # If caller specifies a branch, force prune_scratchpad.py to target that
+    # branch's per-day file via --file so branch selection is explicit.
+    if branch.strip():
+        file_path = Path(REPO_ROOT) / ".tmp" / slug / f"{date.today().isoformat()}.md"
+        args.extend(["--file", str(file_path)])
+
     if dry_run:
         args.append("--check-only")
     else:

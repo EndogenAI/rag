@@ -1321,7 +1321,7 @@ uv run python scripts/detect_rate_limit.py --check 0 30000
 # With custom rate-limit window (default 60,000 ms)
 uv run python scripts/detect_rate_limit.py --check 50000 30000 --window-ms 120000
 
-# Custom safety margin (default 8,000 tokens)
+# Custom safety margin (default 15,000 tokens)
 uv run python scripts/detect_rate_limit.py --check 50000 30000 --safety-margin 5000
 ```
 
@@ -1337,7 +1337,7 @@ uv run python scripts/detect_rate_limit.py --check 50000 30000 --safety-margin 5
 | `SLEEP_REQUIRED_NNN` | Budget exhausted (≤ 0) | Sleep NNN milliseconds, then proceed |
 
 **Algorithm** (from rate-limit-detection-api.md § Recommendation Algorithm):
-1. total_needed = phase_cost_estimate + safety_margin (default 8000)
+1. total_needed = phase_cost_estimate + safety_margin (default 15000)
 2. if remaining ≥ 2× total_needed: return OK
 3. elif remaining ≥ total_needed: return WARN
 4. elif remaining > 0: return CRITICAL
@@ -1346,7 +1346,8 @@ uv run python scripts/detect_rate_limit.py --check 50000 30000 --safety-margin 5
 **Sleep duration heuristic** (for SLEEP_REQUIRED):
 - Deficit = total_needed − remaining
 - Estimated throughput: 500 tokens/second (conservative under rate-limit load)
-- Sleep = (deficit / 500) × 1000 milliseconds, capped at 95% of the rate-limit window
+- Sleep = max((deficit / 500) × 1000, strict phase-boundary floor)
+- Strict floor = 120,000 ms (`PHASE_BOUNDARY_SLEEP_MS`)
 
 **Flags**:
 
@@ -1356,7 +1357,7 @@ uv run python scripts/detect_rate_limit.py --check 50000 30000 --safety-margin 5
 | `<remaining_tokens>` | Yes (after `--check`) | N/A | Tokens available in current rate-limit window (can be negative if already over-budget) |
 | `<phase_cost_estimate>` | Yes (after `--check`) | N/A | Estimated tokens for the next phase |
 | `--window-ms` | No | 60000 | Rate-limit window duration in milliseconds |
-| `--safety-margin` | No | 8000 | Additional token buffer for retries and overhead |
+| `--safety-margin` | No | 15000 | Additional token buffer for retries and overhead |
 
 **Exit codes**: `0` (status computed successfully, output to stdout); `1` (error — invalid arguments, non-integer inputs, or internal failure).
 
