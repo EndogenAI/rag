@@ -1,6 +1,6 @@
 # MCP Integration Design
 
-**Status**: Design specification (implementation deferred)  
+**Status**: Active implementation guide (updated after Sprint 17 delivery)
 **Related issues**: #134, #123  
 **Last updated**: 2026-03-11
 
@@ -53,18 +53,18 @@ The Endogenous-First principle (MANIFESTO.md § 1) prioritizes **local compute a
 
 **Purpose**: Enable Copilot agents to read/query local repository files, scripts, and docs without embedding entire files in prompts.
 
-**Capabilities** (full spec deferred to #XXXX):
+**Capabilities**:
 - Read file contents (with line-range queries)
 - List directory contents with filtering
 - Search for patterns within files
 - Get file metadata (size, modification time)
 
-**Configuration**: Not yet included in `.vscode/mcp.json` — the filesystem stanza has been deferred until `mcp_server.py` is implemented. See child issue for implementation scope.
+**Configuration**: Sprint 17 implemented the governance MCP server at `mcp_server/dogma_server.py` with discovery config in `mcp_server/.well-known/mcp-servers.json` and runtime docs in `mcp_server/README.md`.
 
-**Status**: Implementation (`mcp_server.py`) deferred to child issue. Will be added to `.vscode/mcp.json` when ready.
+**Status**: Implemented in Sprint 17 (`feat(mcp)`) and tested in `tests/test_mcp_server.py`.
 
 **Design notes**:
-- Server will be a Python subprocess (not Node.js; placeholder arg is a placeholder)
+- Server is a Python subprocess (not Node.js)
 - Must respect repository root boundary (no OWASP A01 — path traversal)
 - Must support capability gating (e.g., only Research Scout can fetch external URLs via `fetch_source.py`)
 
@@ -122,7 +122,7 @@ In agent role files (`.agent.md`), MCP capabilities are referenced in the **Work
 
 The **Capability Gate** (AGENTS.md § Executive Fleet Privileges) determines which agents can invoke which MCP capabilities. This is enforced by the capability_gate.py script and recorded in a JSONL audit log.
 
-Early implementation focuses on GitHub MCP; Filesystem MCP servers are introduced after the local compute baseline is established.
+Early implementation focused on GitHub MCP; Sprint 17 now adds the local governance MCP server for validation/scaffolding/query workflows.
 
 ---
 
@@ -145,25 +145,34 @@ Early implementation focuses on GitHub MCP; Filesystem MCP servers are introduce
 
 ---
 
-## Deferred Work
+## Follow-Up Work
 
-The following aspects are deferred to child issues:
+The following aspects are tracked as follow-up sprint work:
 
 | Item | Issue | Reason |
 |------|-------|--------|
-| Full Filesystem MCP server implementation | #XXXX | Requires design review + security audit |
-| Capability gating for MCP operations | #XXXX | Depends on capability_gate.py maturation |
-| MCP server discovery and manifest | #XXXX | Deferred to fleet-wide agent capability registry (#158) |
-| Multi-server coordination (e.g., GitHub + Filesystem in same agent) | #XXXX | Depends on improved context window management |
+| Full generic Filesystem MCP server implementation | #134 | Governance MCP server is shipped; generic file-server hardening remains |
+| Capability gating for MCP operations | #155 | Depends on capability_gate.py maturation |
+| MCP server discovery and manifest | #158 | Align with fleet-wide agent capability registry continuity |
+| Multi-server coordination (e.g., GitHub + Filesystem in same agent) | #297 | Depends on improved context window management |
 
 ---
 
 ## Next Steps
 
-1. **Immediate** (Merge #134): Commit `.vscode/mcp.json` with GitHub server config + this design spec
-2. **Short-term** (Q2): Implement endogenic Filesystem MCP server (mcp_server.py)
-3. **Medium-term** (Q3): Add capability gating + audit logging for MCP operations
-4. **Long-term** (Q4): Build agent capability registry + dynamic server discovery
+1. **Immediate**: Integrate `mcp_server/.well-known/mcp-servers.json` into editor-level MCP registry where needed
+2. **Short-term**: Add capability gating + audit logging for governance MCP tool invocations
+3. **Medium-term**: Publish and version MCP server discovery metadata alongside package docs
+4. **Long-term**: Build agent capability registry + dynamic server discovery
+
+---
+
+## Sprint 17 Packaging Cross-Reference
+
+- Standalone governance pre-commit package: `packages/dogma-governance/`
+- Package hooks: `packages/dogma-governance/.pre-commit-hooks.yaml`
+- Release workflow: `.github/workflows/release-governance-package.yml`
+- CLI tools: `dogma-validate-agent`, `dogma-validate-synthesis`, `dogma-check-health`, `dogma-detect-drift`
 
 ---
 

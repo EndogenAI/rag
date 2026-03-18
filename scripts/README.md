@@ -27,6 +27,7 @@ scripts/
   fetch_toolchain_docs.py      # Cache gh CLI help output as structured Markdown under .cache/toolchain/ (--check, --force, --dry-run)
   wait_for_unblock.py          # Poll a GitHub issue until status:blocked is removed; writes trigger file on exit 0 (--issue, --interval, --timeout, --dry-run)
   detect_drift.py              # Detect value-encoding drift in .agent.md files via watermark-phrase analysis (--agents-dir, --threshold, --fail-below, --format, --output)
+  detect_rate_limit.py         # Detect rate-limit budget exhaustion and recommend protective action (sleep injection, phase deferral) — command: --check <remaining_tokens> <phase_cost_estimate>; outputs: OK|WARN|CRITICAL|SLEEP_REQUIRED_NNN
   check_substrate_health.py    # CRD health check for startup-loaded substrate files — reports PASS/WARN/BLOCK per file; exits 1 if any file is below the block threshold (--warn-below, --block-below, --files)
   audit_provenance.py          # Audit .agent.md files for governs: provenance annotations; report orphaned files and unverifiable axiom citations (--agents-dir, --scope, --manifesto, --format, --output)
   annotate_provenance.py       # Scan Markdown and .agent.md files for MANIFESTO.md axiom mentions and write governs: frontmatter annotations (--scope, --dry-run, --registry, --manifesto, --no-recurse)
@@ -47,6 +48,9 @@ scripts/
   assess_doc_quality.py        # Composite readability/structure/completeness scorer for Markdown docs; 30% readability (FK grade, textstat), 40% structural (heading density, tables, list/code ratio), 30% completeness (citations, bold terms, labeled blocks); --output json, --delta for FK grade target comparison (advisory only — calibrate before CI enforcement; closes #289)
   check_divergence.py          # Cookiecutter template drift detector — compares governance artefacts (AGENTS.md H2 headings, .pre-commit-config.yaml hook IDs, pyproject.toml sections, client-values.yml presence) in a derived repo vs the dogma template; --check exits 1 on drift; --dry-run; --export-hgt outputs YAML HGT candidates (closes #293)
   parse_fsm_to_graph.py        # FSM-to-NetworkX path analysis + CI invariant check — loads data/phase-gate-fsm.yml into a NetworkX DiGraph; --validate checks all terminal states are reachable from the initial state (exit 0/1); --query <FROM> <TO> checks reachability between two states (closes #253)
+  afs_index.py                 # B' hybrid SQLite FTS5 keyword index for .tmp/ session scratchpads — commands: init, index, query, status; --q, --field, --format json|table (closes #129)
+  analyse_fleet_coupling.py    # NK K-coupling analysis for the agent fleet — reads .agent.md handoffs + data/delegation-gate.yml; computes K per agent, Louvain modularity Q, flags high-K bottlenecks; --format json|table|summary; --threshold (default 6); --output (closes #291)
+  suggest_routing.py           # GPS-style delegation routing from free-text task description — keyword match → topo sort → annotated delegation sequence; reads data/task-type-classifier.yml; --format table|json|markdown; --all-steps (closes #292)
   docs/                        # Per-script generated Markdown documentation (see scripts/docs/README.md)
 ```
 
@@ -1203,6 +1207,193 @@ All scripts in this repo must follow these conventions (enforced by `Executive S
 5. **Listed here** — every script must appear in this catalog
 
 When adopting an external tool, document it here with usage notes and the rationale for adoption.
+
+---
+
+## scripts/afs_index.py
+
+**B' Hybrid SQLite FTS5 Keyword Index for Session Scratchpads** (closes #129)
+
+Implements the B' hybrid scratchpad architecture: SQLite FTS5 as a query-optimised index layer over Markdown session files. Agents continue writing via `replace_string_in_file`; this script maintains a queryable index.
+
+**Commands:**
+| Command | Description |
+|---------|-------------|
+| `init` | Create / migrate the `.db` file for the current branch's `.tmp/` dir |
+| `index` | (Re)index all `.md` session files under a branch `.tmp/` dir |
+| `query` | Run a keyword query against the FTS5 index |
+| `status` | Show per-file index coverage stats |
+
+**Usage:**
+```bash
+uv run python scripts/afs_index.py init
+uv run python scripts/afs_index.py index
+uv run python scripts/afs_index.py query --q "Phase 3"
+uv run python scripts/afs_index.py query --q "blocker OR blocked" --field content --format json
+uv run python scripts/afs_index.py status
+uv run python scripts/afs_index.py index --branch feat-my-branch
+```
+
+**FTS5 Schema:** `sessions(date, branch, phase, status, content)` — one row per H2 section plus one whole-file row per `.md` file.
+
+**Design:** The `.db` file is gitignored; `.md` files remain the source of truth and continue to be committed as session records.
+
+---
+
+## scripts/analyse_fleet_coupling.py
+
+**NK K-Coupling Analysis for the Agent Fleet** (closes #291)
+
+Computes per-agent K-coupling (K = in-degree + out-degree) from `.agent.md` handoff edges and `data/delegation-gate.yml` delegation routes. Flags high-K bottleneck nodes and computes Louvain modularity Q as a fleet cohesion metric.
+
+**Usage:**
+```bash
+uv run python scripts/analyse_fleet_coupling.py
+uv run python scripts/analyse_fleet_coupling.py --format json --output coupling.json
+uv run python scripts/analyse_fleet_coupling.py --format summary
+uv run python scripts/analyse_fleet_coupling.py --threshold 8
+```
+
+**Key Outputs:**
+- `N` — total agent count
+- `mean_K` — mean degree
+- `regime` — `ordered` (mean_K < 1), `edge_of_chaos` (1–2), or `chaotic` (> 2) per NK theoretical model
+- `Q` — Louvain modularity (higher = more modular, lower coupling)
+- High-K bottleneck agent table (K > `--threshold`, default 6)
+
+**Inputs:** `data/delegation-gate.yml`, `.github/agents/*.agent.md` (reads the `handoffs:` frontmatter field)
+
+---
+
+## scripts/suggest_routing.py
+
+**GPS-Style Delegation Routing from Task Description** (closes #292)
+
+Matches a free-text task description to governance-boundary operation categories via keyword lookup, then topologically sorts the matched agents into a delegation sequence using the canonical fleet ordering.
+
+**Usage:**
+```bash
+uv run python scripts/suggest_routing.py "implement a new script for the fleet"
+uv run python scripts/suggest_routing.py "research MCP architecture" --format markdown
+uv run python scripts/suggest_routing.py --all-steps --format json
+uv run python scripts/suggest_routing.py "write documentation update" --format json
+```
+
+**Inputs:**
+- `data/task-type-classifier.yml` — keyword → category → agent mapping (11 categories)
+- `data/delegation-gate.yml` — delegation routes for cross-referencing
+- `data/amplification-table.yml` — governing axiom per task type
+- `data/phase-gate-fsm.yml` — FSM gate annotations per step
+
+**Exit codes:** 0 = routing produced; 2 = no categories matched (use `--all-steps` to see full topology)
+
+---
+
+## scripts/detect_rate_limit.py
+
+**Job**: Enable orchestrators to detect approaching Claude API rate-limit exhaustion and recommend protective action (sleep injection, phase deferral), so multi-agent sessions can proactively pause rather than fail cascading on 429/529 errors.
+
+**Purpose**: Programmatic rate-limit budget detection command implementing Tier 1 budget tracking from [`docs/research/rate-limit-detection-api.md`](../docs/research/rate-limit-detection-api.md). Compares remaining tokens in the rate-limit window to the estimated cost of the next phase, and returns a protective action recommendation.
+
+Implements the **Algorithms Before Tokens** principle (`MANIFESTO.md §2`) by encoding rate-limit detection logic as a deterministic CLI, shifting the behavior constraint from agent prompts (T4 tokens) to a local program (T3 algorithms).
+
+**Tests**: [`tests/test_detect_rate_limit.py`](../tests/test_detect_rate_limit.py) — 31 test functions, ≥80% coverage, includes happy path, boundary conditions, error cases, sleep duration calculation
+
+**Usage**:
+
+```bash
+# Check if 50,000 remaining tokens can support a 30,000-token phase
+uv run python scripts/detect_rate_limit.py --check 50000 30000
+# Output: OK
+
+# Tight margin (remaining = 1–2× total needed)
+uv run python scripts/detect_rate_limit.py --check 35000 30000
+# Output: WARN
+
+# Critically low budget
+uv run python scripts/detect_rate_limit.py --check 10000 30000
+# Output: CRITICAL
+
+# Exhausted budget (must sleep)
+uv run python scripts/detect_rate_limit.py --check 0 30000
+# Output: SLEEP_REQUIRED_120000
+
+# With custom rate-limit window (default 60,000 ms)
+uv run python scripts/detect_rate_limit.py --check 50000 30000 --window-ms 120000
+
+# Custom safety margin (default 15,000 tokens)
+uv run python scripts/detect_rate_limit.py --check 50000 30000 --safety-margin 5000
+```
+
+**Command**: `--check <remaining_tokens> <phase_cost_estimate> [--window-ms <ms>] [--safety-margin <tokens>]`
+
+**Outputs** (single line to stdout):
+
+| Status | Meaning | Action |
+|--------|---------|--------|
+| `OK` | Budget ≥ 2× phase cost + margin | Proceed normally |
+| `WARN` | Budget = 1–2× phase cost + margin | Proceed with caution |
+| `CRITICAL` | 0 < Budget < 1× phase cost + margin | May fail; consider deferring |
+| `SLEEP_REQUIRED_NNN` | Budget exhausted (≤ 0) | Sleep NNN milliseconds, then proceed |
+
+**Algorithm** (from rate-limit-detection-api.md § Recommendation Algorithm):
+1. total_needed = phase_cost_estimate + safety_margin (default 15000)
+2. if remaining ≥ 2× total_needed: return OK
+3. elif remaining ≥ total_needed: return WARN
+4. elif remaining > 0: return CRITICAL
+5. else: compute sleep duration and return SLEEP_REQUIRED_NNN
+
+**Sleep duration heuristic** (for SLEEP_REQUIRED):
+- Deficit = total_needed − remaining
+- Estimated throughput: 500 tokens/second (conservative under rate-limit load)
+- Sleep = max((deficit / 500) × 1000, strict phase-boundary floor)
+- Strict floor = 120,000 ms (`PHASE_BOUNDARY_SLEEP_MS`)
+
+**Flags**:
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `--check` | Yes | N/A | Activate budget-check mode |
+| `<remaining_tokens>` | Yes (after `--check`) | N/A | Tokens available in current rate-limit window (can be negative if already over-budget) |
+| `<phase_cost_estimate>` | Yes (after `--check`) | N/A | Estimated tokens for the next phase |
+| `--window-ms` | No | 60000 | Rate-limit window duration in milliseconds |
+| `--safety-margin` | No | 15000 | Additional token buffer for retries and overhead |
+
+**Exit codes**: `0` (status computed successfully, output to stdout); `1` (error — invalid arguments, non-integer inputs, or internal failure).
+
+**Error handling**:
+- Negative or non-integer arguments: exit 1 with `ERROR_invalid_input: <reason>`
+- Configuration errors (zero/negative window or phase cost): exit 1
+- Outputs `ERROR_*` messages to stdout for CI/orchestrator parsing
+
+**Dependencies**: stdlib only — no third-party packages required.
+
+**When to run**:
+- **Phase boundary gates** (Orchestrator): before delegating the next phase, call `detect_rate_limit.py --check <remaining> <estimated_cost>` and honor the output:
+  - OK/WARN/CRITICAL → proceed
+  - SLEEP_REQUIRED_NNN → sleep NNN ms, then proceed
+- **Session initialization**: Record initial rate-limit window reset time and cumulative tokens = 0
+- **Post-delegation**: Update cumulative_tokens_consumed; track phase cost for next-phase estimation
+
+**Integration pattern** (Orchestrator agent):
+
+```bash
+# Before Phase 2
+remaining_tokens=$(orchestrator.get_remaining_tokens())
+phase_2_cost=$(orchestrator.estimate_cost("Phase 2: Research Synthesis", prior_phases))
+action=$(uv run python scripts/detect_rate_limit.py --check "$remaining_tokens" "$phase_2_cost")
+
+if [[ "$action" == SLEEP_REQUIRED_* ]]; then
+    duration=$(echo "$action" | cut -d_ -f3)
+    sleep_seconds=$((duration / 1000))
+    echo "Rate-limit approaching; sleeping ${sleep_seconds}s before Phase 2..."
+    sleep $sleep_seconds
+fi
+
+# Proceed with Phase 2 delegation
+```
+
+**Research basis**: [`docs/research/rate-limit-detection-api.md`](../docs/research/rate-limit-detection-api.md) — specifications for Claude API error codes, rate-limit headers, retry-after semantics, per-key scoping, model-switching myth, and Tier 1–3 mitigation strategies.
 
 ---
 

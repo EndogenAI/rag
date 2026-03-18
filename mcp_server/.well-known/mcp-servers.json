@@ -1,0 +1,11 @@
+{
+  "servers": [
+    {
+      "name": "dogma-governance",
+      "description": "EndogenAI Workflows governance and validation toolset",
+      "transport": "stdio",
+      "command": "uv",
+      "args": ["run", "python", "-m", "mcp_server.dogma_server"]
+    }
+  ]
+}

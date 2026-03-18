@@ -1,0 +1,180 @@
+# dogma MCP Server
+
+Exposes the dogma governance toolset as an [MCP](https://modelcontextprotocol.io/) server
+using [FastMCP](https://github.com/jlowin/fastmcp). Provides 8 tools for validating,
+scaffolding, researching, and managing sessions within the dogma repository.
+
+---
+
+## Tools
+
+| Tool | Description |
+|------|-------------|
+| `validate_agent_file` | Validate a `.agent.md` file against AGENTS.md constraints |
+| `validate_synthesis` | Validate a D4 synthesis doc before archiving |
+| `check_substrate` | Full CRD substrate health check |
+| `scaffold_agent` | Scaffold a new `.agent.md` stub from template |
+| `scaffold_workplan` | Scaffold a new `docs/plans/` workplan from template |
+| `run_research_scout` | Fetch and cache an external URL (SSRF-safe) |
+| `query_docs` | BM25 query over the dogma documentation corpus |
+| `prune_scratchpad` | Initialise or inspect the session scratchpad |
+
+---
+
+## Prerequisites
+
+```bash
+# Install the mcp optional dependency group
+uv sync --extra mcp
+```
+
+Requires Python 3.10+ (mcp SDK constraint).
+
+---
+
+## Claude Desktop Setup
+
+Add to `~/.claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "dogma-governance": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "mcp_server.dogma_server"],
+      "cwd": "/absolute/path/to/your/dogma-clone"
+    }
+  }
+}
+```
+
+Restart Claude Desktop after saving. The server appears under **Tools** in the sidebar.
+
+---
+
+## Cursor Setup
+
+Add to `.cursor/mcp.json` (project-scoped) or `~/.cursor/mcp.json` (global):
+
+```json
+{
+  "mcpServers": {
+    "dogma-governance": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "mcp_server.dogma_server"],
+      "cwd": "/absolute/path/to/your/dogma-clone"
+    }
+  }
+}
+```
+
+---
+
+## VS Code + GitHub Copilot Setup
+
+Add to `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "dogma-governance": {
+      "type": "stdio",
+      "command": "uv",
+      "args": ["run", "python", "-m", "mcp_server.dogma_server"]
+    }
+  }
+}
+```
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DOGMA_MCP_PORT` | `8000` | Port for HTTP transport mode (if using SSE/HTTP) |
+| `DOGMA_MCP_AUTH_TOKEN` | _(empty)_ | Optional bearer token for HTTP transport auth |
+
+The default transport is **stdio**, which does not use `DOGMA_MCP_PORT`. These variables
+are reserved for future HTTP transport support.
+
+---
+
+## Security Model
+
+- **Path traversal protection**: all file path arguments are resolved and checked against
+  `REPO_ROOT` before any script is invoked. Paths outside the repo root are rejected.
+- **SSRF protection**: `run_research_scout` validates URLs before fetching — blocks
+  RFC 1918 private ranges, loopback, IPv6 link-local, and non-https schemes.
+- **Subprocess isolation**: all tools invoke existing dogma scripts via `sys.executable`
+  with an explicit argument list (no `shell=True`). Environment is inherited from the
+  launched server process.
+
+---
+
+## Running in HTTP Mode (Advanced)
+
+To expose the server over HTTP (e.g. for remote MCP clients):
+
+```bash
+DOGMA_MCP_PORT=8000 uv run python -m mcp_server.dogma_server --transport streamable-http
+```
+
+> **Note**: HTTP mode is not authenticated by default. Use `DOGMA_MCP_AUTH_TOKEN` and a
+> reverse proxy with TLS for production deployments.
+
+---
+
+## Development
+
+```bash
+# Run tests
+uv run pytest tests/test_mcp_server.py -v
+
+# Lint
+uv run ruff check mcp_server/
+
+# Type-check (optional)
+uv run mypy mcp_server/
+```
+
+---
+
+## Module Reference (Concise)
+
+### `mcp_server/dogma_server.py`
+- `mcp`: FastMCP app instance (`dogma-governance`)
+- Registers 8 tool functions from `mcp_server/tools/*`
+
+### `mcp_server/_security.py`
+- `validate_repo_path(file_path: str) -> Path`
+  - Rejects paths outside repository root (path traversal guard)
+- `validate_url(url: str) -> str`
+  - Enforces https-only and blocks private/loopback/link-local targets (SSRF guard)
+
+### `mcp_server/tools/validation.py`
+- `validate_agent_file(file_path: str) -> dict`
+  - Runs `scripts/validate_agent_files.py` on a repo-scoped path
+- `validate_synthesis(file_path: str, min_lines: int = 80) -> dict`
+  - Runs `scripts/validate_synthesis.py` with line threshold
+- `check_substrate() -> dict`
+  - Runs `scripts/check_substrate_health.py` and returns report summary
+
+### `mcp_server/tools/scaffolding.py`
+- `scaffold_agent(name: str, description: str, area: str = "general", posture: str = "readonly") -> dict`
+  - Wraps `scripts/scaffold_agent.py` with input validation
+- `scaffold_workplan(slug: str, issues: str = "") -> dict`
+  - Wraps `scripts/scaffold_workplan.py` for plan skeleton creation
+
+### `mcp_server/tools/research.py`
+- `run_research_scout(url: str, force: bool = False) -> dict`
+  - URL validation + `scripts/fetch_source.py`
+- `query_docs(query: str, scope: str = "all", top_n: int = 5) -> dict`
+  - Wraps `scripts/query_docs.py` for BM25 search results
+
+### `mcp_server/tools/scratchpad.py`
+- `prune_scratchpad(branch: str = "", dry_run: bool = False) -> dict`
+  - Wraps `scripts/prune_scratchpad.py` (`--init`/`--check-only`)
+  - Supports explicit branch-targeted daily scratchpad path via `--file`
