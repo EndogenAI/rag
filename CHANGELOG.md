@@ -1,3 +1,21 @@
+## [0.12.3](https://github.com/EndogenAI/dogma/compare/v0.12.2...v0.12.3) (2026-03-18)
+
+
+### Bug Fixes
+
+* **agents:** convert all ../../ relative links to /-rooted paths (fleet-wide) ([b2ebf22](https://github.com/EndogenAI/dogma/commit/b2ebf229c5d6a6be76d7b715480cad5295564b5f))
+* **agents:** convert relative ../../ links to workspace-root-relative paths ([7a1a159](https://github.com/EndogenAI/dogma/commit/7a1a1595b1d1d5beefae651f67dd8ad9ce32f581))
+* **agents:** remove hyperlinks from governance stub — /‑rooted paths resolve to filesystem root in plain .md files ([be87ecf](https://github.com/EndogenAI/dogma/commit/be87ecf29067086cb46485c77cbd0e830a95c451))
+* **agents:** revert /-rooted link regression; fix pre-commit hook; update convention docs ([d1d94d7](https://github.com/EndogenAI/dogma/commit/d1d94d7a8d1f61ee1512b673368f4f11f00d131d)), closes [#389](https://github.com/EndogenAI/dogma/issues/389)
+* **ci,schema:** repair broken markdown links, update astral-sh/setup-uv@v1 to [@v7](https://github.com/v7), create custom agent schema ([3269cba](https://github.com/EndogenAI/dogma/commit/3269cba12dea7fbcf4a02553910962c2d447cf25))
+* **review:** address copilot PR comments on links, schema, and diagnostics ([2e0ede4](https://github.com/EndogenAI/dogma/commit/2e0ede4b4ce8da74c646a904fdc6845eb1ff93d0))
+* **scripts:** strengthen retrospective encodings to T2/T3 runtime gates ([d1c04b9](https://github.com/EndogenAI/dogma/commit/d1c04b93b31247c89ef3f2796ec1f06c0393d605)), closes [#390](https://github.com/EndogenAI/dogma/issues/390)
+* **skills:** convert all relative traversal links to /-rooted paths (fleet-wide) ([6638330](https://github.com/EndogenAI/dogma/commit/6638330b562eb22d53d1d81fe7b1d99f4bb8e582))
+* **skills:** correct depth in cross-reference minimum pattern in agent-file-authoring ([3531359](https://github.com/EndogenAI/dogma/commit/353135910c7b47697221db05120e89257654050c))
+* **vscode:** disable markdown link validator, remove non-functional problems.exclude ([30b3e2a](https://github.com/EndogenAI/dogma/commit/30b3e2a06d7f8b395eb80235b49e876a2a9d8d22))
+
+
+
 ## [0.12.2](https://github.com/EndogenAI/dogma/compare/v0.12.1...v0.12.2) (2026-03-18)
 
 
