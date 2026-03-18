@@ -1,3 +1,12 @@
+# [0.12.0](https://github.com/EndogenAI/dogma/compare/v0.11.0...v0.12.0) (2026-03-18)
+
+
+### Features
+
+* **agents:** wire Review agent to MCP tools for read-only verification ([a09746c](https://github.com/EndogenAI/dogma/commit/a09746c90dd4de765ba97fc4d00eeaedd44edbc5))
+
+
+
 # [0.11.0](https://github.com/EndogenAI/dogma/compare/v0.10.0...v0.11.0) (2026-03-18)
 
 
