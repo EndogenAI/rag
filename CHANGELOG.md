@@ -1,3 +1,26 @@
+# [0.11.0](https://github.com/EndogenAI/dogma/compare/v0.10.0...v0.11.0) (2026-03-18)
+
+
+### Bug Fixes
+
+* **docs,scripts:** address PR [#330](https://github.com/EndogenAI/dogma/issues/330) Copilot review comments ([bdcf671](https://github.com/EndogenAI/dogma/commit/bdcf671081931d2ee71bda4f6339dbf0cbedfd6c))
+* **docs:** reconcile contradictory acceptance criteria status ([b0fe6ba](https://github.com/EndogenAI/dogma/commit/b0fe6ba0aae2fee67e551266dd179b46e0b38607))
+* **docs:** typo in research doc source reference ([e233799](https://github.com/EndogenAI/dogma/commit/e233799d855e7de5d4d4d04e6682954ebffaafbd))
+* **integration:** correct rate-limit threshold & anchor link ([c54a34e](https://github.com/EndogenAI/dogma/commit/c54a34e84078263265b152de3210b5f6a4490f0b))
+* **scripts:** circuit-breaker decision alignment ([fb90681](https://github.com/EndogenAI/dogma/commit/fb90681cfd38c764c0bea11739db38eb9a640ba4))
+* **scripts:** fallback provider loading ([2d9afd3](https://github.com/EndogenAI/dogma/commit/2d9afd38e5b4781a9aa82ac27612ad48fc38fe33))
+* **scripts:** fix detect_rate_limit sleep policy — policy clamp at budget exhaustion ([1b74d17](https://github.com/EndogenAI/dogma/commit/1b74d178328ef4a7b4ee5f635b1658f8dd1c770f))
+* **scripts:** remove non-functional --dry-run flag ([5e2f8d5](https://github.com/EndogenAI/dogma/commit/5e2f8d51e890ad19185ffebb5ed49aa9a94df572))
+* **scripts:** resolve ruff lint failures for CI — import sort, W293, E501, F401, budget boundary ([ffe2770](https://github.com/EndogenAI/dogma/commit/ffe2770d32753fda46da79b821a13fbea1787a37))
+* **tests:** audit log isolation + unused imports + boundary assertions ([94b9d69](https://github.com/EndogenAI/dogma/commit/94b9d69c808b391a9f216423b40c86451f4793af))
+
+
+### Features
+
+* **scripts:** implement Phase 0 rate-limit resilience foundation ([88b55c0](https://github.com/EndogenAI/dogma/commit/88b55c015e0a51046c20ef8a20489259e2689ef7)), closes [#322](https://github.com/EndogenAI/dogma/issues/322) [#323](https://github.com/EndogenAI/dogma/issues/323) [#325](https://github.com/EndogenAI/dogma/issues/325) [#322](https://github.com/EndogenAI/dogma/issues/322) [#323](https://github.com/EndogenAI/dogma/issues/323) [#324](https://github.com/EndogenAI/dogma/issues/324) [#325](https://github.com/EndogenAI/dogma/issues/325)
+
+
+
 # [0.10.0](https://github.com/EndogenAI/dogma/compare/v0.9.0...v0.10.0) (2026-03-18)
 
 
