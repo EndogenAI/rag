@@ -128,3 +128,8 @@ https://github.com/EndogenAI/dogma/commit/a257c83c93b524ab0f46e95c2fdf642ed9eb44
 # transport errors despite being reachable outside CI.
 # Referenced from docs/research/OPEN_RESEARCH.md.
 https://www.xda-developers.com/youre-using-local-llm-wrong-if-youre-prompting-it-like-cloud-llm/
+
+# monorepo.tools — "Connection failed" from GitHub Actions CI runners.
+# Site is live; referenced in docs/research/greenfield-repo-candidates.md.
+# Transient network/firewall issue in CI environment.
+https://monorepo.tools/
