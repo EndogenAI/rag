@@ -10,6 +10,9 @@
 
 * **mcp:** normalize `mocker.patch` usage in MCP server tests and include `mcp_server` in coverage source ([70971e1](https://github.com/EndogenAI/dogma/commit/70971e1))
 * **scripts:** stricter anti-rate-limit defaults (60s post-delegation, 120s phase-boundary, 15k margin) ([d71f5ad](https://github.com/EndogenAI/dogma/commit/d71f5ad))
+* **ci:** add `--extra mcp` to test install step; exclude transient URLs from lychee ([ae18f3b](https://github.com/EndogenAI/dogma/commit/ae18f3b))
+* **review:** address PR review round 1 — `suggest_routing` DAG sort, FSM gate derivation, `detect_rate_limit` sleep cap, `scratchpad` branch passthrough, `validation.py` errors-on-success, `mcp-servers.json` transport field, concise module reference ([d3387f2](https://github.com/EndogenAI/dogma/commit/d3387f2))
+* **review:** address PR re-review round 2 — ruff `target-version` py39→py310, `detect_rate_limit` docstring and `window_ms` floor, README examples, topo-sort determinism, path traversal guard, `afs_index` duplicate rows, hermetic DNS mock, `mcp_server` coverage flag ([2b21e8f](https://github.com/EndogenAI/dogma/commit/2b21e8f))
 
 # [0.9.0](https://github.com/EndogenAI/dogma/compare/v0.8.0...v0.9.0) (2026-03-17)
 
