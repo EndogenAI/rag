@@ -1,18 +1,25 @@
-## Unreleased
+# [0.10.0](https://github.com/EndogenAI/dogma/compare/v0.9.0...v0.10.0) (2026-03-18)
 
-### Features
-
-* **scripts:** Sprint 17 scripting delivery — AFS FTS5 index, fleet coupling analysis, and routing suggester [#129](https://github.com/EndogenAI/dogma/issues/129) [#291](https://github.com/EndogenAI/dogma/issues/291) [#292](https://github.com/EndogenAI/dogma/issues/292) ([5ac954c](https://github.com/EndogenAI/dogma/commit/5ac954c))
-* **mcp:** dogma governance MCP server with 8 tools, security guards, and test coverage [#303](https://github.com/EndogenAI/dogma/issues/303) ([22bebea](https://github.com/EndogenAI/dogma/commit/22bebea))
-* **packages:** standalone dogma-governance pre-commit bundle and release workflow [#305](https://github.com/EndogenAI/dogma/issues/305) ([6e67a33](https://github.com/EndogenAI/dogma/commit/6e67a33))
 
 ### Bug Fixes
 
-* **mcp:** normalize `mocker.patch` usage in MCP server tests and include `mcp_server` in coverage source ([70971e1](https://github.com/EndogenAI/dogma/commit/70971e1))
-* **scripts:** stricter anti-rate-limit defaults (60s post-delegation, 120s phase-boundary, 15k margin) ([d71f5ad](https://github.com/EndogenAI/dogma/commit/d71f5ad))
-* **ci:** add `--extra mcp` to test install step; exclude transient URLs from lychee ([ae18f3b](https://github.com/EndogenAI/dogma/commit/ae18f3b))
-* **review:** address PR review round 1 — `suggest_routing` DAG sort, FSM gate derivation, `detect_rate_limit` sleep cap, `scratchpad` branch passthrough, `validation.py` errors-on-success, `mcp-servers.json` transport field, concise module reference ([d3387f2](https://github.com/EndogenAI/dogma/commit/d3387f2))
-* **review:** address PR re-review round 2 — ruff `target-version` py39→py310, `detect_rate_limit` docstring and `window_ms` floor, README examples, topo-sort determinism, path traversal guard, `afs_index` duplicate rows, hermetic DNS mock, `mcp_server` coverage flag ([2b21e8f](https://github.com/EndogenAI/dogma/commit/2b21e8f))
+* **ci:** ignore flaky XDA HTTP/2 link in lychee checks ([963193e](https://github.com/EndogenAI/dogma/commit/963193e3836d967c0f355253678c16cc0638150d))
+* **ci:** ignore monorepo.tools — connection failure in CI runners ([d53f401](https://github.com/EndogenAI/dogma/commit/d53f4019ed8c8a0c4d07042487cb93f0f97b7e34))
+* **ci:** resolve PR [#321](https://github.com/EndogenAI/dogma/issues/321) test/link failures; track rate-limit follow-ups ([ae18f3b](https://github.com/EndogenAI/dogma/commit/ae18f3bc73d66d43275b06395bc67a2d7d735d86)), closes [#322](https://github.com/EndogenAI/dogma/issues/322) [-#325](https://github.com/-/issues/325)
+* **mcp:** use mocker.patch throughout test_mcp_server; add mcp_server to coverage source ([70971e1](https://github.com/EndogenAI/dogma/commit/70971e1c979b23caa92d3927b6d40d2d6840b559))
+* **review:** address Copilot re-review — 11 comments across 8 files ([2b21e8f](https://github.com/EndogenAI/dogma/commit/2b21e8fd5a2bacd180f2eb756e2960affd5f99a7))
+* **review:** address PR [#321](https://github.com/EndogenAI/dogma/issues/321) routing/rate-limit/MCP feedback ([d3387f2](https://github.com/EndogenAI/dogma/commit/d3387f22afcccb7770d1ce08d2bb2c29d16fb048))
+* **scripts:** stricter rate-limit mitigation — 60s post-delegation, 120s phase-boundary, 15k safety margin ([d71f5ad](https://github.com/EndogenAI/dogma/commit/d71f5adf04cddeb045436e59375eed8870630431))
+
+
+### Features
+
+* **mcp:** dogma governance MCP server — 8 tools, FastMCP (closes [#303](https://github.com/EndogenAI/dogma/issues/303)) ([22bebea](https://github.com/EndogenAI/dogma/commit/22bebea4bdd7f43983cd87453ff3d9caab7a9695))
+* **packages:** dogma-governance standalone pre-commit bundle (closes [#305](https://github.com/EndogenAI/dogma/issues/305)) ([6e67a33](https://github.com/EndogenAI/dogma/commit/6e67a331f15cce453696d228afe006c0f9a2520c))
+* **scripts:** add rate-limit detector with budget tracking ([9c84fdf](https://github.com/EndogenAI/dogma/commit/9c84fdfdf601fbbf81943fae98b5031adb65a8e7))
+* **scripts:** AFS FTS5 index, fleet coupling, routing (closes [#129](https://github.com/EndogenAI/dogma/issues/129), [#291](https://github.com/EndogenAI/dogma/issues/291), [#292](https://github.com/EndogenAI/dogma/issues/292)) ([5ac954c](https://github.com/EndogenAI/dogma/commit/5ac954c6fbc13c34187ec09769f2f123df734d9d))
+
+
 
 # [0.9.0](https://github.com/EndogenAI/dogma/compare/v0.8.0...v0.9.0) (2026-03-17)
 
