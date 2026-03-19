@@ -1,3 +1,4 @@
+# Deployment Layer: client-values.yml present — see AGENTS.md §Deployment Layer integration
 ---
 x-governs: [endogenous-first, algorithms-before-tokens, local-compute-first, minimal-posture, programmatic-first, documentation-first, commit-discipline, enforcement-proximity]
 ---

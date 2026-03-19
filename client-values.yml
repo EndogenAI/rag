@@ -1,0 +1,12 @@
+# client-values.yml — Deployment Layer external-values file
+# Specialises (does not override) Core Layer constraints in MANIFESTO.md.
+
+org: EndogenAI
+repo: rag
+mission: Save your values in their language, reduce token burn.
+priorities:
+- Local Compute-First
+- Algorithms Before Tokens
+axiom_emphasis: local-compute-first
+constraints: []
+deployment_layer: {}
