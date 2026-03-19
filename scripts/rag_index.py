@@ -311,6 +311,7 @@ def _read_file_state(path: Path, repo_root: Path) -> FileState:
     stat = path.stat()
     return FileState(source_file=rel, file_hash=_sha256(text), file_mtime=stat.st_mtime)
 
+
 def _count_chunks_for_sources(conn: sqlite3.Connection, sources: list[str]) -> int:
     """Return total chunk count currently stored for the provided source files."""
     if not sources:

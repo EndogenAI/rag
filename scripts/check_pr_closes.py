@@ -29,9 +29,7 @@ import argparse
 import re
 from pathlib import Path
 
-AUTO_CLOSE_RE = re.compile(
-    r"(?im)^\s*(?:closes|fixes|resolves)\s*:??\s*#\d+\s*$"
-)
+AUTO_CLOSE_RE = re.compile(r"(?im)^\s*(?:closes|fixes|resolves)\s*:??\s*#\d+\s*$")
 
 
 def extract_auto_close_lines(body: str) -> list[str]:
