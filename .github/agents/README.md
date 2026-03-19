@@ -145,6 +145,7 @@ Operational agents for release coordination, environment validation, test covera
 | **B5 Dependency Auditor** | `b5-dependency-auditor.agent.md` | read-only | Audit `uv.lock` and `pyproject.toml` for CVEs, outdated packages, and version conflicts; output structured compatibility report | Executive Scripter, Security Researcher, Executive Orchestrator |
 | **Test Coordinator** | `test-coordinator.agent.md` | read-only | Map pytest markers to CI phases; identify untested scripts; flag test anti-patterns — advisory only | Executive Scripter, Executive Orchestrator |
 | **CI Monitor** | `ci-monitor.agent.md` | read + execute | Watch `gh run` history for failure patterns, flaky tests, and slow steps; categorise failures across CI failure modes; produce health report | Executive Scripter, Executive Automator, Executive Orchestrator |
+| **RAG Specialist** | `rag-specialist.agent.md` | read + create | Define bounded retrieval, indexing, and evaluation workflow contracts for repository RAG systems; compare pilot effectiveness against baseline workflows without editor/client lock-in | Executive Orchestrator, MCP Architect, Executive Docs, Review |
 
 ---
 

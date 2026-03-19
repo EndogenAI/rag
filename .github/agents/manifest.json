@@ -1,7 +1,7 @@
 {
-  "generated": "2026-03-09T00:51:38",
-  "agent_count": 33,
-  "avg_cross_ref_density": 5.36,
+  "generated": "2026-03-19T21:14:12",
+  "agent_count": 37,
+  "avg_cross_ref_density": 5.46,
   "agents": [
     {
       "name": "A5 Context Architect",
@@ -51,7 +51,22 @@
         "Executive Orchestrator"
       ],
       "file": ".github/agents/b5-dependency-auditor.agent.md",
-      "cross_ref_density": 3
+      "cross_ref_density": 4
+    },
+    {
+      "name": "Business Lead",
+      "description": ">",
+      "tools": [
+        "search",
+        "read"
+      ],
+      "posture": "readonly",
+      "capabilities": [],
+      "handoffs": [
+        "Executive Orchestrator"
+      ],
+      "file": ".github/agents/business-lead.agent.md",
+      "cross_ref_density": 1
     },
     {
       "name": "CI Monitor",
@@ -76,6 +91,21 @@
         "Executive Orchestrator"
       ],
       "file": ".github/agents/ci-monitor.agent.md",
+      "cross_ref_density": 1
+    },
+    {
+      "name": "Comms Strategist",
+      "description": ">",
+      "tools": [
+        "search",
+        "read"
+      ],
+      "posture": "readonly",
+      "capabilities": [],
+      "handoffs": [
+        "Executive Orchestrator"
+      ],
+      "file": ".github/agents/comms-strategist.agent.md",
       "cross_ref_density": 1
     },
     {
@@ -250,7 +280,7 @@
         "Executive Orchestrator"
       ],
       "file": ".github/agents/env-validator.agent.md",
-      "cross_ref_density": 1
+      "cross_ref_density": 3
     },
     {
       "name": "Executive Automator",
@@ -263,7 +293,8 @@
         "execute",
         "terminal",
         "usages",
-        "changes"
+        "changes",
+        "execute/runInTerminal"
       ],
       "posture": "full",
       "capabilities": [
@@ -276,7 +307,9 @@
       "handoffs": [
         "Review",
         "GitHub",
-        "Executive Scripter"
+        "Executive Scripter",
+        "Executive Orchestrator",
+        "Executive Fleet"
       ],
       "file": ".github/agents/executive-automator.agent.md",
       "cross_ref_density": 3
@@ -290,7 +323,10 @@
         "edit",
         "write",
         "usages",
-        "changes"
+        "changes",
+        "edit/editFiles",
+        "execute/runInTerminal",
+        "execute/getTerminalOutput"
       ],
       "posture": "creator",
       "capabilities": [
@@ -302,10 +338,12 @@
       "handoffs": [
         "Review",
         "GitHub",
-        "Executive Researcher"
+        "Executive Researcher",
+        "Executive Orchestrator",
+        "Executive Fleet"
       ],
       "file": ".github/agents/executive-docs.agent.md",
-      "cross_ref_density": 16
+      "cross_ref_density": 17
     },
     {
       "name": "Executive Fleet",
@@ -336,24 +374,13 @@
         "Executive Docs"
       ],
       "file": ".github/agents/executive-fleet.agent.md",
-      "cross_ref_density": 7
+      "cross_ref_density": 8
     },
     {
       "name": "Executive Orchestrator",
       "description": "Coordinate multi-workflow sessions spanning research, docs, scripting, and fleet changes \u2014 sequence executive agents and maintain session coherence.",
-      "tools": [
-        "search",
-        "read",
-        "edit",
-        "write",
-        "web",
-        "execute",
-        "terminal",
-        "usages",
-        "changes",
-        "agent"
-      ],
-      "posture": "full",
+      "tools": [],
+      "posture": "readonly",
       "capabilities": [
         "coordinate-multi-workflow",
         "docs",
@@ -361,9 +388,15 @@
         "fleet-changes",
         "sequence-executive"
       ],
-      "handoffs": [],
+      "handoffs": [
+        "Executive Planner",
+        "Executive Docs",
+        "Executive Fleet",
+        "Executive Researcher",
+        "Executive Scripter"
+      ],
       "file": ".github/agents/executive-orchestrator.agent.md",
-      "cross_ref_density": 9
+      "cross_ref_density": 13
     },
     {
       "name": "Executive Planner",
@@ -399,7 +432,9 @@
         "terminal",
         "usages",
         "changes",
-        "agent"
+        "agent",
+        "github.vscode-pull-request-github/doSearch",
+        "github.vscode-pull-request-github/issue_fetch"
       ],
       "posture": "full",
       "capabilities": [
@@ -431,7 +466,9 @@
         "terminal",
         "usages",
         "changes",
-        "agent"
+        "agent",
+        "execute/runInTerminal",
+        "web/fetch"
       ],
       "posture": "full",
       "capabilities": [
@@ -448,7 +485,8 @@
         "Research Archivist",
         "Executive Scripter",
         "Executive Docs",
-        "Review"
+        "Review",
+        "Executive Orchestrator"
       ],
       "file": ".github/agents/executive-researcher.agent.md",
       "cross_ref_density": 7
@@ -464,7 +502,9 @@
         "execute",
         "terminal",
         "usages",
-        "changes"
+        "changes",
+        "execute/runInTerminal",
+        "execute/runTests"
       ],
       "posture": "full",
       "capabilities": [
@@ -477,14 +517,16 @@
       "handoffs": [
         "Review",
         "GitHub",
-        "Executive Automator"
+        "Executive Automator",
+        "Executive Orchestrator",
+        "Executive Researcher"
       ],
       "file": ".github/agents/executive-scripter.agent.md",
       "cross_ref_density": 3
     },
     {
       "name": "GitHub",
-      "description": "Commit approved changes to the current branch following Conventional Commits. The final step in every agent workflow before human review.",
+      "description": "Executive-tier agent owning all git and GitHub API write operations \u2014 commits, pushes, PR creation, issue updates, label management. Receives approved changes from any executive after Review APPROVED. The sole executor of remote writes in the fleet.",
       "tools": [
         "terminal",
         "execute",
@@ -493,14 +535,17 @@
       ],
       "posture": "full",
       "capabilities": [
-        "commit-approved",
-        "final-step"
+        "executive-tier-agent",
+        "commits",
+        "pushes",
+        "creation",
+        "issue-updates"
       ],
       "handoffs": [
         "Review"
       ],
       "file": ".github/agents/github.agent.md",
-      "cross_ref_density": 2
+      "cross_ref_density": 1
     },
     {
       "name": "Issue Triage",
@@ -607,6 +652,46 @@
       "cross_ref_density": 3
     },
     {
+      "name": "Public Engagement Officer",
+      "description": ">",
+      "tools": [
+        "search",
+        "read"
+      ],
+      "posture": "readonly",
+      "capabilities": [],
+      "handoffs": [
+        "Executive Orchestrator"
+      ],
+      "file": ".github/agents/public-engagement-officer.agent.md",
+      "cross_ref_density": 1
+    },
+    {
+      "name": "RAG Specialist",
+      "description": "Design and validate retrieval, indexing, and evaluation workflows for the repository\u2019s local-first RAG stack without coupling to a specific editor or model client.",
+      "tools": [
+        "search",
+        "read",
+        "edit",
+        "changes",
+        "usages"
+      ],
+      "posture": "creator",
+      "capabilities": [
+        "design-validate",
+        "indexing",
+        "evaluation-workflows"
+      ],
+      "handoffs": [
+        "Executive Orchestrator",
+        "MCP Architect",
+        "Executive Docs",
+        "Review"
+      ],
+      "file": ".github/agents/rag-specialist.agent.md",
+      "cross_ref_density": 6
+    },
+    {
       "name": "Release Manager",
       "description": "Orchestrate versioning, CHANGELOG entries, and GitHub Releases \u2014 manage SemVer decisions, tag commits, and ensure every release has a correlated milestone.",
       "tools": [
@@ -633,7 +718,7 @@
         "Executive Orchestrator"
       ],
       "file": ".github/agents/release-manager.agent.md",
-      "cross_ref_density": 2
+      "cross_ref_density": 3
     },
     {
       "name": "Research Archivist",
@@ -657,7 +742,7 @@
         "Executive Researcher"
       ],
       "file": ".github/agents/research-archivist.agent.md",
-      "cross_ref_density": 2
+      "cross_ref_density": 3
     },
     {
       "name": "Research Reviewer",
@@ -683,7 +768,7 @@
     },
     {
       "name": "Research Scout",
-      "description": "Survey the web and local sources for a given research topic. Catalogue raw findings in the session scratchpad \u2014 do not synthesize.",
+      "description": "Conduct mandatory web searches and survey external authoritative sources for a given research topic. Catalogue raw findings in the session scratchpad \u2014 do not synthesize. Web sourcing is non-negotiable for all research sprints.",
       "tools": [
         "search",
         "read",
@@ -692,9 +777,10 @@
       ],
       "posture": "readonly",
       "capabilities": [
-        "survey-web",
+        "conduct-mandatory",
         "catalogue-raw",
-        "synthesize"
+        "synthesize",
+        "web-sourcing"
       ],
       "handoffs": [
         "Executive Researcher"
@@ -721,7 +807,7 @@
         "Executive Researcher"
       ],
       "file": ".github/agents/research-synthesizer.agent.md",
-      "cross_ref_density": 2
+      "cross_ref_density": 3
     },
     {
       "name": "Review",
@@ -740,11 +826,11 @@
         "flags-issues"
       ],
       "handoffs": [
-        "GitHub",
+        "Executive Orchestrator",
         "Executive Researcher"
       ],
       "file": ".github/agents/review.agent.md",
-      "cross_ref_density": 9
+      "cross_ref_density": 13
     },
     {
       "name": "Security Researcher",
@@ -772,7 +858,7 @@
         "Review"
       ],
       "file": ".github/agents/security-researcher.agent.md",
-      "cross_ref_density": 5
+      "cross_ref_density": 6
     },
     {
       "name": "Test Coordinator",
