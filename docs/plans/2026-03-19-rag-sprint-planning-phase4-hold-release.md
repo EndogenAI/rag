@@ -7,6 +7,8 @@ Phase 3 input: [2026-03-19-rag-sprint-planning-phase3-installability-adoption.md
 Pilot-hold issue: #8
 Date: 2026-03-19
 
+Status note: this document is the pre-closure HOLD snapshot for Phase 4. The current post-closure posture is defined in [2026-03-19-rag-sprint-planning-rg4-reentry-update.md](./2026-03-19-rag-sprint-planning-rg4-reentry-update.md).
+
 ## Section A: Evidence-to-Claim Matrix
 
 | Claim ID | Claim (Phases 1-3) | Anchor | Evidence from inputs | Confidence | Impact on hold/release |
@@ -33,6 +35,7 @@ Date: 2026-03-19
 
 - Recommendation: HOLD.
 - Binary decision: HOLD implementation planning release at Gate 4.
+- Supersession: this HOLD decision is superseded for current posture by the RG4 re-entry update once G1-G3 closure evidence is attached.
 - Primary rationale: Issue #8 has an explicit unmet acceptance criterion for pilot effectiveness versus baseline, so evidence sufficiency is not complete.
 - Supporting rationale: Phases 1-3 establish strong planning evidence across 1C/2C/3B/4C, but the required pilot-proof closure step is still missing.
 - Risk rationale: Releasing now would convert a known evidence gap into implementation risk, violating the workplan hold constraint.

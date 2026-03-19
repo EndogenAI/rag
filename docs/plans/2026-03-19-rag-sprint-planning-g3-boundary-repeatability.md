@@ -12,10 +12,11 @@ Close G3 by demonstrating three consecutive boundary-safe windows under 4C separ
 - Filter: --filter-governs endogenous-first
 - Top-k: 5
 - Consecutive windows: 3 (executed sequentially in one run)
-- Critical leak rule: any returned result missing endogenous-first in governs
+- Critical leak rule (Phase 2-aligned): any forbidden-scope result appearing in the top-5.
+	- For this check, forbidden scope means any returned result whose governs tokens do not include endogenous-first.
 - Threshold target from prior gates:
-  - critical leaks = 0 per window
-  - aggregate leak rate <= 0.1%
+  - critical leaks (forbidden-scope in top-5) = 0 per window
+  - aggregate cross-scope leak rate <= 0.1%
 
 ## Window Results
 

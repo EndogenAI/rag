@@ -139,7 +139,7 @@ Exit criteria:
 Owner recommendation: Review
 Depends on: Phase 5
 Goal: confirm planning package is complete, coherent, and safe to operationalize
-Hard gate: no implementation planning begins until APPROVED.
+Hard gate: no implementation execution may start until APPROVED.
 Gate acceptance criteria:
 1. Full issue-to-phase traceability exists for #15-#20 and #8.
 2. Implementation hold constraints are explicit and enforceable.
