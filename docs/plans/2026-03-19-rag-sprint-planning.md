@@ -14,6 +14,11 @@ Produce an evidence-backed planning contract for the next RAG architecture sprin
   - 4C: hybrid separation (default separate, optional federation)
 - Sprint cadence rule: every domain phase is followed by a Review gate with APPROVED verdict before the next domain phase begins.
 
+## Model Strategy for Research Phases
+- Primary model: GPT-5.3-Codex for Phase 1 through Phase 5 research reasoning, dependency mapping, and synthesis quality.
+- Secondary validation pass: one optional frontier-model cross-check before each Review gate for blind-spot detection.
+- Cost posture: reserve lower-cost models for mechanical tasks (format checks, issue metadata hygiene), not for core architecture judgments.
+
 ## Source-of-Truth Backlog Snapshot (session start)
 - #15: research epic for RAG architecture decisions and execution framing
 - #16: auto-update architecture model
