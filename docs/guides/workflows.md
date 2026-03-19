@@ -730,7 +730,7 @@ Effective date: YYYY-MM-DD
 Reason: <one sentence naming what changed>
 ```
 
-**Canonical example**: `Superseded by: docs/plans/2026-03-21-phase-gates-v2.md; Effective date: 2026-03-21; Reason: Replaces v1 gate order after Review gate sequencing update.`
+**Canonical example**: `Superseded by: <relative-path-to-new-artifact>; Effective date: YYYY-MM-DD; Reason: Replaces v1 gate order after Review gate sequencing update.`
 
 **Anti-pattern**: `Deprecated` or `Old` without a replacement path and effective date.
 
