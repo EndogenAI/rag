@@ -1,10 +1,19 @@
-## [Unreleased]
+# [0.13.0](https://github.com/EndogenAI/dogma/compare/v0.12.3...v0.13.0) (2026-03-19)
 
 
 ### Bug Fixes
 
-* **agents:** require explicit `Desired Outcomes & Acceptance` section in `validate_agent_files.py` ([67404ad](https://github.com/EndogenAI/dogma/commit/67404ad))
-* **docs,research:** complete Phase 2C anchor and MANIFESTO citation normalization sweep ([dc045f0](https://github.com/EndogenAI/dogma/commit/dc045f0))
+* **agents:** require explicit Desired Outcomes section in validator ([3d28457](https://github.com/EndogenAI/dogma/commit/3d284573a39776bc01a9d6ea950b704bc4b63918))
+* **docs,scripts,agents:** resolve PR [#393](https://github.com/EndogenAI/dogma/issues/393) review thread issues ([3c2ef3f](https://github.com/EndogenAI/dogma/commit/3c2ef3feee837c103a61802f89d33ff533665227))
+* **scripts:** support legacy governs frontmatter parsing ([b8dccb9](https://github.com/EndogenAI/dogma/commit/b8dccb9eb7d018d90b7c6f0f911e15b843dea9d9))
+
+
+### Features
+
+* **fleet:** Phase 2A structural repairs — bulk XML tagging and validator tightening ([#391](https://github.com/EndogenAI/dogma/issues/391)) ([73dbd14](https://github.com/EndogenAI/dogma/commit/73dbd146ef1bd508593d2a74fe11c029adbb519a))
+* **scripts:** dogma audit Phase 0/1 normalization & structural audit ([cf0c295](https://github.com/EndogenAI/dogma/commit/cf0c295f0e6e79c893dd388a0183645b9ca8eaba))
+* **scripts:** fix audit_provenance backward compatibility for governs key ([f58f2b2](https://github.com/EndogenAI/dogma/commit/f58f2b21b13e816a7c190f02962635b1c3d5af88))
+
 
 
 ## [0.12.3](https://github.com/EndogenAI/dogma/compare/v0.12.2...v0.12.3) (2026-03-18)
