@@ -153,6 +153,47 @@ Grounded retrieval results (chunk + source file + line range + governs)
 
 ---
 
+## Index Storage and Benchmark Evidence
+
+### Local Index Path and Gitignore
+
+- Default local index path: `rag-index/rag_index.sqlite3` (created by `scripts/rag_index.py`).
+- Index storage is local-only and excluded from commits via `.gitignore` entry `rag-index/`.
+- This keeps retrieval state reproducible per machine without introducing generated DB artifacts into git history.
+
+### Apple Silicon Reindex Benchmark (Cold + Warm)
+
+Environment and dataset from measured run:
+
+- machine: `macOS-26.3-arm64-arm-64bit`
+- processor: `arm`
+- benchmark index path: `rag-index/rag_index.sqlite3`
+- corpus size during run: `363` files, `2465` total chunks
+
+Reproducible benchmark commands (default local index path):
+
+```bash
+# Cold full reindex (clear default local index first)
+uv run python -c "from pathlib import Path; Path('rag-index/rag_index.sqlite3').unlink(missing_ok=True); Path('rag-index/rag_index.sqlite3-journal').unlink(missing_ok=True)"
+/usr/bin/time -p uv run python scripts/rag_index.py reindex --scope full --output json
+
+# Warm full reindex (same corpus immediately after cold run)
+/usr/bin/time -p uv run python scripts/rag_index.py reindex --scope full --output json
+
+# Warm incremental reindex (no corpus changes expected)
+/usr/bin/time -p uv run python scripts/rag_index.py reindex --scope incremental --output json
+```
+
+Measured results (Apple Silicon):
+
+| Run | Elapsed | files_updated | files_unchanged | total_chunks |
+|---|---:|---:|---:|---:|
+| cold_full | 0.794s | 363 | 0 | 2465 |
+| warm_full | 1.148s | 363 | 0 | 2465 |
+| warm_incremental | 0.083s | 0 | 363 | 2465 |
+
+---
+
 ## Troubleshooting
 
 ### Server startup failures
