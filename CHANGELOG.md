@@ -1,4 +1,13 @@
-# 0.1.0 (2026-03-19)
+# [0.2.0](https://github.com/EndogenAI/rag/compare/v0.1.0...v0.2.0) (2026-03-19)
+
+
+### Features
+
+* **agents:** add RAG specialist role contract ([aa313ff](https://github.com/EndogenAI/rag/commit/aa313ffcdf5ea439044bb90600c46a889ea67c53))
+
+
+
+# [0.1.0](https://github.com/EndogenAI/rag/compare/12f8382bf74e514be69953642a92a5fb17d2692d...v0.1.0) (2026-03-19)
 
 
 ### Bug Fixes
