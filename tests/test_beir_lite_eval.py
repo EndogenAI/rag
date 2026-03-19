@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sqlite3
+import subprocess
 import sys
 from pathlib import Path
 
@@ -12,19 +13,19 @@ import pytest
 
 pytestmark = pytest.mark.io
 
-_BEIR_PATH = Path(__file__).parent.parent / "scripts" / "beir_lite_eval.py"
-_BEIR_SPEC = importlib.util.spec_from_file_location("beir_lite_eval", _BEIR_PATH)
-assert _BEIR_SPEC and _BEIR_SPEC.loader
-be = importlib.util.module_from_spec(_BEIR_SPEC)
-sys.modules["beir_lite_eval"] = be
-_BEIR_SPEC.loader.exec_module(be)
-
 _RAG_PATH = Path(__file__).parent.parent / "scripts" / "rag_index.py"
 _RAG_SPEC = importlib.util.spec_from_file_location("rag_index", _RAG_PATH)
 assert _RAG_SPEC and _RAG_SPEC.loader
 ri = importlib.util.module_from_spec(_RAG_SPEC)
 sys.modules["rag_index"] = ri
 _RAG_SPEC.loader.exec_module(ri)
+
+_BEIR_PATH = Path(__file__).parent.parent / "scripts" / "beir_lite_eval.py"
+_BEIR_SPEC = importlib.util.spec_from_file_location("beir_lite_eval", _BEIR_PATH)
+assert _BEIR_SPEC and _BEIR_SPEC.loader
+be = importlib.util.module_from_spec(_BEIR_SPEC)
+sys.modules["beir_lite_eval"] = be
+_BEIR_SPEC.loader.exec_module(be)
 
 
 @pytest.fixture
@@ -214,6 +215,22 @@ def test_retrieval_runtime_error_classified(eval_workspace: dict[str, Path]) -> 
 
 def test_shipped_beir_lite_config_meets_sprint_1_thresholds() -> None:
     config_path = Path(__file__).parent.parent / "scripts" / "eval_data" / "beir_lite_config_v1.json"
+
+    # Ensure a fresh deterministic index exists in CI before evaluating shipped thresholds.
+    subprocess.run(
+        [
+            sys.executable,
+            str(Path(__file__).parent.parent / "scripts" / "rag_index.py"),
+            "reindex",
+            "--scope",
+            "full",
+            "--output",
+            "json",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
     payload = be.run_evaluation(config_path)
 
