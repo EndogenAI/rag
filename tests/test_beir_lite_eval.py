@@ -213,6 +213,14 @@ def test_retrieval_runtime_error_classified(eval_workspace: dict[str, Path]) -> 
     assert all(row["error"] is not None for row in payload["queries"])
 
 
+def test_run_evaluation_applies_config_seed(eval_workspace: dict[str, Path], mocker) -> None:
+    seed_spy = mocker.patch.object(be.random, "seed")
+    be.run_evaluation(eval_workspace["config_path"])
+    seed_spy.assert_called_once_with(0)
+
+
+@pytest.mark.integration
+@pytest.mark.slow
 def test_shipped_beir_lite_config_meets_sprint_1_thresholds() -> None:
     config_path = Path(__file__).parent.parent / "scripts" / "eval_data" / "beir_lite_config_v1.json"
 

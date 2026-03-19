@@ -57,6 +57,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import random
 import statistics
 import sys
 import time
@@ -387,6 +388,8 @@ def run_evaluation(
 ) -> dict[str, Any]:
     """Execute BEIR-lite evaluation and return machine-readable payload."""
     config = load_config(config_path)
+    # Seed global RNG so the config seed has concrete semantics for any stochastic extensions.
+    random.seed(config.seed)
     dataset = load_dataset(config.dataset_path)
 
     if assert_deterministic:

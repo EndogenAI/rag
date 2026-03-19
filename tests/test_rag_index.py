@@ -227,6 +227,20 @@ def test_reindex_dry_run_reports_expected_counts(repo_root: Path, db_path: Path)
     assert result["dry_run"] is True
     assert result["files_updated"] == 1
     assert result["last_indexed"] is None
+    assert result["projected_total_chunks"] is not None
+
+
+def test_reindex_dry_run_projects_total_without_double_count(repo_root: Path, db_path: Path) -> None:
+    a = repo_root / "docs" / "a.md"
+    _write(a, "## A\nfirst content")
+
+    first = ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[a])
+    assert first["total_chunks"] == 1
+
+    _write(a, "## A\nupdated content")
+    dry = ri.reindex(scope="incremental", repo_root=repo_root, db_path=db_path, file_paths=[a], dry_run=True)
+    assert dry["total_chunks"] == 1
+    assert dry["projected_total_chunks"] == 1
 
 
 def test_reindex_removes_missing_files(repo_root: Path, db_path: Path) -> None:
@@ -338,6 +352,20 @@ def test_status_report_invalid_last_indexed_not_fresh(repo_root: Path, db_path: 
     status = ri.status_report(db_path=db_path)
     assert status["seconds_since_last_index"] is None
     assert status["is_fresh"] is False
+
+
+def test_status_report_naive_last_indexed_is_normalized(repo_root: Path, db_path: Path) -> None:
+    a = repo_root / "docs" / "a.md"
+    _write(a, "## A\nalpha")
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[a])
+
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("UPDATE meta SET value = ? WHERE key = ?", ("2026-03-19T00:00:00", "last_indexed"))
+    conn.commit()
+    conn.close()
+
+    status = ri.status_report(db_path=db_path)
+    assert isinstance(status["seconds_since_last_index"], float)
 
 
 def test_print_output_branches(capsys: pytest.CaptureFixture[str]) -> None:

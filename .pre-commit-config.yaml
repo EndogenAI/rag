@@ -47,6 +47,12 @@ repos:
         language: system
         pass_filenames: false
         stages: [pre-push]
+      - id: enforce-open-pr-closes
+        name: Enforce open PR auto-close syntax (pre-push)
+        entry: uv run python scripts/check_current_pr_closes.py
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
       - id: full-repo-ruff-lint
         name: Full repo ruff lint (CI parity)
         entry: uv run ruff check scripts/ tests/

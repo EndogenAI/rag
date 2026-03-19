@@ -311,6 +311,17 @@ def _read_file_state(path: Path, repo_root: Path) -> FileState:
     stat = path.stat()
     return FileState(source_file=rel, file_hash=_sha256(text), file_mtime=stat.st_mtime)
 
+def _count_chunks_for_sources(conn: sqlite3.Connection, sources: list[str]) -> int:
+    """Return total chunk count currently stored for the provided source files."""
+    if not sources:
+        return 0
+    placeholders = ",".join("?" for _ in sources)
+    row = conn.execute(
+        f"SELECT COALESCE(SUM(chunk_count), 0) AS c FROM files WHERE source_file IN ({placeholders})",
+        sources,
+    ).fetchone()
+    return int(row["c"]) if row else 0
+
 
 def _connect(db_path: Path) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -479,8 +490,12 @@ def reindex(
 
         total_chunks_row = conn.execute("SELECT COUNT(*) AS c FROM chunks").fetchone()
         total_chunks = int(total_chunks_row["c"]) if total_chunks_row else 0
+
+        projected_total_chunks: int | None = None
         if dry_run:
-            total_chunks += chunks_indexed
+            affected_sources = sorted(set(removed_files).union([state.source_file for state in target_states]))
+            existing_affected_chunks = _count_chunks_for_sources(conn, affected_sources)
+            projected_total_chunks = max(0, total_chunks - existing_affected_chunks + chunks_indexed)
 
         return {
             "ok": True,
@@ -496,6 +511,7 @@ def reindex(
             "files_removed": len(removed_files),
             "chunks_indexed": chunks_indexed,
             "total_chunks": total_chunks,
+            "projected_total_chunks": projected_total_chunks,
             "last_indexed": None if dry_run else indexed_at,
         }
     finally:
@@ -621,9 +637,12 @@ def status_report(*, db_path: Path = INDEX_DB_PATH, freshness_seconds: int = 864
         if last_indexed:
             try:
                 last_dt = datetime.fromisoformat(last_indexed)
+                if last_dt.tzinfo is None:
+                    # Normalize naive timestamps to UTC for safe subtraction.
+                    last_dt = last_dt.replace(tzinfo=timezone.utc)
                 seconds_since = (datetime.now(timezone.utc) - last_dt).total_seconds()
                 is_fresh = seconds_since <= freshness_seconds
-            except ValueError:
+            except (TypeError, ValueError):
                 seconds_since = None
                 is_fresh = False
 

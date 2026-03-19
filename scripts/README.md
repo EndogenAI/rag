@@ -76,6 +76,7 @@ scripts/
   measure_cross_reference_density.py # Measure MANIFESTO.md axiom citation density across the corpus; outputs metrics for validate_synthesis.py (closes #219)
   pre_review_sweep.py          # Pre-review checklist automation — checks ruff, pytest, and substrate validation before human review (closes #299)
   check_pr_closes.py           # PR body auto-close syntax validator — enforces at least one Closes/Fixes/Resolves #NNN line for traceable merge-time issue closure
+  check_current_pr_closes.py   # Pre-push guard for current branch — if an open PR exists, fails when body is missing Closes/Fixes/Resolves #NNN syntax
   preexec_audit_log.py         # Format and filter the shell pre-execution governor audit log; calculates compliance rate (closes #305)
   rate_limit_config.py         # CLI manager for data/rate-limit-profiles.yml — add/update provider profiles (closes #323)
   rate_limit_gate.py           # Pre-delegation rate-limit circuit breaker — checks budget and provider policy before orchestration (closes #325)
