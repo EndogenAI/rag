@@ -107,6 +107,12 @@ jobs:
       - name: Run ruff format (check)
         run: uv run ruff format --check scripts/ tests/
 
+      - name: Enforce PR body auto-close syntax
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: uv run python scripts/check_pr_closes.py --body "$PR_BODY"
+
   retrieval-smoke:
     name: Retrieval smoke checks
     runs-on: ubuntu-latest
