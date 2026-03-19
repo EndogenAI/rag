@@ -8,5 +8,6 @@ priorities:
 - Local Compute-First
 - Algorithms Before Tokens
 axiom_emphasis: local-compute-first
+default_provider: gemini
 constraints: []
 deployment_layer: {}

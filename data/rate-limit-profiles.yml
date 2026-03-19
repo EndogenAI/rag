@@ -119,6 +119,61 @@ providers:
         retry_limit: 0
         circuit_breaker_threshold: 999
 
+  gemini:
+    description: "Google Gemini 1.5/2.0 API (Gemini 1.5 Flash, Gemini 1.5 Pro)"
+    rationale: |
+      Gemini Flash has high rate limits (~2000 RPM) while Pro is more restricted (~50 RPM).
+      Policy: moderate sleep, high throughput tolerance.
+    policies:
+      fetch_source:
+        sleep_sec: 10
+        retry_limit: 3
+        circuit_breaker_threshold: 6
+      delegation:
+        sleep_sec: 20
+        retry_limit: 2
+        circuit_breaker_threshold: 4
+      phase_boundary:
+        sleep_sec: 45
+        retry_limit: 1
+        circuit_breaker_threshold: 3
+      review_gate:
+        sleep_sec: 20
+        retry_limit: 2
+        circuit_breaker_threshold: 4
+      commit:
+        sleep_sec: 5
+        retry_limit: 3
+        circuit_breaker_threshold: 6
+
+  openai:
+    description: "OpenAI API (GPT-4o, GPT-4o-mini, o1-preview, o1-mini)"
+    rationale: |
+      Latest OpenAI models (o1, 4o) have tiered rate-limits (often 500k+ TPM per tier).
+      Sprint 17-18 observed high burst tolerance but strict RPM on o1.
+      Policy: moderate delegation sleep to allow for reasoning-model latency.
+    policies:
+      fetch_source:
+        sleep_sec: 15
+        retry_limit: 3
+        circuit_breaker_threshold: 6
+      delegation:
+        sleep_sec: 30
+        retry_limit: 2
+        circuit_breaker_threshold: 4
+      phase_boundary:
+        sleep_sec: 60
+        retry_limit: 1
+        circuit_breaker_threshold: 3
+      review_gate:
+        sleep_sec: 30
+        retry_limit: 2
+        circuit_breaker_threshold: 4
+      commit:
+        sleep_sec: 5
+        retry_limit: 3
+        circuit_breaker_threshold: 6
+
 # Fallback policy for unknown providers
 fallback:
   description: "Conservative fallback for unrecognized providers"

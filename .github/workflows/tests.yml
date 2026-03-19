@@ -20,6 +20,7 @@ jobs:
   test:
     name: Run pytest with coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 12
 
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +52,7 @@ jobs:
   lint:
     name: Lint code style
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
@@ -104,6 +106,47 @@ jobs:
       - name: Run ruff format (check)
         run: uv run ruff format --check scripts/ tests/
 
+  retrieval-smoke:
+    name: Retrieval smoke checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Build retrieval index and capture artifact
+        run: >-
+          uv run python -c 'import json, pathlib, subprocess; out_dir=pathlib.Path("smoke-artifacts"); out_dir.mkdir(parents=True, exist_ok=True); cmd=["uv","run","python","scripts/rag_index.py","reindex","--scope","full","--output","json"]; result=subprocess.run(cmd, capture_output=True, text=True); result.check_returncode(); payload=json.loads(result.stdout); (out_dir / "reindex.json").write_text(json.dumps(payload, indent=2), encoding="utf-8"); print("Reindex completed: total_chunks=" + str(payload.get("total_chunks")))'
+
+      - name: Validate retrieval query returns at least one result
+        run: >-
+          uv run python -c 'import json, pathlib, subprocess; out_dir=pathlib.Path("smoke-artifacts"); cmd=["uv","run","python","scripts/rag_index.py","query","--query","governing axiom","--top-k","3","--output","json"]; result=subprocess.run(cmd, capture_output=True, text=True); result.check_returncode(); payload=json.loads(result.stdout); (out_dir / "query.json").write_text(json.dumps(payload, indent=2), encoding="utf-8"); count=int(payload.get("count",0)); assert count >= 1, "Retrieval smoke failed: expected >=1 query result, got " + str(count)'
+
+      - name: Validate retrieval status health signal
+        run: >-
+          uv run python -c 'import json, pathlib, subprocess; out_dir=pathlib.Path("smoke-artifacts"); cmd=["uv","run","python","scripts/rag_index.py","status","--freshness-seconds","3600","--output","json"]; result=subprocess.run(cmd, capture_output=True, text=True); result.check_returncode(); payload=json.loads(result.stdout); (out_dir / "status.json").write_text(json.dumps(payload, indent=2), encoding="utf-8"); exists=bool(payload.get("exists")); fresh=bool(payload.get("is_fresh")); version_ok=bool(payload.get("version_ok")); chunks=int(payload.get("total_chunks",0)); assert exists, "Retrieval smoke failed: index does not exist after reindex"; assert version_ok, "Retrieval smoke failed: index version mismatch"; assert fresh, "Retrieval smoke failed: index is stale after reindex"; assert chunks > 0, "Retrieval smoke failed: expected total_chunks > 0, got " + str(chunks)'
+
+      - name: Upload retrieval smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retrieval-smoke-${{ github.run_id }}
+          path: smoke-artifacts/*.json
+          if-no-files-found: error
+
   links:
     name: Check links
     runs-on: ubuntu-latest
@@ -120,12 +163,12 @@ jobs:
   required:
     name: All tests passed
     runs-on: ubuntu-latest
-    needs: [test, lint]
+    needs: [test, lint, retrieval-smoke]
     if: always()
     steps:
       - name: Decide whether all tests and checks passed
         run: |
-          if [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.lint.result }}" != "success" ]; then
-            echo "Tests or linting failed"
+          if [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.retrieval-smoke.result }}" != "success" ]; then
+            echo "One or more required checks failed: test=${{ needs.test.result }}, lint=${{ needs.lint.result }}, retrieval-smoke=${{ needs.retrieval-smoke.result }}"
             exit 1
           fi

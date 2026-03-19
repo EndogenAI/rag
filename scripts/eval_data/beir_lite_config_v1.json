@@ -1,0 +1,7 @@
+{
+  "dataset_path": "scripts/eval_data/beir_lite_v1.json",
+  "top_k": 5,
+  "filter_governs": null,
+  "seed": 0,
+  "index_path": "rag-index/rag_index.sqlite3"
+}

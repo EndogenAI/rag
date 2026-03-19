@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BEIR-lite Instrumentation Output",
+  "type": "object",
+  "required": [
+    "timestamp",
+    "run_id",
+    "dataset_id",
+    "latency_p50_ms",
+    "latency_p95_ms",
+    "error_rate_pct",
+    "token_savings_median_pct"
+  ],
+  "properties": {
+    "timestamp": {"type": "string"},
+    "run_id": {"type": "string"},
+    "dataset_id": {"type": "string"},
+    "latency_p50_ms": {"type": "number"},
+    "latency_p95_ms": {"type": "number"},
+    "error_rate_pct": {"type": "number"},
+    "token_savings_median_pct": {"type": "number"}
+  }
+}

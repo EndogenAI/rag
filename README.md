@@ -87,6 +87,10 @@ uv run python scripts/watch_scratchpad.py
 
 See [`scripts/README.md`](scripts/README.md) for the full catalog.
 
+### MCP Retrieval Quickstart
+
+For clean-machine setup from clone to first successful `rag_query`, see [`mcp_server/README.md`](mcp_server/README.md).
+
 ---
 
 ## File Directory
