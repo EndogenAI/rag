@@ -25,7 +25,7 @@ Scope: Integration evidence for issues #8 and #3 for PR assembly.
 | Risk | Owner | Trigger | Mitigation |
 |---|---|---|---|
 | R1: #8 closure without pilot measurement evidence | Executive Orchestrator | PR attempts to close #8 with no linked pilot result artifact | Mark #8 as deferred in this PR unless pilot evidence link is added before merge |
-| R2: #3 closure claim rejected due weak traceability in PR body | Executive Docs | PR body omits direct links to index-path and benchmark sections | Copy exact section links from [mcp_server/README.md](../../mcp_server/README.md) into the PR evidence block |
+| R2: #3 closure claim rejected due to weak traceability in PR body | Executive Docs | PR body omits direct links to index-path and benchmark sections | Copy exact section links from [mcp_server/README.md](../../mcp_server/README.md) into the PR evidence block |
 | R3: Reviewer flags incomplete issue-to-artifact mapping | Executive Docs | Missing matrix rows or unresolved criteria in integration packet | Keep this matrix in PR description; do not summarize away criterion-level rows |
 | R4: Phase-gate audit ambiguity | Executive Orchestrator | Review notes do not reference approved Phases 1-3 state | Include one-line gate status note in PR body: Phases 1-3 approved, Phase 4 packet attached |
 
