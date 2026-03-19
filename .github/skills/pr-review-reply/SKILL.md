@@ -150,4 +150,7 @@ Do not request re-review until all threads are resolved — unresolved threads i
 - **Never pass multi-line reply bodies via `--body "..."`** on the command line — use `--batch` with a JSON file.
 - **Never use heredoc writes to create the JSON batch file** — use `create_file` or `replace_string_in_file` tools.
 - **Always verify after posting** — zero exit from the script is not confirmation that the reply posted successfully.
+- **When using `--agent`, pass the capability-map key identity (for example `github`), not a display name** (for example "GitHub Agent").
+- **Concrete example**: `uv run python scripts/pr_review_reply.py --pr <num> --batch .tmp/<branch>/review-replies.json --agent github`
+- **Verify key mapping before execution**: `rg -n "^\s*github:" scripts/agent_capabilities.yaml`
 - Do not request re-review until all flagged threads are resolved.
