@@ -215,6 +215,22 @@ Use `gh issue close` directly **only** for issues that are resolved without a PR
 
 The [PR template](../../.github/pull_request_template.md) includes a `## Closes` section at the bottom. Populate it as you commit phases — do not leave it blank.
 
+### CI Enforcement
+
+PRs are now validated by `scripts/check_pr_closes.py` in `.github/workflows/tests.yml` (lint job, pull_request only). The check fails if the PR body does not contain at least one auto-close line matching:
+
+```
+Closes #NNN
+Fixes #NNN
+Resolves #NNN
+```
+
+Local pre-check:
+
+```bash
+uv run python scripts/check_pr_closes.py --body-file /tmp/pr_body.md
+```
+
 ---
 
 ## 10. PR Merge Strategy

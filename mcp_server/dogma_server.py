@@ -1,6 +1,6 @@
 """mcp_server/dogma_server.py — FastMCP server exposing dogma governance tools.
 
-Registers 8 tools via @mcp.tool():
+Registers 11 tools via @mcp.tool():
     validate_agent_file  — Validate a .agent.md file against AGENTS.md constraints.
     validate_synthesis   — Validate a D4 synthesis document.
     check_substrate      — Run a full CRD substrate health check.
@@ -8,6 +8,9 @@ Registers 8 tools via @mcp.tool():
     scaffold_workplan    — Scaffold a new docs/plans/ workplan from template.
     run_research_scout   — Fetch and cache an external URL (SSRF-safe).
     query_docs           — BM25 query over the dogma documentation corpus.
+    rag_query            — Query local Phase 2 retrieval index chunks.
+    rag_reindex          — Build/rebuild local Phase 2 retrieval index.
+    rag_status           — Report retrieval index freshness + version health.
     prune_scratchpad     — Initialise or inspect the session scratchpad.
 
 Transport: stdio (default for Claude Desktop / Cursor / VS Code MCP clients).
@@ -35,6 +38,9 @@ from mcp.server.fastmcp import FastMCP
 
 from mcp_server.tools.research import query_docs as _query_docs
 from mcp_server.tools.research import run_research_scout as _run_research_scout
+from mcp_server.tools.retrieval import rag_query as _rag_query
+from mcp_server.tools.retrieval import rag_reindex as _rag_reindex
+from mcp_server.tools.retrieval import rag_status as _rag_status
 from mcp_server.tools.scaffolding import scaffold_agent as _scaffold_agent
 from mcp_server.tools.scaffolding import scaffold_workplan as _scaffold_workplan
 from mcp_server.tools.scratchpad import prune_scratchpad as _prune_scratchpad
@@ -59,7 +65,8 @@ Common workflow:
   2. query_docs("topic") — find relevant guidance before making changes
   3. validate_agent_file() / validate_synthesis() — validate changes before committing
   4. scaffold_agent() / scaffold_workplan() — create new governance artefacts
-  5. prune_scratchpad() — initialise today's session scratchpad for cross-agent handoffs
+    5. rag_reindex() / rag_query() — local retrieval index build + grounded lookup
+    6. prune_scratchpad() — initialise today's session scratchpad for cross-agent handoffs
 """
 
 mcp = FastMCP("dogma-governance", instructions=_INSTRUCTIONS)
@@ -183,6 +190,51 @@ def query_docs(query: str, scope: str = "all", top_n: int = 5) -> dict:
         {"ok": bool, "results": list[dict], "errors": list[str]}
     """
     return _query_docs(query, scope, top_n)
+
+
+@mcp.tool()
+def rag_query(query: str, top_k: int = 5, filter_governs: str | None = None) -> dict:
+    """Query the local Phase 2 retrieval index.
+
+    Args:
+        query: The search query string.
+        top_k: Number of chunks to return (1-50, default: 5).
+        filter_governs: Optional governs-domain slug filter.
+
+    Returns:
+        Success: {"ok": true, "results": [...], ...}
+        Error:   {"ok": false, "error": {"code", "message", "details"}}
+    """
+    return _rag_query(query, top_k, filter_governs)
+
+
+@mcp.tool()
+def rag_reindex(scope: str = "incremental", dry_run: bool = False) -> dict:
+    """Build or refresh the local Phase 2 retrieval index.
+
+    Args:
+        scope: Reindex scope — "full" or "incremental".
+        dry_run: If true, preview changes without writing.
+
+    Returns:
+        Success: {"ok": true, "stats": {...}}
+        Error:   {"ok": false, "error": {"code", "message", "details"}}
+    """
+    return _rag_reindex(scope, dry_run)
+
+
+@mcp.tool()
+def rag_status(freshness_seconds: int = 86400) -> dict:
+    """Report local retrieval index health, version, and freshness.
+
+    Args:
+        freshness_seconds: Staleness threshold in seconds.
+
+    Returns:
+        Success: {"ok": true, "status": {...}}
+        Error:   {"ok": false, "error": {"code", "message", "details"}}
+    """
+    return _rag_status(freshness_seconds)
 
 
 # ---------------------------------------------------------------------------

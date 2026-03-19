@@ -46,6 +46,8 @@ scripts/
   annotate_provenance.py       # Scan Markdown and .agent.md files for MANIFESTO.md axiom mentions and write x-governs: frontmatter annotations (--scope, --dry-run, --registry, --manifesto, --no-recurse)
   propose_dogma_edit.py        # Programmatic enforcer of the back-propagation protocol — generate ADR-style dogma edit proposals from session evidence (--input, --tier, --affected-axiom, --proposed-delta, --output)
   query_docs.py                # BM25 query CLI over the documentation corpus — scoped retrieval without bulk context loading (query, --scope [manifesto|agents|guides|research|toolchain|skills|all], --top-n, --output text|json)
+  beir_lite_eval.py            # BEIR-lite style retrieval evaluator with deterministic Recall@K/Precision@K metrics and instrumentation output (latency/error/token-savings)
+  rag_index.py                 # Phase 2 local retrieval substrate — H2 chunking + frozen fallback rule, full/incremental indexing, governs-filtered query, version/freshness status
   weave_links.py               # Inject Markdown cross-reference links across the corpus via a YAML concept registry (--scope, --dry-run, --registry); idempotent
   validate_handoff_permeability.py  # Validate cross-substrate handoff signal preservation (Canonical examples, Anti-patterns, Axiom citations, Source URLs) per membrane type (scout-to-synthesizer, synthesizer-to-reviewer, reviewer-to-archivist); AGENTS.md § Signal Preservation Rules enforcement
   parse_audit_result.py        # Convert JSON provenance audit output to Markdown risk assessment & PR comments; compute risk levels (green/yellow/red) from axiom citation intensity and test coverage
@@ -73,6 +75,8 @@ scripts/
   format_citations.py          # Render ACM-style citations from a bibliography YAML file (closes #180)
   measure_cross_reference_density.py # Measure MANIFESTO.md axiom citation density across the corpus; outputs metrics for validate_synthesis.py (closes #219)
   pre_review_sweep.py          # Pre-review checklist automation — checks ruff, pytest, and substrate validation before human review (closes #299)
+  check_pr_closes.py           # PR body auto-close syntax validator — enforces at least one Closes/Fixes/Resolves #NNN line for traceable merge-time issue closure
+  check_current_pr_closes.py   # Pre-push guard for current branch — if an open PR exists, fails when body is missing Closes/Fixes/Resolves #NNN syntax
   preexec_audit_log.py         # Format and filter the shell pre-execution governor audit log; calculates compliance rate (closes #305)
   rate_limit_config.py         # CLI manager for data/rate-limit-profiles.yml — add/update provider profiles (closes #323)
   rate_limit_gate.py           # Pre-delegation rate-limit circuit breaker — checks budget and provider policy before orchestration (closes #325)
@@ -1267,6 +1271,63 @@ uv run python scripts/afs_index.py index --branch feat-my-branch
 **FTS5 Schema:** `sessions(date, branch, phase, status, content)` — one row per H2 section plus one whole-file row per `.md` file.
 
 **Design:** The `.db` file is gitignored; `.md` files remain the source of truth and continue to be committed as session records.
+
+---
+
+## scripts/rag_index.py
+
+**Phase 2 Local Retrieval Substrate** (issues #1, #2, #3)
+
+Implements deterministic H2 chunking with a frozen fallback rule (`__FROZEN_H2_FALLBACK__`) for files without H2 headings, plus a SQLite FTS5-backed retrieval index with version checks, full/incremental reindex modes, freshness reporting, and governs filtering.
+
+**Commands:**
+| Command | Description |
+|---------|-------------|
+| `reindex` | Build/rebuild index in `full` or `incremental` mode |
+| `query` | Query chunks with optional `--filter-governs` |
+| `status` | Report index version compatibility and freshness |
+
+**Usage:**
+```bash
+uv run python scripts/rag_index.py reindex --scope full
+uv run python scripts/rag_index.py reindex --scope incremental --dry-run
+uv run python scripts/rag_index.py query --query "programmatic-first" --top-k 3
+uv run python scripts/rag_index.py query --query "commit" --filter-governs commit-discipline
+uv run python scripts/rag_index.py status --freshness-seconds 3600
+```
+
+**Index behavior highlights:**
+- Frozen fallback: no-H2 docs are indexed as one deterministic fallback chunk.
+- Incremental idempotency: unchanged files are skipped by file hash.
+- Version gate: incremental mode fails fast on schema version mismatch; full mode rebuilds.
+- Freshness: status computes staleness against `--freshness-seconds`.
+
+---
+
+## scripts/beir_lite_eval.py
+
+**Phase 3 BEIR-lite Evaluation and Instrumentation Harness** (issues #5, #6)
+
+Runs a fixed-query BEIR-lite style retrieval evaluation against the Phase 2 `rag_index` substrate and emits machine-readable per-query + aggregate metrics, including mandatory instrumentation fields.
+
+**Default fixtures:**
+- `scripts/eval_data/beir_lite_v1.json` (dataset)
+- `scripts/eval_data/beir_lite_config_v1.json` (frozen config)
+- `scripts/schemas/beir_lite_instrumentation.schema.json` (required output fields)
+
+**Usage:**
+```bash
+uv run python scripts/beir_lite_eval.py --config scripts/eval_data/beir_lite_config_v1.json
+uv run python scripts/beir_lite_eval.py --config scripts/eval_data/beir_lite_config_v1.json --assert-deterministic
+uv run python scripts/beir_lite_eval.py --config scripts/eval_data/beir_lite_config_v1.json --output scripts/output/beir_lite_results.json
+```
+
+**Output highlights:**
+- Retrieval quality: `recall_at_5`, `precision_at_5`, plus per-query `recall_at_k` / `precision_at_k`.
+- Instrumentation schema fields: `timestamp`, `run_id`, `dataset_id`, `latency_p50_ms`, `latency_p95_ms`, `error_rate_pct`, `token_savings_median_pct`.
+- Determinism guard: `--assert-deterministic` verifies rerun stability of retrieval metrics on unchanged inputs.
+
+**Tests:** `tests/test_beir_lite_eval.py`
 
 ---
 

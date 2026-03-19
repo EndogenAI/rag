@@ -1,0 +1,50 @@
+{
+  "dataset_id": "beir-lite-v1",
+  "version": "1.0.0",
+  "queries": [
+    {
+      "query_id": "q1",
+      "query": "sprint 1 checklist phase gate",
+      "relevant_source_files": [
+        ".github/skills/session-management/SKILL.md",
+        "docs/plans/2026-03-19-sprint-1-issues-1-11.md",
+        "docs/research/pm/sprint-retrospective-2026-03-13-dogma-update.md"
+      ],
+      "baseline_tokens": 1200,
+      "rag_tokens": 180
+    },
+    {
+      "query_id": "q2",
+      "query": "session start encoding checkpoint",
+      "relevant_source_files": [
+        "AGENTS.md",
+        ".github/skills/agent-file-authoring/SKILL.md",
+        "docs/guides/claude-code-hooks.md"
+      ],
+      "baseline_tokens": 1100,
+      "rag_tokens": 190
+    },
+    {
+      "query_id": "q3",
+      "query": "phase gate sequence review",
+      "relevant_source_files": [
+        "docs/sessions/2026-03-08-review-gate-inter-phase.md",
+        ".github/skills/phase-gate-sequence/SKILL.md",
+        "docs/research/agents/skills-as-decision-logic.md"
+      ],
+      "baseline_tokens": 1050,
+      "rag_tokens": 200
+    },
+    {
+      "query_id": "q4",
+      "query": "agent communication scratchpad session summary",
+      "relevant_source_files": [
+        ".github/agents/executive-docs.agent.md",
+        "docs/research/agent-to-agent-communication-protocol.md",
+        "docs/research/infrastructure/scratchpad-architecture-maturation.md"
+      ],
+      "baseline_tokens": 1150,
+      "rag_tokens": 170
+    }
+  ]
+}

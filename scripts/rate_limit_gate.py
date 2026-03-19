@@ -57,6 +57,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -71,6 +72,9 @@ from rate_limit_config import OperationNotFound, OperationType, PolicyNotFound, 
 AUDIT_LOG_PATH = Path(__file__).parent.parent / ".cache" / "rate-limit-audit.log"
 CIRCUIT_BREAKER_WINDOW_MIN = 5  # Look back 5 minutes for consecutive failures
 MIN_BUDGET_SAFETY_MARGIN = 5000  # Reserve 5k tokens for overhead
+
+# Default provider from environment, with 'claude' as fallback
+DEFAULT_PROVIDER = os.environ.get("LM_PROVIDER", "claude")
 
 
 # ============================================================================
@@ -282,8 +286,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--provider",
-        default="claude",
-        help="Provider name (default: claude)",
+        default=DEFAULT_PROVIDER,
+        help=f"Provider name (default: {DEFAULT_PROVIDER})",
     )
     parser.add_argument(
         "--audit-log",
