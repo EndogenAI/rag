@@ -132,7 +132,7 @@
 - [x] #5 baseline harness runs with one command and produces machine-readable Recall@5 and Precision@5 outputs.
 - [x] #6 instrumentation produces machine-readable latency and token-savings report with required schema fields.
 - [x] #4 quickstart is validated end-to-end on clean setup checklist and reaches successful retrieval.
-- [ ] #7 CI executes lint, tests, and retrieval smoke checks on PRs with failing checks blocking merge.
+- [x] #7 CI executes lint, tests, and retrieval smoke checks on PRs with failing checks blocking merge.
 - [x] Phase 1 threshold check is explicit in evidence: Recall@5 >= 0.75, Precision@5 >= 0.60.
 - [x] Phase 1 threshold check is explicit in evidence: latency p95 <= 700ms, error rate < 1.0%.
 - [x] Phase 1 threshold check is explicit in evidence: median token savings >= 80%.
@@ -141,16 +141,16 @@
 - [ ] If any threshold is missed, carry-over note and mitigation plan are recorded before gate closure.
 
 ### Review Gate C Evidence Packet
-- [ ] E1: BEIR-lite runner command and exact invocation used for baseline.
-- [ ] E2: Machine-readable BEIR-lite results artifact with Recall@5 and Precision@5.
-- [ ] E3: Instrumentation report artifact with latency, error rate, and token-savings fields.
-- [ ] E4: Clean-setup quickstart validation checklist with pass/fail marks.
-- [ ] E5: CI run evidence showing lint, tests, and retrieval smoke jobs executed.
-- [ ] E6: Retrieval smoke output artifact proving index-to-query success path.
-- [ ] E7: Test evidence for new/changed #5/#6/#7 logic (relevant test run summary).
-- [ ] E8: Docs diff summary for #4 quickstart and architecture updates.
-- [ ] E9: Issue-to-artifact trace table for #5, #6, #4, #7 and related acceptance checks.
-- [ ] E10: One-page gate verdict sheet stating pass/fail against each objective criterion above.
+- [x] E1: BEIR-lite runner command and exact invocation used for baseline.
+- [x] E2: Machine-readable BEIR-lite results artifact with Recall@5 and Precision@5.
+- [x] E3: Instrumentation report artifact with latency, error rate, and token-savings fields.
+- [x] E4: Clean-setup quickstart validation checklist with pass/fail marks.
+- [x] E5: CI run evidence showing lint, tests, and retrieval smoke jobs executed.
+- [x] E6: Retrieval smoke output artifact proving index-to-query success path.
+- [x] E7: Test evidence for new/changed #5/#6/#7 logic (relevant test run summary).
+- [x] E8: Docs diff summary for #4 quickstart and architecture updates.
+- [x] E9: Issue-to-artifact trace table for #5, #6, #4, #7 and related acceptance checks.
+- [x] E10: One-page gate verdict sheet stating pass/fail against each objective criterion above.
 
 ### Phase 3 Evidence Snapshot (#5/#6)
 - [x] Runner command: `uv run python scripts/beir_lite_eval.py --config scripts/eval_data/beir_lite_config_v1.json --assert-deterministic --output scripts/output/beir_lite_results.json --run-id sprint1-phase3-tuned`
@@ -162,4 +162,18 @@
 - [x] Lint mirror: `uv run ruff check scripts/ tests/` => passed.
 - [x] Test mirror: `uv run pytest tests/test_beir_lite_eval.py tests/test_rag_index.py tests/test_mcp_retrieval.py tests/test_mcp_server.py -q` => 105 passed.
 - [x] Retrieval smoke mirror: `reindex/query/status` commands returned `ok=true`, query `count=3`, status `is_fresh=true`, `version_ok=true`, `total_chunks=2450`.
-- [ ] Pending remote proof: PR CI run must execute lint+tests+retrieval-smoke in GitHub Actions to satisfy E5 and close #7 done-gate line.
+- [x] Remote CI proof: GitHub Actions run `23313035880` on `sprint/rag-sprint-1` completed `success` with jobs `Run pytest with coverage`, `Lint code style`, and `Retrieval smoke checks` all passing.
+
+### Issue-to-Artifact Trace (E9)
+- [x] #5 -> scripts/beir_lite_eval.py, scripts/eval_data/beir_lite_config_v1.json, scripts/eval_data/beir_lite_v1.json, scripts/output/beir_lite_results.json
+- [x] #6 -> scripts/schemas/beir_lite_instrumentation.schema.json, scripts/output/beir_lite_results.json
+- [x] #4 -> mcp_server/README.md, README.md
+- [x] #7 -> .github/workflows/tests.yml, GitHub Actions run 23313035880
+
+### Gate C Verdict Sheet (E10)
+- [x] Criterion #5: PASS
+- [x] Criterion #6: PASS
+- [x] Criterion #4: PASS
+- [x] Criterion #7: PASS
+- [x] Threshold checks: PASS
+- [x] Evidence packet completeness: PASS
