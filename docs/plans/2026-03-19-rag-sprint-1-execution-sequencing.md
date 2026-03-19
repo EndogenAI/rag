@@ -1,4 +1,4 @@
-# Workplan: Rag Sprint 1 Execution Sequencing
+# Workplan: RAG Sprint 1 Execution Sequencing
 
 **Branch**: `sprint/rag-sprint-1-execution-planning`
 **Date**: 2026-03-19
