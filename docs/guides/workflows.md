@@ -717,6 +717,24 @@ Every document in this repo belongs to one of four types. The type determines wh
 
 **Rule**: when a phase is in progress, identify the doc type for every file it touches before drafting. D1 docs gate phases; D4 docs inform them. Mixing the two produces governance drift.
 
+### Supersession Notes for Temporal Gate Artifacts
+
+Temporal gate artifacts (for example, phase-gate checklists, time-bound workplans, and interim gate records) must include a supersession note when a newer artifact replaces them and future readers could follow the older artifact by mistake.
+
+Add the note at the top of the superseded artifact (or directly under its title) and point to the exact replacement path.
+
+**Required mini-template**:
+
+```markdown
+Superseded by: <relative-path-to-new-artifact>
+Effective date: YYYY-MM-DD
+Reason: <one sentence naming what changed>
+```
+
+**Canonical example**: `Superseded by: <relative-path-to-new-artifact>; Effective date: YYYY-MM-DD; Reason: Replaces v1 gate order after Review gate sequencing update.`
+
+**Anti-pattern**: `Deprecated` or `Old` without a replacement path and effective date.
+
 ### Programmatic Sweep Table Pattern
 
 When a convention update touches multiple documents across more than one doc type, **generate a sweep table rather than editing ad-hoc**. A sweep table makes the scope of the change auditable and prevents missed files.

@@ -712,6 +712,13 @@ Any command that creates or modifies a remote side effect must be immediately pr
 | milestone create via API | N/A (JSON payload) | `gh api repos/:owner/:repo/milestones` |
 | `gh issue comment` (session-end update) | `test -s /tmp/file && file /tmp/file \| grep -q "UTF-8"` | `gh issue view <num> --json comments -q '.comments[-1].body[:80]'` |
 
+**Cross-artifact state sync (gate-based planning docs)**: When blocker state changes across linked planning artifacts, update all linked artifacts in the same execution window before proceeding to the next gate.
+
+**Sync checklist**:
+- Update the planning artifact first (for example `docs/plans/` phase gate/dependency status).
+- Propagate the same blocker state to linked tracker artifacts (`gh issue edit` body/labels and scratchpad gate entry).
+- Verify state parity across artifacts before continuing (`gh issue view` + plan/scratchpad read-back).
+
 **Issue auto-close via PR body**: For any issue that will be resolved by a PR merge, **do not run `gh issue close` manually**. Instead add `Closes #NNN` lines to the PR body as each phase completes. GitHub closes them automatically on merge. Manual pre-merge closes break the PR→issue traceability link. See [`docs/guides/github-workflow.md` § Issue Auto-Close via PR Body](docs/guides/github-workflow.md#issue-auto-close-via-pr-body).
 
 **Zero error output is not confirmation of success.** Output truncation, network timeouts, and silent API failures all produce clean exits. Always verify.
@@ -986,6 +993,7 @@ Key agents for this repo:
 | **Executive Docs** | Update guides, top-level docs, AGENTS.md, MANIFESTO.md; codify values across documentation |
 | **Executive Scripter** | Identify tasks done >2 times interactively; audit `scripts/` for gaps |
 | **Executive Automator** | Design file watchers, pre-commit hooks, CI tasks |
+| **RAG Specialist** | Define bounded retrieval, indexing, and evaluation workflow contracts for repository RAG systems |
 | **Review** | Validate any changed files against AGENTS.md constraints before committing |
 | **GitHub** | Commit approved changes following Conventional Commits |
 
