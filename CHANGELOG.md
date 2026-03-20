@@ -1,3 +1,12 @@
+## [0.3.1](https://github.com/EndogenAI/rag/compare/v0.3.0...v0.3.1) (2026-03-20)
+
+
+### Bug Fixes
+
+* **rag:** normalize natural-language query syntax ([893a068](https://github.com/EndogenAI/rag/commit/893a068104d6b0e00873279b70a1ad05cdcb8d1d))
+
+
+
 # [0.3.0](https://github.com/EndogenAI/rag/compare/v0.2.0...v0.3.0) (2026-03-20)
 
 
