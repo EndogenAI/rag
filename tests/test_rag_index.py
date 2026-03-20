@@ -53,6 +53,10 @@ Second section content words.
     assert len(chunks) == 2
     assert chunks[0].heading == "Alpha"
     assert chunks[0].source_file == "docs/example.md"
+    assert chunks[0].scope == "dogma"
+    assert chunks[0].governance_tier == "core"
+    assert chunks[0].partition_id == "dogma"
+    assert chunks[0].retention_policy == "core-long"
     assert chunks[0].governs_csv == ",commit-discipline,"
     assert chunks[0].fallback_h2 == 0
     assert chunks[0].start_line == 5
@@ -159,11 +163,37 @@ session guidance words for notes
     filtered = ri.query_index("guidance", top_k=5, filter_governs="commit-discipline", db_path=db_path)
     assert filtered["count"] == 1
     assert filtered["results"][0]["source_file"] == "docs/a.md"
+    assert filtered["results"][0]["scope"] == "dogma"
+
+
+def test_query_filter_scope_behavior(repo_root: Path, db_path: Path) -> None:
+    dogma_doc = repo_root / "docs" / "a.md"
+    client_doc = repo_root / "{{cookiecutter.project_slug}}" / "README.md"
+    _write(dogma_doc, "## A\npolicy guidance words")
+    _write(client_doc, "## B\npolicy guidance words")
+
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[dogma_doc, client_doc])
+
+    dogma_only = ri.query_index("policy", top_k=10, filter_scope="dogma", db_path=db_path)
+    client_only = ri.query_index("policy", top_k=10, filter_scope="client", db_path=db_path)
+
+    assert dogma_only["count"] == 1
+    assert dogma_only["results"][0]["source_file"] == "docs/a.md"
+    assert dogma_only["results"][0]["scope"] == "dogma"
+
+    assert client_only["count"] == 1
+    assert client_only["results"][0]["source_file"] == "{{cookiecutter.project_slug}}/README.md"
+    assert client_only["results"][0]["scope"] == "client"
 
 
 def test_query_invalid_filter_governs_rejected() -> None:
     with pytest.raises(ValueError, match="filter_governs"):
         ri.query_index("hello", filter_governs="Bad Value")
+
+
+def test_query_invalid_filter_scope_rejected() -> None:
+    with pytest.raises(ValueError, match="filter_scope"):
+        ri.query_index("hello", filter_scope="invalid-scope")
 
 
 def test_normalize_governs_values_variants() -> None:
@@ -199,7 +229,9 @@ def test_governs_csv_empty_and_populated() -> None:
 
 def test_resolve_corpus_files_skips_dirs_and_dedupes(repo_root: Path) -> None:
     _write(repo_root / "AGENTS.md", "# root")
+    _write(repo_root / "client-values.yml", "org: demo")
     _write(repo_root / "docs" / "a.md", "# a")
+    _write(repo_root / "{{cookiecutter.project_slug}}" / "README.md", "# template")
     _write(repo_root / ".github" / "agents" / "test.agent.md", "# test")
     (repo_root / "docs" / "subdir").mkdir(parents=True)
 
@@ -207,9 +239,25 @@ def test_resolve_corpus_files_skips_dirs_and_dedupes(repo_root: Path) -> None:
     rel = [str(p.relative_to(repo_root)) for p in files]
 
     assert "AGENTS.md" in rel
+    assert "client-values.yml" in rel
     assert "docs/a.md" in rel
+    assert "{{cookiecutter.project_slug}}/README.md" in rel
     assert all(not p.endswith("subdir") for p in rel)
     assert len(rel) == len(set(rel))
+
+
+def test_reindex_default_discovery_includes_client_scope(repo_root: Path, db_path: Path) -> None:
+    _write(repo_root / "AGENTS.md", "# root")
+    _write(repo_root / "client-values.yml", "org: demo")
+    _write(repo_root / "docs" / "a.md", "## A\npolicy guidance")
+    _write(repo_root / "{{cookiecutter.project_slug}}" / "README.md", "## B\npolicy guidance")
+
+    result = ri.reindex(scope="full", repo_root=repo_root, db_path=db_path)
+    assert result["ok"] is True
+
+    client_only = ri.query_index("policy", top_k=10, filter_scope="client", db_path=db_path)
+    assert client_only["count"] >= 1
+    assert all(row["scope"] == "client" for row in client_only["results"])
 
 
 def test_reindex_invalid_scope_raises(repo_root: Path, db_path: Path) -> None:
@@ -278,6 +326,22 @@ def test_reindex_skips_unreadable_files(repo_root: Path, db_path: Path, mocker) 
 def test_validate_filter_governs_accepts_none_and_valid() -> None:
     assert ri._validate_filter_governs(None) is None
     assert ri._validate_filter_governs("commit-discipline") == "commit-discipline"
+
+
+def test_classify_content_scope_contract() -> None:
+    dogma = ri.classify_content_scope("docs/example.md")
+    assert dogma["scope"] == "dogma"
+    assert dogma["governance_tier"] == "core"
+
+    client = ri.classify_content_scope("{{cookiecutter.project_slug}}/README.md")
+    assert client["scope"] == "client"
+    assert client["governance_tier"] == "deployment"
+
+
+def test_validate_filter_scope_accepts_none_and_valid() -> None:
+    assert ri._validate_filter_scope(None) is None
+    assert ri._validate_filter_scope("DOGMA") == "dogma"
+    assert ri._validate_filter_scope("client") == "client"
 
 
 def test_query_index_argument_and_index_errors(db_path: Path) -> None:
@@ -429,6 +493,15 @@ def test_main_query_and_status_success(mocker) -> None:
     mocker.patch.object(ri, "status_report", return_value={"ok": True, "exists": False})
     status_code = ri.main(["status"])
     assert status_code == 0
+
+
+def test_main_query_passes_filter_scope(mocker) -> None:
+    query_mock = mocker.patch.object(ri, "query_index", return_value={"ok": True, "results": []})
+    mocker.patch.object(ri, "_print_output")
+
+    code = ri.main(["query", "--query", "hello", "--filter-scope", "client"])
+    assert code == 0
+    assert query_mock.call_args.kwargs["filter_scope"] == "client"
 
 
 def test_main_exception_paths(mocker, capsys: pytest.CaptureFixture[str]) -> None:

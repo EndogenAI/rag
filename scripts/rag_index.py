@@ -59,18 +59,21 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 INDEX_DIR = REPO_ROOT / "rag-index"
 INDEX_DB_PATH = INDEX_DIR / "rag_index.sqlite3"
-INDEX_VERSION = "phase2-v1"
+INDEX_VERSION = "phase2-v2"
 FROZEN_H2_FALLBACK_HEADING = "__FROZEN_H2_FALLBACK__"
 
 CORPUS_GLOBS: tuple[str, ...] = (
     "AGENTS.md",
     "MANIFESTO.md",
+    "client-values.yml",
     "docs/**/*.md",
+    "{{cookiecutter.project_slug}}/**/*.md",
     ".github/agents/*.agent.md",
     ".github/skills/**/*.md",
 )
 
 VALID_SCOPE: frozenset[str] = frozenset({"full", "incremental"})
+VALID_CONTENT_SCOPE: frozenset[str] = frozenset({"dogma", "client"})
 _GOVERNS_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 SCHEMA_SQL = """
@@ -90,6 +93,10 @@ CREATE TABLE IF NOT EXISTS files (
 CREATE TABLE IF NOT EXISTS chunks (
     chunk_id TEXT PRIMARY KEY,
     source_file TEXT NOT NULL,
+    scope TEXT NOT NULL,
+    governance_tier TEXT NOT NULL,
+    partition_id TEXT NOT NULL,
+    retention_policy TEXT NOT NULL,
     heading TEXT NOT NULL,
     governs_csv TEXT NOT NULL,
     fallback_h2 INTEGER NOT NULL,
@@ -103,12 +110,14 @@ CREATE TABLE IF NOT EXISTS chunks (
 
 CREATE INDEX IF NOT EXISTS idx_chunks_source_file ON chunks(source_file);
 CREATE INDEX IF NOT EXISTS idx_chunks_governs ON chunks(governs_csv);
+CREATE INDEX IF NOT EXISTS idx_chunks_scope ON chunks(scope);
 
 CREATE VIRTUAL TABLE IF NOT EXISTS rag_fts USING fts5(
     chunk_id UNINDEXED,
     content,
     source_file UNINDEXED,
     heading UNINDEXED,
+    scope UNINDEXED,
     governs UNINDEXED
 );
 """
@@ -131,6 +140,10 @@ class ChunkRecord:
 
     chunk_id: str
     source_file: str
+    scope: str
+    governance_tier: str
+    partition_id: str
+    retention_policy: str
     heading: str
     governs_csv: str
     fallback_h2: int
@@ -218,6 +231,24 @@ def _governs_csv(governs: list[str]) -> str:
     return "," + ",".join(governs) + ","
 
 
+def classify_content_scope(source_file: str) -> dict[str, str]:
+    """Derive deterministic scope metadata for contract-layer separation."""
+    if source_file == "client-values.yml" or source_file.startswith("{{cookiecutter.project_slug}}/"):
+        return {
+            "scope": "client",
+            "governance_tier": "deployment",
+            "partition_id": "client",
+            "retention_policy": "client-rotating",
+        }
+
+    return {
+        "scope": "dogma",
+        "governance_tier": "core",
+        "partition_id": "dogma",
+        "retention_policy": "core-long",
+    }
+
+
 def chunk_markdown_h2(text: str, source_file: str) -> list[ChunkRecord]:
     """Chunk Markdown at H2 boundaries with a deterministic frozen fallback rule.
 
@@ -231,6 +262,7 @@ def chunk_markdown_h2(text: str, source_file: str) -> list[ChunkRecord]:
     lines = text.splitlines()
     governs = parse_frontmatter_governs(text)
     governs_csv = _governs_csv(governs)
+    scope_meta = classify_content_scope(source_file)
 
     h2_positions: list[int] = []
     for idx, line in enumerate(lines):
@@ -250,6 +282,10 @@ def chunk_markdown_h2(text: str, source_file: str) -> list[ChunkRecord]:
             ChunkRecord(
                 chunk_id=chunk_id,
                 source_file=source_file,
+                scope=scope_meta["scope"],
+                governance_tier=scope_meta["governance_tier"],
+                partition_id=scope_meta["partition_id"],
+                retention_policy=scope_meta["retention_policy"],
                 heading=FROZEN_H2_FALLBACK_HEADING,
                 governs_csv=governs_csv,
                 fallback_h2=1,
@@ -276,6 +312,10 @@ def chunk_markdown_h2(text: str, source_file: str) -> list[ChunkRecord]:
             ChunkRecord(
                 chunk_id=chunk_id,
                 source_file=source_file,
+                scope=scope_meta["scope"],
+                governance_tier=scope_meta["governance_tier"],
+                partition_id=scope_meta["partition_id"],
+                retention_policy=scope_meta["retention_policy"],
                 heading=heading_text,
                 governs_csv=governs_csv,
                 fallback_h2=0,
@@ -364,14 +404,19 @@ def _insert_file_and_chunks(
         conn.executemany(
             """
             INSERT INTO chunks(
-                chunk_id, source_file, heading, governs_csv, fallback_h2,
+                chunk_id, source_file, scope, governance_tier, partition_id, retention_policy,
+                heading, governs_csv, fallback_h2,
                 start_line, end_line, content, content_hash, indexed_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
                     c.chunk_id,
                     c.source_file,
+                    c.scope,
+                    c.governance_tier,
+                    c.partition_id,
+                    c.retention_policy,
                     c.heading,
                     c.governs_csv,
                     c.fallback_h2,
@@ -386,8 +431,8 @@ def _insert_file_and_chunks(
         )
 
         conn.executemany(
-            "INSERT INTO rag_fts(chunk_id, content, source_file, heading, governs) VALUES (?, ?, ?, ?, ?)",
-            [(c.chunk_id, c.content, c.source_file, c.heading, c.governs_csv) for c in chunks],
+            "INSERT INTO rag_fts(chunk_id, content, source_file, heading, scope, governs) VALUES (?, ?, ?, ?, ?, ?)",
+            [(c.chunk_id, c.content, c.source_file, c.heading, c.scope, c.governs_csv) for c in chunks],
         )
 
     conn.execute(
@@ -530,11 +575,21 @@ def _validate_filter_governs(filter_governs: str | None) -> str | None:
     return raw
 
 
+def _validate_filter_scope(filter_scope: str | None) -> str | None:
+    if filter_scope is None:
+        return None
+    normalized = filter_scope.strip().lower()
+    if normalized not in VALID_CONTENT_SCOPE:
+        raise ValueError("Invalid filter_scope. Expected one of: dogma, client.")
+    return normalized
+
+
 def query_index(
     query: str,
     *,
     top_k: int = 5,
     filter_governs: str | None = None,
+    filter_scope: str | None = None,
     db_path: Path = INDEX_DB_PATH,
 ) -> dict[str, Any]:
     """Query the index with optional governs filtering."""
@@ -544,6 +599,7 @@ def query_index(
         raise ValueError("top_k must be between 1 and 50")
 
     normalized_filter = _validate_filter_governs(filter_governs)
+    normalized_scope = _validate_filter_scope(filter_scope)
 
     if not db_path.exists():
         raise RagIndexError(f"Index not found at {db_path}. Run reindex first.")
@@ -558,7 +614,8 @@ def query_index(
             )
 
         sql = (
-            "SELECT c.chunk_id, c.source_file, c.heading, c.governs_csv, c.fallback_h2, "
+            "SELECT c.chunk_id, c.source_file, c.scope, c.governance_tier, c.partition_id, c.retention_policy, "
+            "c.heading, c.governs_csv, c.fallback_h2, "
             "c.start_line, c.end_line, c.content, bm25(rag_fts) AS score "
             "FROM rag_fts "
             "JOIN chunks c ON c.chunk_id = rag_fts.chunk_id "
@@ -569,6 +626,10 @@ def query_index(
         if normalized_filter:
             sql += " AND c.governs_csv LIKE ?"
             params.append(f"%,{normalized_filter},%")
+
+        if normalized_scope:
+            sql += " AND c.scope = ?"
+            params.append(normalized_scope)
 
         sql += " ORDER BY score ASC LIMIT ?"
         params.append(top_k)
@@ -581,6 +642,10 @@ def query_index(
                 {
                     "chunk_id": row["chunk_id"],
                     "source_file": row["source_file"],
+                    "scope": row["scope"],
+                    "governance_tier": row["governance_tier"],
+                    "partition_id": row["partition_id"],
+                    "retention_policy": row["retention_policy"],
                     "heading": row["heading"],
                     "governs": governs_tokens,
                     "fallback_h2": bool(row["fallback_h2"]),
@@ -596,6 +661,7 @@ def query_index(
             "query": query,
             "top_k": top_k,
             "filter_governs": normalized_filter,
+            "filter_scope": normalized_scope,
             "count": len(results),
             "results": results,
         }
@@ -697,6 +763,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--query")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--filter-governs")
+    parser.add_argument("--filter-scope")
 
     parser.add_argument("--freshness-seconds", type=int, default=86400)
 
@@ -718,6 +785,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.query,
                 top_k=args.top_k,
                 filter_governs=args.filter_governs,
+                filter_scope=args.filter_scope,
             )
             _print_output(payload, args.output)
             return 0
