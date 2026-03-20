@@ -186,6 +186,50 @@ def test_query_filter_scope_behavior(repo_root: Path, db_path: Path) -> None:
     assert client_only["results"][0]["scope"] == "client"
 
 
+def test_query_defaults_to_segmented_dogma_scope(repo_root: Path, db_path: Path) -> None:
+    dogma_doc = repo_root / "docs" / "a.md"
+    client_doc = repo_root / "{{cookiecutter.project_slug}}" / "README.md"
+    _write(dogma_doc, "## A\npolicy guidance words")
+    _write(client_doc, "## B\npolicy guidance words")
+
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[dogma_doc, client_doc])
+
+    default_query = ri.query_index("policy", top_k=10, db_path=db_path)
+    assert default_query["query_mode"] == "segmented"
+    assert default_query["filter_scope"] == "dogma"
+    assert default_query["count"] == 1
+    assert default_query["results"][0]["scope"] == "dogma"
+
+
+def test_query_federation_requires_reason(repo_root: Path, db_path: Path) -> None:
+    doc = repo_root / "docs" / "a.md"
+    _write(doc, "## A\npolicy guidance words")
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[doc])
+
+    with pytest.raises(ValueError, match="federation_reason"):
+        ri.query_index("policy", allow_federation=True, db_path=db_path)
+
+
+def test_query_federation_allows_cross_scope(repo_root: Path, db_path: Path) -> None:
+    dogma_doc = repo_root / "docs" / "a.md"
+    client_doc = repo_root / "{{cookiecutter.project_slug}}" / "README.md"
+    _write(dogma_doc, "## A\npolicy guidance words")
+    _write(client_doc, "## B\npolicy guidance words")
+
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[dogma_doc, client_doc])
+    federated = ri.query_index(
+        "policy",
+        top_k=10,
+        allow_federation=True,
+        federation_reason="cross-scope audit",
+        db_path=db_path,
+    )
+
+    assert federated["query_mode"] == "federated"
+    assert federated["filter_scope"] is None
+    assert federated["count"] == 2
+
+
 def test_query_invalid_filter_governs_rejected() -> None:
     with pytest.raises(ValueError, match="filter_governs"):
         ri.query_index("hello", filter_governs="Bad Value")
@@ -502,6 +546,25 @@ def test_main_query_passes_filter_scope(mocker) -> None:
     code = ri.main(["query", "--query", "hello", "--filter-scope", "client"])
     assert code == 0
     assert query_mock.call_args.kwargs["filter_scope"] == "client"
+
+
+def test_main_query_passes_federation_flags(mocker) -> None:
+    query_mock = mocker.patch.object(ri, "query_index", return_value={"ok": True, "results": []})
+    mocker.patch.object(ri, "_print_output")
+
+    code = ri.main(
+        [
+            "query",
+            "--query",
+            "hello",
+            "--allow-federation",
+            "--federation-reason",
+            "cross-scope audit",
+        ]
+    )
+    assert code == 0
+    assert query_mock.call_args.kwargs["allow_federation"] is True
+    assert query_mock.call_args.kwargs["federation_reason"] == "cross-scope audit"
 
 
 def test_main_exception_paths(mocker, capsys: pytest.CaptureFixture[str]) -> None:

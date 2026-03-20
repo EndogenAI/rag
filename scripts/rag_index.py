@@ -19,6 +19,9 @@ Inputs:
         --query TEXT              Query text
         --top-k INT               Max chunks to return (1-50, default: 5)
         --filter-governs TEXT     Optional governs slug filter
+        --filter-scope TEXT       Optional scope filter (dogma|client)
+        --allow-federation        Allow cross-scope retrieval (explicit opt-in)
+        --federation-reason TEXT  Required reason when federation is enabled
 
     status flags:
         --freshness-seconds INT   Staleness threshold (default: 86400)
@@ -33,6 +36,8 @@ Usage:
     uv run python scripts/rag_index.py reindex --scope incremental --dry-run
     uv run python scripts/rag_index.py query --query "programmatic-first" --top-k 3
     uv run python scripts/rag_index.py query --query "commit" --filter-governs commit-discipline
+    uv run python scripts/rag_index.py query --query "values" --filter-scope dogma
+    uv run python scripts/rag_index.py query --query "values" --allow-federation --federation-reason "cross-scope audit"
     uv run python scripts/rag_index.py status --freshness-seconds 3600
 
 Exit codes:
@@ -590,6 +595,8 @@ def query_index(
     top_k: int = 5,
     filter_governs: str | None = None,
     filter_scope: str | None = None,
+    allow_federation: bool = False,
+    federation_reason: str | None = None,
     db_path: Path = INDEX_DB_PATH,
 ) -> dict[str, Any]:
     """Query the index with optional governs filtering."""
@@ -600,6 +607,9 @@ def query_index(
 
     normalized_filter = _validate_filter_governs(filter_governs)
     normalized_scope = _validate_filter_scope(filter_scope)
+
+    if allow_federation and not (federation_reason and federation_reason.strip()):
+        raise ValueError("federation_reason is required when allow_federation is enabled.")
 
     if not db_path.exists():
         raise RagIndexError(f"Index not found at {db_path}. Run reindex first.")
@@ -627,9 +637,17 @@ def query_index(
             sql += " AND c.governs_csv LIKE ?"
             params.append(f"%,{normalized_filter},%")
 
-        if normalized_scope:
+        effective_scope = normalized_scope
+        query_mode = "segmented"
+        if effective_scope is None and not allow_federation:
+            # Fail-closed default posture: do not blend scopes unless explicitly enabled.
+            effective_scope = "dogma"
+
+        if effective_scope:
             sql += " AND c.scope = ?"
-            params.append(normalized_scope)
+            params.append(effective_scope)
+        elif allow_federation:
+            query_mode = "federated"
 
         sql += " ORDER BY score ASC LIMIT ?"
         params.append(top_k)
@@ -661,7 +679,10 @@ def query_index(
             "query": query,
             "top_k": top_k,
             "filter_governs": normalized_filter,
-            "filter_scope": normalized_scope,
+            "filter_scope": effective_scope,
+            "query_mode": query_mode,
+            "allow_federation": allow_federation,
+            "federation_reason": federation_reason.strip() if federation_reason else None,
             "count": len(results),
             "results": results,
         }
@@ -764,6 +785,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--filter-governs")
     parser.add_argument("--filter-scope")
+    parser.add_argument("--allow-federation", action="store_true")
+    parser.add_argument("--federation-reason")
 
     parser.add_argument("--freshness-seconds", type=int, default=86400)
 
@@ -786,6 +809,8 @@ def main(argv: list[str] | None = None) -> int:
                 top_k=args.top_k,
                 filter_governs=args.filter_governs,
                 filter_scope=args.filter_scope,
+                allow_federation=args.allow_federation,
+                federation_reason=args.federation_reason,
             )
             _print_output(payload, args.output)
             return 0
