@@ -186,6 +186,27 @@ def test_query_filter_scope_behavior(repo_root: Path, db_path: Path) -> None:
     assert client_only["results"][0]["scope"] == "client"
 
 
+def test_query_natural_language_with_punctuation_is_normalized(repo_root: Path, db_path: Path) -> None:
+    doc = repo_root / "docs" / "a.md"
+    _write(doc, "## A\nWhat does programmatic first require in this workflow")
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[doc])
+
+    result = ri.query_index("What does Programmatic-First require?", top_k=5, db_path=db_path)
+
+    assert result["ok"] is True
+    assert result["normalized_query"] == "What does Programmatic First require"
+    assert result["count"] >= 1
+
+
+def test_query_rejects_non_alphanumeric_after_normalization(repo_root: Path, db_path: Path) -> None:
+    doc = repo_root / "docs" / "a.md"
+    _write(doc, "## A\nProgrammatic first requires script encoding")
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[doc])
+
+    with pytest.raises(ValueError, match="alphanumeric token"):
+        ri.query_index("??? --- !!!", db_path=db_path)
+
+
 def test_query_defaults_to_segmented_dogma_scope(repo_root: Path, db_path: Path) -> None:
     dogma_doc = repo_root / "docs" / "a.md"
     client_doc = repo_root / "{{cookiecutter.project_slug}}" / "README.md"

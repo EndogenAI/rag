@@ -635,6 +635,20 @@ def _validate_filter_scope(filter_scope: str | None) -> str | None:
     return normalized
 
 
+def _normalize_query_for_fts(query: str) -> str:
+    """Convert user query text into a safe FTS token query.
+
+    Natural-language punctuation (e.g. '?', '-', ':') can break SQLite FTS5
+    MATCH parsing. We fail closed to alphanumeric tokens and let FTS handle
+    ranking across those normalized terms.
+    """
+    tokens = re.findall(r"[A-Za-z0-9]+", query)
+    normalized = " ".join(tokens).strip()
+    if not normalized:
+        raise ValueError("query must contain at least one alphanumeric token")
+    return normalized
+
+
 def query_index(
     query: str,
     *,
@@ -669,6 +683,8 @@ def query_index(
                 f"Index version mismatch: found '{version or 'none'}', expected '{INDEX_VERSION}'. Run full reindex."
             )
 
+        fts_query = _normalize_query_for_fts(query)
+
         sql = (
             "SELECT c.chunk_id, c.source_file, c.scope, c.governance_tier, c.partition_id, c.retention_policy, "
             "c.heading, c.governs_csv, c.fallback_h2, "
@@ -677,7 +693,7 @@ def query_index(
             "JOIN chunks c ON c.chunk_id = rag_fts.chunk_id "
             "WHERE rag_fts MATCH ?"
         )
-        params: list[Any] = [query]
+        params: list[Any] = [fts_query]
 
         if normalized_filter:
             sql += " AND c.governs_csv LIKE ?"
@@ -723,6 +739,7 @@ def query_index(
         return {
             "ok": True,
             "query": query,
+            "normalized_query": fts_query,
             "top_k": top_k,
             "filter_governs": normalized_filter,
             "filter_scope": effective_scope,
