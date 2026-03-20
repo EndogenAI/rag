@@ -22,7 +22,7 @@ Convert the merged sprint-planning packet into an executable Sprint 1 delivery s
 - Add explicit link-outs from each issue to the authoritative planning artifacts for execution kickoff.
 
 **Depends on**: nothing
-**CI**: Tests, Auto-validate, Lint
+**CI**: Tests, Docs Build, Auto-label by area
 **Status**: Complete
 
 Phase 1 output:
@@ -38,7 +38,7 @@ Phase 1 output:
 - Explicitly classify #8 and #15 as governance-tracking issues for this pass (not implementation-slice items), with link-outs to controlling planning artifacts.
 
 **Depends on**: Phase 1
-**CI**: Tests, Auto-validate, Lint
+**CI**: Tests, Docs Build, Auto-label by area
 **Status**: Complete
 
 Phase 2 output:
@@ -52,7 +52,7 @@ Phase 2 output:
 - Document CI gating posture for each planned phase.
 
 **Depends on**: Phase 2
-**CI**: Tests, Auto-validate, Lint
+**CI**: Tests, Docs Build, Auto-label by area
 **Status**: Complete
 
 Phase 3 output:
@@ -66,7 +66,7 @@ Phase 3 output:
 - Ensure cross-artifact state synchronization notes are present where blocker status changed.
 
 **Depends on**: Phase 3
-**CI**: Tests, Auto-validate, Lint
+**CI**: Tests, Docs Build, Auto-label by area
 **Status**: Complete
 
 Phase 4 draft output:
@@ -82,7 +82,7 @@ Phase 4 draft output:
 - Publish session-end issue progress comments and next-session orientation prompt.
 
 **Depends on**: Phase 4
-**CI**: Tests, Auto-validate, Lint
+**CI**: Tests, Docs Build, Auto-label by area
 **Status**: Complete
 
 Phase 5 output:

@@ -718,7 +718,7 @@ Any command that creates or modifies a remote side effect must be immediately pr
 
 **CI must pass before requesting review.** After every `git push` to a PR branch: check CI status with `gh run list --limit 3` before requesting or re-requesting Copilot review. A passing push with failing CI is a broken PR — fix CI before doing anything else. Common CI failure modes: lychee dead link (add to `.lycheeignore`), ruff format (run `uv run ruff format scripts/ tests/`), validate_synthesis missing headings.
 
-**Copilot review trigger policy (Augmentive Partnership)**:
+**Copilot review trigger policy (Augmentative Partnership)**:
 - Treat Copilot review as auto-triggered on PR creation by default.
 - Do **not** manually trigger or re-trigger Copilot review unless the human explicitly asks for it in-session.
 - If a manual trigger may be needed (stale review, missing review event, or post-fix re-check), surface a one-line request to the human and wait for approval before executing.
@@ -817,13 +817,13 @@ When a research question asks "can we suppress X in tool Y?", **first ask whethe
 
 *Grounded in Problems Panel sprint retrospective (2026-03-18): research asked "can VS Code suppress governs: errors?" but never formally posed "can we rename the key?" — the rename was obvious once framed correctly but took an additional sprint to surface.*
 
-### Anti-pattern: Burying decision options in footnotes (Augmentive Partnership violation)
+### Anti-pattern: Burying decision options in footnotes (Augmentative Partnership violation)
 
-When research surfaces ≥2 viable options, **all options must be presented to the human as an explicit decision menu** — not left as footnotes or "optional future paths". Burying an option in a footnote and recommending against it without presenting it to the human violates the **Augmentive Partnership** principle ([MANIFESTO.md § Foundational Principle: Augmentive Partnership](MANIFESTO.md#foundational-principle-augmentive-partnership)):
+When research surfaces ≥2 viable options, **all options must be presented to the human as an explicit decision menu** — not left as footnotes or "optional future paths". Burying an option in a footnote and recommending against it without presenting it to the human violates the **Augmentative Partnership** principle ([MANIFESTO.md § Foundational Principle: Augmentative Partnership](MANIFESTO.md#foundational-principle-augmentive-partnership)):
 
-> *"Augmentive, not autonomous: agents surface information and options for human decision-making; they do not make strategic choices."*
+> *"Augmentative, not autonomous: agents surface information and options for human decision-making; they do not make strategic choices."*
 
-**Canonical failure (2026-03-18)**: The `governs:` → `x-governs:` rename was identified during research but consigned to a footnote as "optional future path". The recommendation stated "accept as permanent (non-blocking)" without presenting the rename as an explicit option. This was a **strategic framing choice made by the agent, not the human** — a direct violation of Augmentive Partnership.
+**Canonical failure (2026-03-18)**: The `governs:` → `x-governs:` rename was identified during research but consigned to a footnote as "optional future path". The recommendation stated "accept as permanent (non-blocking)" without presenting the rename as an explicit option. This was a **strategic framing choice made by the agent, not the human** — a direct violation of Augmentative Partnership.
 
 **Required posture**: After any research that surfaces ≥2 viable paths, present them as a numbered option table (option, tradeoff, effort) before recommending one. The human decides; the agent recommends.
 
