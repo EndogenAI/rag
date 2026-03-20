@@ -26,6 +26,19 @@ Inputs:
     status flags:
         --freshness-seconds INT   Staleness threshold (default: 86400)
 
+    health flags:
+        --freshness-seconds INT   Staleness threshold (default: 600)
+        --pending-backlog INT     Pending update backlog count (default: 0)
+        --consecutive-failures INT Consecutive update failures (default: 0)
+        --mismatch-rate FLOAT     Audit mismatch rate (default: 0.0)
+
+    local-test flags:
+        --test-tier quick|standard|stress  Test battery tier (default: quick)
+        --probe-query TEXT                  Probe query text (default: "governance")
+
+    adoption-gate flags:
+        --enforcement-level soft|medium|hard  Governance enforcement level (default: medium)
+
 Outputs:
     reindex: Index stats JSON/text (updated/unchanged/removed/chunk counts)
     query:   JSON/text list of chunk matches with metadata
@@ -39,6 +52,9 @@ Usage:
     uv run python scripts/rag_index.py query --query "values" --filter-scope dogma
     uv run python scripts/rag_index.py query --query "values" --allow-federation --federation-reason "cross-scope audit"
     uv run python scripts/rag_index.py status --freshness-seconds 3600
+    uv run python scripts/rag_index.py health --freshness-seconds 600 --pending-backlog 10 --consecutive-failures 0 --mismatch-rate 0.0
+    uv run python scripts/rag_index.py local-test --test-tier standard --probe-query "programmatic"
+    uv run python scripts/rag_index.py adoption-gate --enforcement-level hard
 
 Exit codes:
     0 — success
@@ -80,6 +96,27 @@ CORPUS_GLOBS: tuple[str, ...] = (
 VALID_SCOPE: frozenset[str] = frozenset({"full", "incremental"})
 VALID_CONTENT_SCOPE: frozenset[str] = frozenset({"dogma", "client"})
 _GOVERNS_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+UPDATE_HEALTH_THRESHOLDS = {
+    "freshness": {"warn_sec": 900, "fail_sec": 1800},
+    "backlog": {"warn": 100, "fail": 200},
+    "failures": {"warn": 2, "fail": 5},
+    "mismatch_rate": {"warn": 0.002, "fail": 0.005},
+}
+
+VALID_TEST_TIERS: frozenset[str] = frozenset({"quick", "standard", "stress"})
+VALID_ENFORCEMENT_LEVELS: frozenset[str] = frozenset({"soft", "medium", "hard"})
+FAILURE_SCENARIO_CATALOG: tuple[str, ...] = (
+    "F1 delete-indexed-file",
+    "F2 rapid-sequential-edits",
+    "F3 malformed-markdown",
+    "F4 concurrent-writes",
+    "F5 watcher-interruption",
+    "F6 corrupted-index-metadata",
+    "F7 scope-tag-omission",
+    "F8 backlog-surge",
+    "F9 duplicate-namespace-collision",
+)
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -754,6 +791,224 @@ def status_report(*, db_path: Path = INDEX_DB_PATH, freshness_seconds: int = 864
         conn.close()
 
 
+def _gate_level(value: float, warn: float, fail: float) -> str:
+    if value > fail:
+        return "fail"
+    if value > warn:
+        return "warn"
+    return "pass"
+
+
+def health_report(
+    *,
+    db_path: Path = INDEX_DB_PATH,
+    freshness_seconds: int = 600,
+    pending_backlog: int = 0,
+    consecutive_failures: int = 0,
+    mismatch_rate: float = 0.0,
+) -> dict[str, Any]:
+    """Evaluate deterministic update-cadence gates for freshness/correctness/stability."""
+    if pending_backlog < 0:
+        raise ValueError("pending_backlog must be >= 0")
+    if consecutive_failures < 0:
+        raise ValueError("consecutive_failures must be >= 0")
+    if mismatch_rate < 0:
+        raise ValueError("mismatch_rate must be >= 0")
+
+    status = status_report(db_path=db_path, freshness_seconds=freshness_seconds)
+
+    freshness_seconds_since = status.get("seconds_since_last_index")
+    if freshness_seconds_since is None:
+        freshness_gate = "fail"
+    else:
+        freshness_gate = _gate_level(
+            float(freshness_seconds_since),
+            float(UPDATE_HEALTH_THRESHOLDS["freshness"]["warn_sec"]),
+            float(UPDATE_HEALTH_THRESHOLDS["freshness"]["fail_sec"]),
+        )
+
+    backlog_gate = _gate_level(
+        float(pending_backlog),
+        float(UPDATE_HEALTH_THRESHOLDS["backlog"]["warn"]),
+        float(UPDATE_HEALTH_THRESHOLDS["backlog"]["fail"]),
+    )
+    failures_gate = _gate_level(
+        float(consecutive_failures),
+        float(UPDATE_HEALTH_THRESHOLDS["failures"]["warn"]),
+        float(UPDATE_HEALTH_THRESHOLDS["failures"]["fail"]),
+    )
+    mismatch_gate = _gate_level(
+        float(mismatch_rate),
+        float(UPDATE_HEALTH_THRESHOLDS["mismatch_rate"]["warn"]),
+        float(UPDATE_HEALTH_THRESHOLDS["mismatch_rate"]["fail"]),
+    )
+
+    gates = {
+        "freshness": freshness_gate,
+        "backlog": backlog_gate,
+        "stability": failures_gate,
+        "correctness": mismatch_gate,
+    }
+    overall = "pass"
+    if "fail" in gates.values() or not status.get("version_ok", False):
+        overall = "fail"
+    elif "warn" in gates.values():
+        overall = "warn"
+
+    return {
+        "ok": True,
+        "profile": "hybrid-watcher-plus-sweep",
+        "overall": overall,
+        "gates": gates,
+        "inputs": {
+            "pending_backlog": pending_backlog,
+            "consecutive_failures": consecutive_failures,
+            "mismatch_rate": mismatch_rate,
+            "freshness_seconds": freshness_seconds,
+        },
+        "thresholds": UPDATE_HEALTH_THRESHOLDS,
+        "status": status,
+    }
+
+
+def local_test_report(
+    *,
+    test_tier: str = "quick",
+    probe_query: str = "governance",
+    db_path: Path = INDEX_DB_PATH,
+) -> dict[str, Any]:
+    """Run a deterministic local test battery and return PR-ready evidence payload."""
+    tier = test_tier.strip().lower()
+    if tier not in VALID_TEST_TIERS:
+        raise ValueError("Invalid test_tier. Expected one of: quick, standard, stress.")
+
+    checks: list[dict[str, Any]] = []
+
+    status = status_report(db_path=db_path, freshness_seconds=3600)
+    checks.append(
+        {
+            "name": "status",
+            "pass": bool(status.get("exists") and status.get("version_ok")),
+            "details": {"exists": status.get("exists"), "version_ok": status.get("version_ok")},
+        }
+    )
+
+    if status.get("exists") and status.get("version_ok"):
+        q = query_index(probe_query, top_k=3, filter_scope="dogma", db_path=db_path)
+        checks.append(
+            {
+                "name": "segmented-query",
+                "pass": q.get("count", 0) >= 1,
+                "details": {"count": q.get("count", 0), "scope": q.get("filter_scope")},
+            }
+        )
+    else:
+        checks.append({"name": "segmented-query", "pass": False, "details": {"reason": "index-unavailable"}})
+
+    if tier in {"standard", "stress"}:
+        health = health_report(
+            db_path=db_path,
+            freshness_seconds=600,
+            pending_backlog=0,
+            consecutive_failures=0,
+            mismatch_rate=0.0,
+        )
+        checks.append(
+            {
+                "name": "health-gates",
+                "pass": health.get("overall") in {"pass", "warn"},
+                "details": {"overall": health.get("overall"), "gates": health.get("gates")},
+            }
+        )
+
+    if tier == "stress":
+        federated = query_index(
+            probe_query,
+            top_k=5,
+            allow_federation=True,
+            federation_reason="stress-tier cross-scope probe",
+            db_path=db_path,
+        )
+        checks.append(
+            {
+                "name": "federated-query",
+                "pass": federated.get("query_mode") == "federated",
+                "details": {"query_mode": federated.get("query_mode"), "count": federated.get("count", 0)},
+            }
+        )
+
+    verdict = "PASS" if all(c["pass"] for c in checks) else "FAIL"
+
+    return {
+        "ok": True,
+        "tier": tier,
+        "probe_query": probe_query,
+        "verdict": verdict,
+        "checks": checks,
+        "failure_scenarios": list(FAILURE_SCENARIO_CATALOG),
+        "evidence_template": {
+            "environment_snapshot": ["os", "branch", "timestamp"],
+            "commands_executed": ["status", "segmented-query", "health-gates(optional)", "federated-query(optional)"],
+            "scenario_coverage": "F1-F9 checklist",
+            "metrics": ["freshness", "correctness", "stability"],
+            "gate_verdict": "PASS|FAIL",
+        },
+    }
+
+
+def adoption_gate_report(*, enforcement_level: str = "medium", db_path: Path = INDEX_DB_PATH) -> dict[str, Any]:
+    """Evaluate installability/adoption governance controls with graded enforcement."""
+    level = enforcement_level.strip().lower()
+    if level not in VALID_ENFORCEMENT_LEVELS:
+        raise ValueError("Invalid enforcement_level. Expected one of: soft, medium, hard.")
+
+    status = status_report(db_path=db_path, freshness_seconds=3600)
+    quick = local_test_report(test_tier="quick", db_path=db_path)
+    standard = local_test_report(test_tier="standard", db_path=db_path)
+    health = health_report(db_path=db_path, freshness_seconds=600)
+
+    reasons: list[str] = []
+    passed = True
+
+    if level == "soft":
+        passed = True
+        reasons.append("soft enforcement: advisory mode")
+    elif level == "medium":
+        passed = bool(status.get("exists") and status.get("version_ok") and quick.get("verdict") == "PASS")
+        if not status.get("exists"):
+            reasons.append("index missing")
+        if not status.get("version_ok"):
+            reasons.append("index version mismatch")
+        if quick.get("verdict") != "PASS":
+            reasons.append("quick local-test failed")
+    else:
+        passed = bool(
+            status.get("exists")
+            and status.get("version_ok")
+            and standard.get("verdict") == "PASS"
+            and health.get("overall") == "pass"
+        )
+        if not status.get("exists"):
+            reasons.append("index missing")
+        if not status.get("version_ok"):
+            reasons.append("index version mismatch")
+        if standard.get("verdict") != "PASS":
+            reasons.append("standard local-test failed")
+        if health.get("overall") != "pass":
+            reasons.append("health overall is not pass")
+
+    return {
+        "ok": True,
+        "enforcement_level": level,
+        "passed": passed,
+        "reasons": reasons,
+        "status": status,
+        "quick_test": quick,
+        "standard_test": standard,
+        "health": health,
+    }
+
+
 def _print_output(payload: dict[str, Any], output: str) -> None:
     if output == "json":
         print(json.dumps(payload, indent=2))
@@ -775,7 +1030,7 @@ def _print_output(payload: dict[str, Any], output: str) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Local retrieval index (Phase 2 core substrate).")
-    parser.add_argument("command", choices=["reindex", "query", "status"])
+    parser.add_argument("command", choices=["reindex", "query", "status", "health", "local-test", "adoption-gate"])
     parser.add_argument("--output", default="json", choices=["json", "text"])
 
     parser.add_argument("--scope", default="incremental", choices=sorted(VALID_SCOPE))
@@ -788,7 +1043,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--allow-federation", action="store_true")
     parser.add_argument("--federation-reason")
 
-    parser.add_argument("--freshness-seconds", type=int, default=86400)
+    parser.add_argument("--freshness-seconds", type=int)
+    parser.add_argument("--pending-backlog", type=int, default=0)
+    parser.add_argument("--consecutive-failures", type=int, default=0)
+    parser.add_argument("--mismatch-rate", type=float, default=0.0)
+    parser.add_argument("--test-tier", default="quick")
+    parser.add_argument("--probe-query", default="governance")
+    parser.add_argument("--enforcement-level", default="medium")
 
     args = parser.parse_args(argv)
 
@@ -816,9 +1077,36 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "status":
-            payload = status_report(freshness_seconds=args.freshness_seconds)
+            freshness_seconds = args.freshness_seconds if args.freshness_seconds is not None else 86400
+            payload = status_report(freshness_seconds=freshness_seconds)
             _print_output(payload, args.output)
             return 0
+
+        if args.command == "health":
+            freshness_seconds = args.freshness_seconds if args.freshness_seconds is not None else 600
+            payload = health_report(
+                freshness_seconds=freshness_seconds,
+                pending_backlog=args.pending_backlog,
+                consecutive_failures=args.consecutive_failures,
+                mismatch_rate=args.mismatch_rate,
+            )
+            _print_output(payload, args.output)
+            return 0
+
+        if args.command == "local-test":
+            payload = local_test_report(
+                test_tier=args.test_tier,
+                probe_query=args.probe_query,
+            )
+            _print_output(payload, args.output)
+            return 0
+
+        if args.command == "adoption-gate":
+            payload = adoption_gate_report(enforcement_level=args.enforcement_level)
+            _print_output(payload, args.output)
+            if payload.get("passed"):
+                return 0
+            return 1
 
     except ValueError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

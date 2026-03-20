@@ -476,6 +476,120 @@ def test_status_report_naive_last_indexed_is_normalized(repo_root: Path, db_path
     assert isinstance(status["seconds_since_last_index"], float)
 
 
+def test_health_report_pass_path(repo_root: Path, db_path: Path) -> None:
+    a = repo_root / "docs" / "a.md"
+    _write(a, "## A\nalpha")
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[a])
+
+    health = ri.health_report(
+        db_path=db_path,
+        freshness_seconds=3600,
+        pending_backlog=0,
+        consecutive_failures=0,
+        mismatch_rate=0.0,
+    )
+    assert health["overall"] == "pass"
+    assert health["gates"]["freshness"] == "pass"
+
+
+def test_health_report_warn_and_fail_paths(repo_root: Path, db_path: Path) -> None:
+    a = repo_root / "docs" / "a.md"
+    _write(a, "## A\nalpha")
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[a])
+
+    warn_health = ri.health_report(
+        db_path=db_path,
+        freshness_seconds=3600,
+        pending_backlog=150,
+        consecutive_failures=3,
+        mismatch_rate=0.003,
+    )
+    assert warn_health["overall"] == "warn"
+
+    fail_health = ri.health_report(
+        db_path=db_path,
+        freshness_seconds=3600,
+        pending_backlog=250,
+        consecutive_failures=6,
+        mismatch_rate=0.006,
+    )
+    assert fail_health["overall"] == "fail"
+
+
+def test_health_report_invalid_inputs_raise(repo_root: Path, db_path: Path) -> None:
+    a = repo_root / "docs" / "a.md"
+    _write(a, "## A\nalpha")
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[a])
+
+    with pytest.raises(ValueError, match="pending_backlog"):
+        ri.health_report(db_path=db_path, pending_backlog=-1)
+
+    with pytest.raises(ValueError, match="consecutive_failures"):
+        ri.health_report(db_path=db_path, consecutive_failures=-1)
+
+    with pytest.raises(ValueError, match="mismatch_rate"):
+        ri.health_report(db_path=db_path, mismatch_rate=-0.1)
+
+
+def test_local_test_report_quick_and_standard(repo_root: Path, db_path: Path) -> None:
+    a = repo_root / "docs" / "a.md"
+    _write(a, "## A\ngovernance guidance")
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[a])
+
+    quick = ri.local_test_report(test_tier="quick", db_path=db_path)
+    assert quick["tier"] == "quick"
+    assert quick["verdict"] == "PASS"
+    assert len(quick["failure_scenarios"]) >= 8
+
+    standard = ri.local_test_report(test_tier="standard", db_path=db_path)
+    assert standard["tier"] == "standard"
+    assert any(c["name"] == "health-gates" for c in standard["checks"])
+
+
+def test_local_test_report_stress_and_invalid_tier(repo_root: Path, db_path: Path) -> None:
+    a = repo_root / "docs" / "a.md"
+    b = repo_root / "{{cookiecutter.project_slug}}" / "README.md"
+    _write(a, "## A\ngovernance guidance")
+    _write(b, "## B\ngovernance guidance")
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[a, b])
+
+    stress = ri.local_test_report(test_tier="stress", db_path=db_path)
+    assert stress["tier"] == "stress"
+    assert any(c["name"] == "federated-query" for c in stress["checks"])
+
+    with pytest.raises(ValueError, match="test_tier"):
+        ri.local_test_report(test_tier="bad", db_path=db_path)
+
+
+def test_adoption_gate_report_levels(repo_root: Path, db_path: Path) -> None:
+    a = repo_root / "docs" / "a.md"
+    _write(a, "## A\ngovernance guidance")
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[a])
+
+    soft = ri.adoption_gate_report(enforcement_level="soft", db_path=db_path)
+    medium = ri.adoption_gate_report(enforcement_level="medium", db_path=db_path)
+    hard = ri.adoption_gate_report(enforcement_level="hard", db_path=db_path)
+
+    assert soft["passed"] is True
+    assert medium["passed"] is True
+    assert hard["passed"] is True
+
+
+def test_adoption_gate_invalid_level() -> None:
+    with pytest.raises(ValueError, match="enforcement_level"):
+        ri.adoption_gate_report(enforcement_level="bad")
+
+
+def test_adoption_gate_report_failure_paths_without_index(db_path: Path) -> None:
+    medium = ri.adoption_gate_report(enforcement_level="medium", db_path=db_path)
+    hard = ri.adoption_gate_report(enforcement_level="hard", db_path=db_path)
+
+    assert medium["passed"] is False
+    assert hard["passed"] is False
+    assert any("index missing" in reason for reason in medium["reasons"])
+    assert any("index missing" in reason for reason in hard["reasons"])
+
+
 def test_print_output_branches(capsys: pytest.CaptureFixture[str]) -> None:
     ri._print_output({"ok": True}, "json")
     assert json.loads(capsys.readouterr().out)["ok"] is True
@@ -565,6 +679,36 @@ def test_main_query_passes_federation_flags(mocker) -> None:
     assert code == 0
     assert query_mock.call_args.kwargs["allow_federation"] is True
     assert query_mock.call_args.kwargs["federation_reason"] == "cross-scope audit"
+
+
+def test_main_health_command_success(mocker) -> None:
+    health_mock = mocker.patch.object(ri, "health_report", return_value={"ok": True, "overall": "pass"})
+    mocker.patch.object(ri, "_print_output")
+
+    code = ri.main(["health", "--pending-backlog", "10", "--consecutive-failures", "0", "--mismatch-rate", "0.0"])
+    assert code == 0
+    assert health_mock.call_count == 1
+    assert health_mock.call_args.kwargs["freshness_seconds"] == 600
+
+
+def test_main_local_test_command_success(mocker) -> None:
+    local_test_mock = mocker.patch.object(ri, "local_test_report", return_value={"ok": True, "verdict": "PASS"})
+    mocker.patch.object(ri, "_print_output")
+
+    code = ri.main(["local-test", "--test-tier", "standard", "--probe-query", "policy"])
+    assert code == 0
+    assert local_test_mock.call_count == 1
+    assert local_test_mock.call_args.kwargs["test_tier"] == "standard"
+
+
+def test_main_adoption_gate_exit_codes(mocker) -> None:
+    mocker.patch.object(ri, "_print_output")
+
+    mocker.patch.object(ri, "adoption_gate_report", return_value={"ok": True, "passed": True})
+    assert ri.main(["adoption-gate", "--enforcement-level", "medium"]) == 0
+
+    mocker.patch.object(ri, "adoption_gate_report", return_value={"ok": True, "passed": False})
+    assert ri.main(["adoption-gate", "--enforcement-level", "hard"]) == 1
 
 
 def test_main_exception_paths(mocker, capsys: pytest.CaptureFixture[str]) -> None:
