@@ -381,6 +381,17 @@ def test_classify_content_scope_contract() -> None:
     assert client["scope"] == "client"
     assert client["governance_tier"] == "deployment"
 
+    windows_style = ri.classify_content_scope("{{cookiecutter.project_slug}}\\README.md")
+    assert windows_style["scope"] == "client"
+
+
+def test_read_file_state_uses_posix_source_path(repo_root: Path) -> None:
+    p = repo_root / "docs" / "nested" / "example.md"
+    _write(p, "## A\ntext")
+
+    state = ri._read_file_state(p, repo_root)
+    assert state.source_file == "docs/nested/example.md"
+
 
 def test_validate_filter_scope_accepts_none_and_valid() -> None:
     assert ri._validate_filter_scope(None) is None
@@ -514,6 +525,28 @@ def test_health_report_warn_and_fail_paths(repo_root: Path, db_path: Path) -> No
         mismatch_rate=0.006,
     )
     assert fail_health["overall"] == "fail"
+
+
+def test_health_report_freshness_threshold_controls_gate(repo_root: Path, db_path: Path) -> None:
+    a = repo_root / "docs" / "a.md"
+    _write(a, "## A\nalpha")
+    ri.reindex(scope="full", repo_root=repo_root, db_path=db_path, file_paths=[a])
+
+    # Force staleness so the freshness gate classification is deterministic.
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("UPDATE meta SET value = ? WHERE key = ?", ("2026-01-01T00:00:00+00:00", "last_indexed"))
+    conn.commit()
+    conn.close()
+
+    strict = ri.health_report(db_path=db_path, freshness_seconds=1)
+    relaxed = ri.health_report(db_path=db_path, freshness_seconds=10_000_000)
+
+    assert strict["gates"]["freshness"] == "fail"
+    assert strict["thresholds"]["freshness"]["warn_sec"] == 1
+    assert strict["thresholds"]["freshness"]["fail_sec"] == 3
+    assert relaxed["gates"]["freshness"] in {"pass", "warn"}
+    assert relaxed["thresholds"]["freshness"]["warn_sec"] == 10_000_000
+    assert relaxed["thresholds"]["freshness"]["fail_sec"] == 30_000_000
 
 
 def test_health_report_invalid_inputs_raise(repo_root: Path, db_path: Path) -> None:

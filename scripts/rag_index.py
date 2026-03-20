@@ -275,8 +275,15 @@ def _governs_csv(governs: list[str]) -> str:
 
 
 def classify_content_scope(source_file: str) -> dict[str, str]:
-    """Derive deterministic scope metadata for contract-layer separation."""
-    if source_file == "client-values.yml" or source_file.startswith("{{cookiecutter.project_slug}}/"):
+    """Derive deterministic scope metadata for contract-layer separation.
+
+    Notes:
+    - Paths are normalized to POSIX separators to keep behavior stable across OSes.
+    - `client-values.yml` and cookiecutter project files are always treated as
+      Deployment Layer (client) scope.
+    """
+    normalized = source_file.replace("\\", "/")
+    if normalized == "client-values.yml" or normalized.startswith("{{cookiecutter.project_slug}}/"):
         return {
             "scope": "client",
             "governance_tier": "deployment",
@@ -390,7 +397,8 @@ def _resolve_corpus_files(repo_root: Path) -> list[Path]:
 
 def _read_file_state(path: Path, repo_root: Path) -> FileState:
     text = path.read_text(encoding="utf-8")
-    rel = str(path.relative_to(repo_root))
+    # Persist POSIX-style repo-relative paths for cross-platform determinism.
+    rel = path.relative_to(repo_root).as_posix()
     stat = path.stat()
     return FileState(source_file=rel, file_hash=_sha256(text), file_mtime=stat.st_mtime)
 
@@ -808,7 +816,12 @@ def health_report(
     consecutive_failures: int = 0,
     mismatch_rate: float = 0.0,
 ) -> dict[str, Any]:
-    """Evaluate deterministic update-cadence gates for freshness/correctness/stability."""
+    """Evaluate deterministic update-cadence gates for freshness/correctness/stability.
+
+    `freshness_seconds` is the pass threshold for freshness. Values above this
+    threshold move into warning/fail bands so CLI overrides change gate behavior
+    deterministically.
+    """
     if pending_backlog < 0:
         raise ValueError("pending_backlog must be >= 0")
     if consecutive_failures < 0:
@@ -818,14 +831,18 @@ def health_report(
 
     status = status_report(db_path=db_path, freshness_seconds=freshness_seconds)
 
+    # Freshness gate policy: pass <= freshness_seconds, warn up to 3x threshold,
+    # fail beyond 3x threshold.
+    freshness_warn = float(freshness_seconds)
+    freshness_fail = float(freshness_seconds * 3)
     freshness_seconds_since = status.get("seconds_since_last_index")
     if freshness_seconds_since is None:
         freshness_gate = "fail"
     else:
         freshness_gate = _gate_level(
             float(freshness_seconds_since),
-            float(UPDATE_HEALTH_THRESHOLDS["freshness"]["warn_sec"]),
-            float(UPDATE_HEALTH_THRESHOLDS["freshness"]["fail_sec"]),
+            freshness_warn,
+            freshness_fail,
         )
 
     backlog_gate = _gate_level(
@@ -856,6 +873,14 @@ def health_report(
     elif "warn" in gates.values():
         overall = "warn"
 
+    thresholds = {
+        **UPDATE_HEALTH_THRESHOLDS,
+        "freshness": {
+            "warn_sec": int(freshness_warn),
+            "fail_sec": int(freshness_fail),
+        },
+    }
+
     return {
         "ok": True,
         "profile": "hybrid-watcher-plus-sweep",
@@ -867,7 +892,7 @@ def health_report(
             "mismatch_rate": mismatch_rate,
             "freshness_seconds": freshness_seconds,
         },
-        "thresholds": UPDATE_HEALTH_THRESHOLDS,
+        "thresholds": thresholds,
         "status": status,
     }
 
