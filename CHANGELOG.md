@@ -1,3 +1,12 @@
+# [0.4.0](https://github.com/EndogenAI/rag/compare/v0.3.1...v0.4.0) (2026-03-20)
+
+
+### Features
+
+* **rag:** implement generation layer with litellm and ollama ([#30](https://github.com/EndogenAI/rag/issues/30)) ([5e33db1](https://github.com/EndogenAI/rag/commit/5e33db115574008599f81765fefcd5de51fcf4cb))
+
+
+
 ## [0.3.1](https://github.com/EndogenAI/rag/compare/v0.3.0...v0.3.1) (2026-03-20)
 
 
