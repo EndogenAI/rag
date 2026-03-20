@@ -537,6 +537,7 @@ CI jobs on this repo (`Tests` workflow):
 | `All tests passed` | Aggregate gate — blocks merge if any above fails |
 
 **Do not re-request Copilot review if CI is red.** Fix CI first. See common failure modes below.
+**Copilot review trigger policy**: assume review is auto-triggered on PR creation. Manual re-trigger is human-gated; ask for explicit approval before running any manual trigger command.
 
 > **Common failure modes and fixes**:
 > - Lychee non-200 response (e.g. HTTP 202 Accepted): add URL to `.lycheeignore` with reason
@@ -1031,7 +1032,7 @@ Triage → Fix → Reply → Resolve → Commit → Re-request review
 | **Reply** | Post a reply on each inline thread noting the fix commit SHA | `scripts/pr_review_reply.py` |
 | **Resolve** | Mark each addressed thread as resolved | `scripts/pr_review_reply.py --resolve` |
 | **Commit** | Route all fixes through **Review** then **GitHub** agents | Standard commit flow |
-| **Re-request review** | Re-request from the original reviewer once CI is green | `gh pr review --request <reviewer>` |
+| **Manual re-trigger (human-gated)** | Only when human explicitly asks and CI is green | `gh pr edit <num> --add-reviewer <reviewer>` |
 
 ### Rules
 
@@ -1040,6 +1041,7 @@ Triage → Fix → Reply → Resolve → Commit → Re-request review
 - **Defer/Decline requires a comment** — record reasoning before resolving.
 - **SHA pinning and non-blocking items** — resolve with "Deferred to issue #N"; open the tracking issue first.
 - **CI must be green before re-requesting review.**
+- **Manual Copilot re-trigger is human-gated** — if auto-trigger did not fire or a re-check is desired, ask the human for explicit permission before triggering.
 
 ### Checkpoints
 

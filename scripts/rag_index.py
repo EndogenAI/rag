@@ -19,9 +19,25 @@ Inputs:
         --query TEXT              Query text
         --top-k INT               Max chunks to return (1-50, default: 5)
         --filter-governs TEXT     Optional governs slug filter
+        --filter-scope TEXT       Optional scope filter (dogma|client)
+        --allow-federation        Allow cross-scope retrieval (explicit opt-in)
+        --federation-reason TEXT  Required reason when federation is enabled
 
     status flags:
         --freshness-seconds INT   Staleness threshold (default: 86400)
+
+    health flags:
+        --freshness-seconds INT   Staleness threshold (default: 600)
+        --pending-backlog INT     Pending update backlog count (default: 0)
+        --consecutive-failures INT Consecutive update failures (default: 0)
+        --mismatch-rate FLOAT     Audit mismatch rate (default: 0.0)
+
+    local-test flags:
+        --test-tier quick|standard|stress  Test battery tier (default: quick)
+        --probe-query TEXT                  Probe query text (default: "governance")
+
+    adoption-gate flags:
+        --enforcement-level soft|medium|hard  Governance enforcement level (default: medium)
 
 Outputs:
     reindex: Index stats JSON/text (updated/unchanged/removed/chunk counts)
@@ -33,7 +49,13 @@ Usage:
     uv run python scripts/rag_index.py reindex --scope incremental --dry-run
     uv run python scripts/rag_index.py query --query "programmatic-first" --top-k 3
     uv run python scripts/rag_index.py query --query "commit" --filter-governs commit-discipline
+    uv run python scripts/rag_index.py query --query "values" --filter-scope dogma
+    uv run python scripts/rag_index.py query --query "values" --allow-federation --federation-reason "cross-scope audit"
     uv run python scripts/rag_index.py status --freshness-seconds 3600
+    uv run python scripts/rag_index.py health --freshness-seconds 600 \
+        --pending-backlog 10 --consecutive-failures 0 --mismatch-rate 0.0
+    uv run python scripts/rag_index.py local-test --test-tier standard --probe-query "programmatic"
+    uv run python scripts/rag_index.py adoption-gate --enforcement-level hard
 
 Exit codes:
     0 — success
@@ -59,19 +81,43 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 INDEX_DIR = REPO_ROOT / "rag-index"
 INDEX_DB_PATH = INDEX_DIR / "rag_index.sqlite3"
-INDEX_VERSION = "phase2-v1"
+INDEX_VERSION = "phase2-v2"
 FROZEN_H2_FALLBACK_HEADING = "__FROZEN_H2_FALLBACK__"
 
 CORPUS_GLOBS: tuple[str, ...] = (
     "AGENTS.md",
     "MANIFESTO.md",
+    "client-values.yml",
     "docs/**/*.md",
+    "{{cookiecutter.project_slug}}/**/*.md",
     ".github/agents/*.agent.md",
     ".github/skills/**/*.md",
 )
 
 VALID_SCOPE: frozenset[str] = frozenset({"full", "incremental"})
+VALID_CONTENT_SCOPE: frozenset[str] = frozenset({"dogma", "client"})
 _GOVERNS_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+UPDATE_HEALTH_THRESHOLDS = {
+    "freshness": {"warn_sec": 900, "fail_sec": 1800},
+    "backlog": {"warn": 100, "fail": 200},
+    "failures": {"warn": 2, "fail": 5},
+    "mismatch_rate": {"warn": 0.002, "fail": 0.005},
+}
+
+VALID_TEST_TIERS: frozenset[str] = frozenset({"quick", "standard", "stress"})
+VALID_ENFORCEMENT_LEVELS: frozenset[str] = frozenset({"soft", "medium", "hard"})
+FAILURE_SCENARIO_CATALOG: tuple[str, ...] = (
+    "F1 delete-indexed-file",
+    "F2 rapid-sequential-edits",
+    "F3 malformed-markdown",
+    "F4 concurrent-writes",
+    "F5 watcher-interruption",
+    "F6 corrupted-index-metadata",
+    "F7 scope-tag-omission",
+    "F8 backlog-surge",
+    "F9 duplicate-namespace-collision",
+)
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -90,6 +136,10 @@ CREATE TABLE IF NOT EXISTS files (
 CREATE TABLE IF NOT EXISTS chunks (
     chunk_id TEXT PRIMARY KEY,
     source_file TEXT NOT NULL,
+    scope TEXT NOT NULL,
+    governance_tier TEXT NOT NULL,
+    partition_id TEXT NOT NULL,
+    retention_policy TEXT NOT NULL,
     heading TEXT NOT NULL,
     governs_csv TEXT NOT NULL,
     fallback_h2 INTEGER NOT NULL,
@@ -103,12 +153,14 @@ CREATE TABLE IF NOT EXISTS chunks (
 
 CREATE INDEX IF NOT EXISTS idx_chunks_source_file ON chunks(source_file);
 CREATE INDEX IF NOT EXISTS idx_chunks_governs ON chunks(governs_csv);
+CREATE INDEX IF NOT EXISTS idx_chunks_scope ON chunks(scope);
 
 CREATE VIRTUAL TABLE IF NOT EXISTS rag_fts USING fts5(
     chunk_id UNINDEXED,
     content,
     source_file UNINDEXED,
     heading UNINDEXED,
+    scope UNINDEXED,
     governs UNINDEXED
 );
 """
@@ -131,6 +183,10 @@ class ChunkRecord:
 
     chunk_id: str
     source_file: str
+    scope: str
+    governance_tier: str
+    partition_id: str
+    retention_policy: str
     heading: str
     governs_csv: str
     fallback_h2: int
@@ -218,6 +274,31 @@ def _governs_csv(governs: list[str]) -> str:
     return "," + ",".join(governs) + ","
 
 
+def classify_content_scope(source_file: str) -> dict[str, str]:
+    """Derive deterministic scope metadata for contract-layer separation.
+
+    Notes:
+    - Paths are normalized to POSIX separators to keep behavior stable across OSes.
+    - `client-values.yml` and cookiecutter project files are always treated as
+      Deployment Layer (client) scope.
+    """
+    normalized = source_file.replace("\\", "/")
+    if normalized == "client-values.yml" or normalized.startswith("{{cookiecutter.project_slug}}/"):
+        return {
+            "scope": "client",
+            "governance_tier": "deployment",
+            "partition_id": "client",
+            "retention_policy": "client-rotating",
+        }
+
+    return {
+        "scope": "dogma",
+        "governance_tier": "core",
+        "partition_id": "dogma",
+        "retention_policy": "core-long",
+    }
+
+
 def chunk_markdown_h2(text: str, source_file: str) -> list[ChunkRecord]:
     """Chunk Markdown at H2 boundaries with a deterministic frozen fallback rule.
 
@@ -231,6 +312,7 @@ def chunk_markdown_h2(text: str, source_file: str) -> list[ChunkRecord]:
     lines = text.splitlines()
     governs = parse_frontmatter_governs(text)
     governs_csv = _governs_csv(governs)
+    scope_meta = classify_content_scope(source_file)
 
     h2_positions: list[int] = []
     for idx, line in enumerate(lines):
@@ -250,6 +332,10 @@ def chunk_markdown_h2(text: str, source_file: str) -> list[ChunkRecord]:
             ChunkRecord(
                 chunk_id=chunk_id,
                 source_file=source_file,
+                scope=scope_meta["scope"],
+                governance_tier=scope_meta["governance_tier"],
+                partition_id=scope_meta["partition_id"],
+                retention_policy=scope_meta["retention_policy"],
                 heading=FROZEN_H2_FALLBACK_HEADING,
                 governs_csv=governs_csv,
                 fallback_h2=1,
@@ -276,6 +362,10 @@ def chunk_markdown_h2(text: str, source_file: str) -> list[ChunkRecord]:
             ChunkRecord(
                 chunk_id=chunk_id,
                 source_file=source_file,
+                scope=scope_meta["scope"],
+                governance_tier=scope_meta["governance_tier"],
+                partition_id=scope_meta["partition_id"],
+                retention_policy=scope_meta["retention_policy"],
                 heading=heading_text,
                 governs_csv=governs_csv,
                 fallback_h2=0,
@@ -307,7 +397,8 @@ def _resolve_corpus_files(repo_root: Path) -> list[Path]:
 
 def _read_file_state(path: Path, repo_root: Path) -> FileState:
     text = path.read_text(encoding="utf-8")
-    rel = str(path.relative_to(repo_root))
+    # Persist POSIX-style repo-relative paths for cross-platform determinism.
+    rel = path.relative_to(repo_root).as_posix()
     stat = path.stat()
     return FileState(source_file=rel, file_hash=_sha256(text), file_mtime=stat.st_mtime)
 
@@ -364,14 +455,19 @@ def _insert_file_and_chunks(
         conn.executemany(
             """
             INSERT INTO chunks(
-                chunk_id, source_file, heading, governs_csv, fallback_h2,
+                chunk_id, source_file, scope, governance_tier, partition_id, retention_policy,
+                heading, governs_csv, fallback_h2,
                 start_line, end_line, content, content_hash, indexed_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
                     c.chunk_id,
                     c.source_file,
+                    c.scope,
+                    c.governance_tier,
+                    c.partition_id,
+                    c.retention_policy,
                     c.heading,
                     c.governs_csv,
                     c.fallback_h2,
@@ -386,8 +482,8 @@ def _insert_file_and_chunks(
         )
 
         conn.executemany(
-            "INSERT INTO rag_fts(chunk_id, content, source_file, heading, governs) VALUES (?, ?, ?, ?, ?)",
-            [(c.chunk_id, c.content, c.source_file, c.heading, c.governs_csv) for c in chunks],
+            "INSERT INTO rag_fts(chunk_id, content, source_file, heading, scope, governs) VALUES (?, ?, ?, ?, ?, ?)",
+            [(c.chunk_id, c.content, c.source_file, c.heading, c.scope, c.governs_csv) for c in chunks],
         )
 
     conn.execute(
@@ -530,11 +626,23 @@ def _validate_filter_governs(filter_governs: str | None) -> str | None:
     return raw
 
 
+def _validate_filter_scope(filter_scope: str | None) -> str | None:
+    if filter_scope is None:
+        return None
+    normalized = filter_scope.strip().lower()
+    if normalized not in VALID_CONTENT_SCOPE:
+        raise ValueError("Invalid filter_scope. Expected one of: dogma, client.")
+    return normalized
+
+
 def query_index(
     query: str,
     *,
     top_k: int = 5,
     filter_governs: str | None = None,
+    filter_scope: str | None = None,
+    allow_federation: bool = False,
+    federation_reason: str | None = None,
     db_path: Path = INDEX_DB_PATH,
 ) -> dict[str, Any]:
     """Query the index with optional governs filtering."""
@@ -544,6 +652,10 @@ def query_index(
         raise ValueError("top_k must be between 1 and 50")
 
     normalized_filter = _validate_filter_governs(filter_governs)
+    normalized_scope = _validate_filter_scope(filter_scope)
+
+    if allow_federation and not (federation_reason and federation_reason.strip()):
+        raise ValueError("federation_reason is required when allow_federation is enabled.")
 
     if not db_path.exists():
         raise RagIndexError(f"Index not found at {db_path}. Run reindex first.")
@@ -558,7 +670,8 @@ def query_index(
             )
 
         sql = (
-            "SELECT c.chunk_id, c.source_file, c.heading, c.governs_csv, c.fallback_h2, "
+            "SELECT c.chunk_id, c.source_file, c.scope, c.governance_tier, c.partition_id, c.retention_policy, "
+            "c.heading, c.governs_csv, c.fallback_h2, "
             "c.start_line, c.end_line, c.content, bm25(rag_fts) AS score "
             "FROM rag_fts "
             "JOIN chunks c ON c.chunk_id = rag_fts.chunk_id "
@@ -569,6 +682,18 @@ def query_index(
         if normalized_filter:
             sql += " AND c.governs_csv LIKE ?"
             params.append(f"%,{normalized_filter},%")
+
+        effective_scope = normalized_scope
+        query_mode = "segmented"
+        if effective_scope is None and not allow_federation:
+            # Fail-closed default posture: do not blend scopes unless explicitly enabled.
+            effective_scope = "dogma"
+
+        if effective_scope:
+            sql += " AND c.scope = ?"
+            params.append(effective_scope)
+        elif allow_federation:
+            query_mode = "federated"
 
         sql += " ORDER BY score ASC LIMIT ?"
         params.append(top_k)
@@ -581,6 +706,10 @@ def query_index(
                 {
                     "chunk_id": row["chunk_id"],
                     "source_file": row["source_file"],
+                    "scope": row["scope"],
+                    "governance_tier": row["governance_tier"],
+                    "partition_id": row["partition_id"],
+                    "retention_policy": row["retention_policy"],
                     "heading": row["heading"],
                     "governs": governs_tokens,
                     "fallback_h2": bool(row["fallback_h2"]),
@@ -596,6 +725,10 @@ def query_index(
             "query": query,
             "top_k": top_k,
             "filter_governs": normalized_filter,
+            "filter_scope": effective_scope,
+            "query_mode": query_mode,
+            "allow_federation": allow_federation,
+            "federation_reason": federation_reason.strip() if federation_reason else None,
             "count": len(results),
             "results": results,
         }
@@ -667,6 +800,241 @@ def status_report(*, db_path: Path = INDEX_DB_PATH, freshness_seconds: int = 864
         conn.close()
 
 
+def _gate_level(value: float, warn: float, fail: float) -> str:
+    if value > fail:
+        return "fail"
+    if value > warn:
+        return "warn"
+    return "pass"
+
+
+def health_report(
+    *,
+    db_path: Path = INDEX_DB_PATH,
+    freshness_seconds: int = 600,
+    pending_backlog: int = 0,
+    consecutive_failures: int = 0,
+    mismatch_rate: float = 0.0,
+) -> dict[str, Any]:
+    """Evaluate deterministic update-cadence gates for freshness/correctness/stability.
+
+    `freshness_seconds` is the pass threshold for freshness. Values above this
+    threshold move into warning/fail bands so CLI overrides change gate behavior
+    deterministically.
+    """
+    if pending_backlog < 0:
+        raise ValueError("pending_backlog must be >= 0")
+    if consecutive_failures < 0:
+        raise ValueError("consecutive_failures must be >= 0")
+    if mismatch_rate < 0:
+        raise ValueError("mismatch_rate must be >= 0")
+
+    status = status_report(db_path=db_path, freshness_seconds=freshness_seconds)
+
+    # Freshness gate policy: pass <= freshness_seconds, warn up to 3x threshold,
+    # fail beyond 3x threshold.
+    freshness_warn = float(freshness_seconds)
+    freshness_fail = float(freshness_seconds * 3)
+    freshness_seconds_since = status.get("seconds_since_last_index")
+    if freshness_seconds_since is None:
+        freshness_gate = "fail"
+    else:
+        freshness_gate = _gate_level(
+            float(freshness_seconds_since),
+            freshness_warn,
+            freshness_fail,
+        )
+
+    backlog_gate = _gate_level(
+        float(pending_backlog),
+        float(UPDATE_HEALTH_THRESHOLDS["backlog"]["warn"]),
+        float(UPDATE_HEALTH_THRESHOLDS["backlog"]["fail"]),
+    )
+    failures_gate = _gate_level(
+        float(consecutive_failures),
+        float(UPDATE_HEALTH_THRESHOLDS["failures"]["warn"]),
+        float(UPDATE_HEALTH_THRESHOLDS["failures"]["fail"]),
+    )
+    mismatch_gate = _gate_level(
+        float(mismatch_rate),
+        float(UPDATE_HEALTH_THRESHOLDS["mismatch_rate"]["warn"]),
+        float(UPDATE_HEALTH_THRESHOLDS["mismatch_rate"]["fail"]),
+    )
+
+    gates = {
+        "freshness": freshness_gate,
+        "backlog": backlog_gate,
+        "stability": failures_gate,
+        "correctness": mismatch_gate,
+    }
+    overall = "pass"
+    if "fail" in gates.values() or not status.get("version_ok", False):
+        overall = "fail"
+    elif "warn" in gates.values():
+        overall = "warn"
+
+    thresholds = {
+        **UPDATE_HEALTH_THRESHOLDS,
+        "freshness": {
+            "warn_sec": int(freshness_warn),
+            "fail_sec": int(freshness_fail),
+        },
+    }
+
+    return {
+        "ok": True,
+        "profile": "hybrid-watcher-plus-sweep",
+        "overall": overall,
+        "gates": gates,
+        "inputs": {
+            "pending_backlog": pending_backlog,
+            "consecutive_failures": consecutive_failures,
+            "mismatch_rate": mismatch_rate,
+            "freshness_seconds": freshness_seconds,
+        },
+        "thresholds": thresholds,
+        "status": status,
+    }
+
+
+def local_test_report(
+    *,
+    test_tier: str = "quick",
+    probe_query: str = "governance",
+    db_path: Path = INDEX_DB_PATH,
+) -> dict[str, Any]:
+    """Run a deterministic local test battery and return PR-ready evidence payload."""
+    tier = test_tier.strip().lower()
+    if tier not in VALID_TEST_TIERS:
+        raise ValueError("Invalid test_tier. Expected one of: quick, standard, stress.")
+
+    checks: list[dict[str, Any]] = []
+
+    status = status_report(db_path=db_path, freshness_seconds=3600)
+    checks.append(
+        {
+            "name": "status",
+            "pass": bool(status.get("exists") and status.get("version_ok")),
+            "details": {"exists": status.get("exists"), "version_ok": status.get("version_ok")},
+        }
+    )
+
+    if status.get("exists") and status.get("version_ok"):
+        q = query_index(probe_query, top_k=3, filter_scope="dogma", db_path=db_path)
+        checks.append(
+            {
+                "name": "segmented-query",
+                "pass": q.get("count", 0) >= 1,
+                "details": {"count": q.get("count", 0), "scope": q.get("filter_scope")},
+            }
+        )
+    else:
+        checks.append({"name": "segmented-query", "pass": False, "details": {"reason": "index-unavailable"}})
+
+    if tier in {"standard", "stress"}:
+        health = health_report(
+            db_path=db_path,
+            freshness_seconds=600,
+            pending_backlog=0,
+            consecutive_failures=0,
+            mismatch_rate=0.0,
+        )
+        checks.append(
+            {
+                "name": "health-gates",
+                "pass": health.get("overall") in {"pass", "warn"},
+                "details": {"overall": health.get("overall"), "gates": health.get("gates")},
+            }
+        )
+
+    if tier == "stress":
+        federated = query_index(
+            probe_query,
+            top_k=5,
+            allow_federation=True,
+            federation_reason="stress-tier cross-scope probe",
+            db_path=db_path,
+        )
+        checks.append(
+            {
+                "name": "federated-query",
+                "pass": federated.get("query_mode") == "federated",
+                "details": {"query_mode": federated.get("query_mode"), "count": federated.get("count", 0)},
+            }
+        )
+
+    verdict = "PASS" if all(c["pass"] for c in checks) else "FAIL"
+
+    return {
+        "ok": True,
+        "tier": tier,
+        "probe_query": probe_query,
+        "verdict": verdict,
+        "checks": checks,
+        "failure_scenarios": list(FAILURE_SCENARIO_CATALOG),
+        "evidence_template": {
+            "environment_snapshot": ["os", "branch", "timestamp"],
+            "commands_executed": ["status", "segmented-query", "health-gates(optional)", "federated-query(optional)"],
+            "scenario_coverage": "F1-F9 checklist",
+            "metrics": ["freshness", "correctness", "stability"],
+            "gate_verdict": "PASS|FAIL",
+        },
+    }
+
+
+def adoption_gate_report(*, enforcement_level: str = "medium", db_path: Path = INDEX_DB_PATH) -> dict[str, Any]:
+    """Evaluate installability/adoption governance controls with graded enforcement."""
+    level = enforcement_level.strip().lower()
+    if level not in VALID_ENFORCEMENT_LEVELS:
+        raise ValueError("Invalid enforcement_level. Expected one of: soft, medium, hard.")
+
+    status = status_report(db_path=db_path, freshness_seconds=3600)
+    quick = local_test_report(test_tier="quick", db_path=db_path)
+    standard = local_test_report(test_tier="standard", db_path=db_path)
+    health = health_report(db_path=db_path, freshness_seconds=600)
+
+    reasons: list[str] = []
+    passed = True
+
+    if level == "soft":
+        passed = True
+        reasons.append("soft enforcement: advisory mode")
+    elif level == "medium":
+        passed = bool(status.get("exists") and status.get("version_ok") and quick.get("verdict") == "PASS")
+        if not status.get("exists"):
+            reasons.append("index missing")
+        if not status.get("version_ok"):
+            reasons.append("index version mismatch")
+        if quick.get("verdict") != "PASS":
+            reasons.append("quick local-test failed")
+    else:
+        passed = bool(
+            status.get("exists")
+            and status.get("version_ok")
+            and standard.get("verdict") == "PASS"
+            and health.get("overall") == "pass"
+        )
+        if not status.get("exists"):
+            reasons.append("index missing")
+        if not status.get("version_ok"):
+            reasons.append("index version mismatch")
+        if standard.get("verdict") != "PASS":
+            reasons.append("standard local-test failed")
+        if health.get("overall") != "pass":
+            reasons.append("health overall is not pass")
+
+    return {
+        "ok": True,
+        "enforcement_level": level,
+        "passed": passed,
+        "reasons": reasons,
+        "status": status,
+        "quick_test": quick,
+        "standard_test": standard,
+        "health": health,
+    }
+
+
 def _print_output(payload: dict[str, Any], output: str) -> None:
     if output == "json":
         print(json.dumps(payload, indent=2))
@@ -688,7 +1056,7 @@ def _print_output(payload: dict[str, Any], output: str) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Local retrieval index (Phase 2 core substrate).")
-    parser.add_argument("command", choices=["reindex", "query", "status"])
+    parser.add_argument("command", choices=["reindex", "query", "status", "health", "local-test", "adoption-gate"])
     parser.add_argument("--output", default="json", choices=["json", "text"])
 
     parser.add_argument("--scope", default="incremental", choices=sorted(VALID_SCOPE))
@@ -697,8 +1065,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--query")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--filter-governs")
+    parser.add_argument("--filter-scope")
+    parser.add_argument("--allow-federation", action="store_true")
+    parser.add_argument("--federation-reason")
 
-    parser.add_argument("--freshness-seconds", type=int, default=86400)
+    parser.add_argument("--freshness-seconds", type=int)
+    parser.add_argument("--pending-backlog", type=int, default=0)
+    parser.add_argument("--consecutive-failures", type=int, default=0)
+    parser.add_argument("--mismatch-rate", type=float, default=0.0)
+    parser.add_argument("--test-tier", default="quick")
+    parser.add_argument("--probe-query", default="governance")
+    parser.add_argument("--enforcement-level", default="medium")
 
     args = parser.parse_args(argv)
 
@@ -718,14 +1095,44 @@ def main(argv: list[str] | None = None) -> int:
                 args.query,
                 top_k=args.top_k,
                 filter_governs=args.filter_governs,
+                filter_scope=args.filter_scope,
+                allow_federation=args.allow_federation,
+                federation_reason=args.federation_reason,
             )
             _print_output(payload, args.output)
             return 0
 
         if args.command == "status":
-            payload = status_report(freshness_seconds=args.freshness_seconds)
+            freshness_seconds = args.freshness_seconds if args.freshness_seconds is not None else 86400
+            payload = status_report(freshness_seconds=freshness_seconds)
             _print_output(payload, args.output)
             return 0
+
+        if args.command == "health":
+            freshness_seconds = args.freshness_seconds if args.freshness_seconds is not None else 600
+            payload = health_report(
+                freshness_seconds=freshness_seconds,
+                pending_backlog=args.pending_backlog,
+                consecutive_failures=args.consecutive_failures,
+                mismatch_rate=args.mismatch_rate,
+            )
+            _print_output(payload, args.output)
+            return 0
+
+        if args.command == "local-test":
+            payload = local_test_report(
+                test_tier=args.test_tier,
+                probe_query=args.probe_query,
+            )
+            _print_output(payload, args.output)
+            return 0
+
+        if args.command == "adoption-gate":
+            payload = adoption_gate_report(enforcement_level=args.enforcement_level)
+            _print_output(payload, args.output)
+            if payload.get("passed"):
+                return 0
+            return 1
 
     except ValueError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

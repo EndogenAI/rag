@@ -718,6 +718,11 @@ Any command that creates or modifies a remote side effect must be immediately pr
 
 **CI must pass before requesting review.** After every `git push` to a PR branch: check CI status with `gh run list --limit 3` before requesting or re-requesting Copilot review. A passing push with failing CI is a broken PR — fix CI before doing anything else. Common CI failure modes: lychee dead link (add to `.lycheeignore`), ruff format (run `uv run ruff format scripts/ tests/`), validate_synthesis missing headings.
 
+**Copilot review trigger policy (Augmentive Partnership)**:
+- Treat Copilot review as auto-triggered on PR creation by default.
+- Do **not** manually trigger or re-trigger Copilot review unless the human explicitly asks for it in-session.
+- If a manual trigger may be needed (stale review, missing review event, or post-fix re-check), surface a one-line request to the human and wait for approval before executing.
+
 <a name="subagent-commit-authority"></a>
 ### Subagent Commit Authority
 
@@ -1127,6 +1132,8 @@ uv run pre-commit install --hook-type pre-push
 ```
 
 **CI must pass before requesting or re-requesting Copilot review.** After every push, run `gh run list --limit 3` and wait for green before reviewing.
+
+**Copilot review trigger policy**: default to auto-trigger on PR creation; manual trigger/re-trigger is human-gated and requires explicit in-session approval.
 
 ---
 
