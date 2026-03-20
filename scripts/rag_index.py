@@ -52,7 +52,8 @@ Usage:
     uv run python scripts/rag_index.py query --query "values" --filter-scope dogma
     uv run python scripts/rag_index.py query --query "values" --allow-federation --federation-reason "cross-scope audit"
     uv run python scripts/rag_index.py status --freshness-seconds 3600
-    uv run python scripts/rag_index.py health --freshness-seconds 600 --pending-backlog 10 --consecutive-failures 0 --mismatch-rate 0.0
+    uv run python scripts/rag_index.py health --freshness-seconds 600 \
+        --pending-backlog 10 --consecutive-failures 0 --mismatch-rate 0.0
     uv run python scripts/rag_index.py local-test --test-tier standard --probe-query "programmatic"
     uv run python scripts/rag_index.py adoption-gate --enforcement-level hard
 
