@@ -78,6 +78,11 @@ from typing import Any
 
 import yaml
 
+try:
+    import litellm
+except ImportError:
+    litellm = None
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 INDEX_DIR = REPO_ROOT / "rag-index"
 INDEX_DB_PATH = INDEX_DIR / "rag_index.sqlite3"
@@ -1052,28 +1057,101 @@ def adoption_gate_report(*, enforcement_level: str = "medium", db_path: Path = I
     }
 
 
-def _print_output(payload: dict[str, Any], output: str) -> None:
+def answer_query(
+    query: str,
+    *,
+    model: str = "ollama/phi3",
+    template_path: Path = REPO_ROOT / "docs/templates/rag_answer.md",
+    top_k: int = 5,
+    db_path: Path = INDEX_DB_PATH,
+) -> dict[str, Any]:
+    """Perform retrieval and generate a grounded answer using LiteLLM."""
+    if litellm is None:
+        raise RagIndexError("litellm is not installed. Install with 'uv pip install litellm'.")
+
+    if not template_path.exists():
+        raise RagIndexError(f"Answer template not found at {template_path}")
+
+    retrieval = query_index(query, top_k=top_k, db_path=db_path)
+    if not retrieval["ok"]:
+        return retrieval
+
+    context_blocks = []
+    for res in retrieval["results"]:
+        block = (
+            f"Source: {res['source_file']}\n"
+            f"Range: L{res['start_line']}-L{res['end_line']}\n"
+            f"Heading: {res['heading']}\n"
+            f"Content:\n{res['content']}"
+        )
+        context_blocks.append(block)
+
+    context_str = "\n\n---\n\n".join(context_blocks)
+    template = template_path.read_text(encoding="utf-8")
+    prompt = template.replace("{{context_chunks}}", context_str).replace("{{query}}", query)
+
+    # Note: Using ollama/phi3 as default per Wave 1 Phase 6 constraints.
+    # Local-Compute-First: Ollama is preferred over external APIs.
+    # Algorithms-Before-Tokens: Prompt is template-driven, not interactive-tweaked.
+    try:
+        response = litellm.completion(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        answer = response.choices[0].message.content
+    except Exception as exc:
+        if "ServiceUnavailableError" in type(exc).__name__:
+            raise RagIndexError(
+                "Ollama/Model service is not running. Start it with 'ollama serve' or check 'ollama list'."
+            ) from exc
+        raise RagIndexError(f"LiteLLM completion failed: {exc}") from exc
+
+    return {
+        "ok": True,
+        "query": query,
+        "model": model,
+        "answer": answer,
+        "retrieval": {
+            "count": retrieval["count"],
+            "sources": [res["source_file"] for res in retrieval["results"]],
+        },
+    }
+
+
+def _print_output(payload: dict[str, Any], output: str, file: Any = sys.stdout) -> None:
     if output == "json":
-        print(json.dumps(payload, indent=2))
+        print(json.dumps(payload, indent=2), file=file)
+        return
+
+    if "answer" in payload:
+        print(f"QUERY: {payload['query']}", file=file)
+        print(f"MODEL: {payload['model']}", file=file)
+        print("\n" + "=" * 20 + " ANSWER " + "=" * 20 + "\n", file=file)
+        print(payload["answer"], file=file)
+        print("\n" + "=" * 20 + " SOURCES " + "=" * 20 + "\n", file=file)
+        for src in payload["retrieval"]["sources"]:
+            print(f"- {src}", file=file)
         return
 
     if "results" in payload:
         if not payload.get("results"):
-            print("No results.")
+            print("No results.", file=file)
             return
         for row in payload["results"]:
-            print(f"{row['source_file']}:{row['start_line']}-{row['end_line']} [{row['heading']}]")
-            print(row["content"][:220])
-            print()
+            print(f"{row['source_file']}:{row['start_line']}-{row['end_line']} [{row['heading']}]", file=file)
+            print(row["content"][:220], file=file)
+            print(file=file)
         return
 
     for key, value in payload.items():
-        print(f"{key}: {value}")
+        print(f"{key}: {value}", file=file)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Local retrieval index (Phase 2 core substrate).")
-    parser.add_argument("command", choices=["reindex", "query", "status", "health", "local-test", "adoption-gate"])
+    parser.add_argument(
+        "command", choices=["reindex", "query", "status", "health", "local-test", "adoption-gate", "answer"]
+    )
     parser.add_argument("--output", default="json", choices=["json", "text"])
 
     parser.add_argument("--scope", default="incremental", choices=sorted(VALID_SCOPE))
@@ -1093,6 +1171,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--test-tier", default="quick")
     parser.add_argument("--probe-query", default="governance")
     parser.add_argument("--enforcement-level", default="medium")
+    parser.add_argument("--model", default="ollama/phi3")
+    parser.add_argument("--template-path", type=Path)
 
     args = parser.parse_args(argv)
 
@@ -1100,7 +1180,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "reindex":
             payload = reindex(scope=args.scope, dry_run=args.dry_run)
             if not payload.get("ok"):
-                print(json.dumps(payload, indent=2), file=sys.stderr)
+                _print_output(payload, args.output, file=sys.stderr)
                 return 1
             _print_output(payload, args.output)
             return 0
@@ -1116,6 +1196,21 @@ def main(argv: list[str] | None = None) -> int:
                 allow_federation=args.allow_federation,
                 federation_reason=args.federation_reason,
             )
+            _print_output(payload, args.output)
+            return 0
+
+        if args.command == "answer":
+            if not args.query:
+                parser.error("--query is required for answer")
+            payload = answer_query(
+                args.query,
+                model=args.model,
+                template_path=args.template_path or (REPO_ROOT / "docs/templates/rag_answer.md"),
+                top_k=args.top_k,
+            )
+            if not payload.get("ok"):
+                _print_output(payload, args.output, file=sys.stderr)
+                return 1
             _print_output(payload, args.output)
             return 0
 
