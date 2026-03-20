@@ -83,11 +83,11 @@ Decision aggregation rule:
 
 | Artifact ID | Required content | Location |
 |---|---|---|
-| E1 | Baseline run log and commands | TODO |
-| E2 | Pilot run logs for S1-S3 | TODO |
-| E3 | Scoped query and canary leak audit output | TODO |
-| E4 | Failure injection and recovery evidence | TODO |
-| E5 | Final metric worksheet and decision worksheet | TODO |
+| E1 | Baseline run log and commands | docs/plans/evidence/rag-sprint-2/e1-baseline-run.json |
+| E2 | Pilot run logs for S1-S3 | docs/plans/evidence/rag-sprint-2/e2-scenario-runs.json |
+| E3 | Scoped query and canary leak audit output | docs/plans/evidence/rag-sprint-2/e3-scope-audit.json |
+| E4 | Failure injection and recovery evidence | docs/plans/evidence/rag-sprint-2/e4-drift-recovery.json |
+| E5 | Final metric worksheet and decision worksheet | docs/plans/evidence/rag-sprint-2/e5-metrics-and-decision.md |
 
 ## Execution Log
 
@@ -99,10 +99,13 @@ Decision aggregation rule:
   - Environment (OS/Python/tool versions): TODO
 - Start timestamp: TODO
 - Commands executed:
-  - TODO
+  - `uv run python scripts/rag_index.py reindex --scope full --output json`
+  - `uv run python scripts/rag_index.py status --output json`
+  - `uv run python scripts/rag_index.py query --query "programmatic first" --top-k 5 --filter-scope dogma --output json`
+  - `uv run python scripts/rag_index.py local-test --test-tier quick --probe-query "programmatic first" --output json`
 - Outcome: TODO
 - Observations: TODO
-- Evidence links: TODO
+- Evidence links: E1, E2 (S1 section), E3
 
 ### S2 - Partial configuration run
 
@@ -112,10 +115,13 @@ Decision aggregation rule:
   - Environment (OS/Python/tool versions): TODO
 - Start timestamp: TODO
 - Commands executed:
-  - TODO
+  - `uv run python scripts/rag_index.py status --output json`
+  - `uv run python scripts/rag_index.py health --freshness-seconds 600 --pending-backlog 150 --consecutive-failures 3 --mismatch-rate 0.003 --output json`
+  - `uv run python scripts/rag_index.py local-test --test-tier standard --probe-query "programmatic first" --output json`
+  - `uv run python scripts/rag_index.py adoption-gate --enforcement-level medium --output json`
 - Outcome: TODO
 - Observations: TODO
-- Evidence links: TODO
+- Evidence links: E2 (S2 section), E3, E5
 
 ### S3 - Drift/failure injection run
 
@@ -124,13 +130,24 @@ Decision aggregation rule:
   - Index snapshot/version: TODO
   - Environment (OS/Python/tool versions): TODO
 - Start timestamp: TODO
-- Failure injected: TODO
+- Failure injected: index version mismatch (forced downgrade in local sqlite meta table)
 - Commands executed:
-  - TODO
-- Fail signal: TODO
-- Recovery signal: TODO
+  - `uv run python -c "import sqlite3; conn=sqlite3.connect('rag-index/rag_index.sqlite3'); conn.execute(\"UPDATE meta SET value='old-version' WHERE key='index_version'\"); conn.commit(); conn.close()"`
+  - `uv run python scripts/rag_index.py query --query "programmatic first" --output json`
+  - `uv run python scripts/rag_index.py reindex --scope full --output json`
+  - `uv run python scripts/rag_index.py query --query "programmatic first" --output json`
+  - `uv run python scripts/rag_index.py adoption-gate --enforcement-level hard --output json`
+- Fail signal: query command exits non-zero and reports index version mismatch before recovery reindex
+- Recovery signal: full reindex exits zero, subsequent query returns non-empty result set, adoption-gate hard returns passed=true
 - Observations: TODO
-- Evidence links: TODO
+- Evidence links: E2 (S3 section), E4, E5
+
+Failure verification checklist (must all pass):
+
+- [ ] Pre-recovery query command produced non-zero exit code
+- [ ] Pre-recovery output/stderr includes version mismatch indicator
+- [ ] Post-recovery full reindex succeeded with exit code 0
+- [ ] Post-recovery query succeeded with exit code 0 and count >= 1
 
 ## Effectiveness Verdict
 
