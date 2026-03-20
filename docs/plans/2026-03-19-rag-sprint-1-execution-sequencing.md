@@ -44,7 +44,7 @@ Phase 1 output:
 Phase 2 output:
 - [2026-03-19-rag-sprint-1-phase2-dependency-slice.md](./2026-03-19-rag-sprint-1-phase2-dependency-slice.md)
 
-### Phase 3 — Execution Validation Contract ⬜
+### Phase 3 — Execution Validation Contract ✅
 **Agent**: Executive Scripter + Test Coordinator
 **Deliverables**:
 - Map each execution phase to required validation commands (tests, lint, substrate checks).
@@ -53,9 +53,12 @@ Phase 2 output:
 
 **Depends on**: Phase 2
 **CI**: Tests, Auto-validate, Lint
-**Status**: Not started
+**Status**: Complete
 
-### Phase 4 — Sprint 1 Kickoff Packet ⬜
+Phase 3 output:
+- [2026-03-19-rag-sprint-1-phase3-validation-contract.md](./2026-03-19-rag-sprint-1-phase3-validation-contract.md)
+
+### Phase 4 — Sprint 1 Kickoff Packet ✅
 **Agent**: Executive Docs
 **Deliverables**:
 - Publish an execution kickoff packet under docs/plans linking sequencing, validation contract, and gate criteria.
@@ -64,14 +67,17 @@ Phase 2 output:
 
 **Depends on**: Phase 3
 **CI**: Tests, Auto-validate, Lint
-**Status**: Not started
+**Status**: Complete
 
-### Phase 5 — Review, Commit, and Handoff ⬜
+Phase 4 draft output:
+- [2026-03-19-rag-sprint-1-phase4-kickoff-packet.md](./2026-03-19-rag-sprint-1-phase4-kickoff-packet.md)
+
+### Phase 5 — Commit and Handoff ⬜
 **Agent**: Executive Orchestrator + Review
 **Deliverables**:
 - Fleet integration (if adding new agents/skills: run `uv run python scripts/check_fleet_integration.py --dry-run`)
 - Session close (archive session, update scratchpad summary, push branch)
-- Run Review gate on all changed planning/governance files with explicit verdict logging.
+- Confirm final Review verdict is APPROVED for changed planning/governance files.
 - Commit and push Sprint 1 execution-sequencing outputs.
 - Publish session-end issue progress comments and next-session orientation prompt.
 
@@ -83,10 +89,10 @@ Phase 2 output:
 
 ## Acceptance Criteria
 
-- [ ] Post-merge issue states are synchronized and verifiable by `gh issue view <num> --json body` for #8 and #15-#20, and each body includes link-outs to the controlling artifacts: `docs/plans/2026-03-19-rag-sprint-planning-rg4-reentry-update.md` and `docs/plans/2026-03-19-rag-sprint-1-execution-sequencing.md`.
-- [ ] Sprint 1 execution sequence is documented with explicit dependencies and phase gates in this file with no placeholder phase names.
-- [ ] Validation contract includes concrete command-level checks and binary pass/fail signals for each planned phase.
-- [ ] Kickoff packet is published in `docs/plans/` and linked from all active Sprint 1 issues (#8, #15-#20).
+- [x] Post-merge issue states are synchronized and verifiable by `gh issue view <num> --json body` for #8 and #15-#20, and each body includes link-outs to the controlling artifacts: `docs/plans/2026-03-19-rag-sprint-planning-rg4-reentry-update.md` and `docs/plans/2026-03-19-rag-sprint-1-execution-sequencing.md`.
+- [x] Sprint 1 execution sequence is documented with explicit dependencies and phase gates in this file with no placeholder phase names.
+- [x] Validation contract includes concrete command-level checks and binary pass/fail signals for each planned phase.
+- [x] Kickoff packet is published in `docs/plans/` and linked from all active Sprint 1 issues (#8, #15-#20).
 - [ ] Branch is pushed, PR exists, and latest CI checks are green (`gh run list --limit 3`).
 
 ## PR Description Template
