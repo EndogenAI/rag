@@ -1,3 +1,19 @@
+# [0.3.0](https://github.com/EndogenAI/rag/compare/v0.2.0...v0.3.0) (2026-03-20)
+
+
+### Bug Fixes
+
+* **rag:** address latest PR review feedback ([ba612fa](https://github.com/EndogenAI/rag/commit/ba612fad4ba66d4d6be54eb17f023e2f5fcb3908))
+
+
+### Features
+
+* **scripts:** add rag health, local-test, and adoption gates ([2f16720](https://github.com/EndogenAI/rag/commit/2f1672036856eeb24e48ef8d5d5fafd97a243ee9))
+* **scripts:** add segmented query topology gate ([a067b11](https://github.com/EndogenAI/rag/commit/a067b116fc60ea0695e9fab2a461f92a6c6ec4ba))
+* **scripts:** enforce rag scope contract metadata ([44d21e9](https://github.com/EndogenAI/rag/commit/44d21e9f7f64573607f83f86ee99bee8298147d6))
+
+
+
 # [0.2.0](https://github.com/EndogenAI/rag/compare/v0.1.0...v0.2.0) (2026-03-19)
 
 
