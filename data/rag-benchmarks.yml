@@ -2,27 +2,95 @@ test_cases:
   - id: t1_commit_format
     tier: 1
     query: "What is the commit message format and what are the allowed types?"
+    reasoning_category: "entity_extraction"
     expected_entities: ["feat", "fix", "docs", "chore", "test", "refactor", "ci", "perf"]
     expected_source: "CONTRIBUTING.md"
 
   - id: t1_heredoc_prohibition
     tier: 1
     query: "What is the rule regarding the use of heredocs for writing file content?"
+    reasoning_category: "entity_extraction"
     expected_patterns: ["NEVER use heredocs", "replace_string_in_file", "create_file"]
     expected_source: "AGENTS.md"
 
-  - id: t2_subagent_commit
-    tier: 2
-    query: "Who is authorized to commit to the repository, and which agents are prohibited from doing so?"
-    expected_entities: ["Executive Orchestrator", "Executive Docs", "GitHub Agent"]
-    expected_patterns: ["Subagents do not invoke GitHub agent directly"]
+  - id: t1_terminal_io_prohibition
+    tier: 1
+    query: "What file operations should I never perform using terminal commands?"
+    reasoning_category: "negation_prohibition"
+    expected_patterns: ["heredocs", "terminal I/O redirection", "create_file", "replace_string_in_file"]
     expected_source: "AGENTS.md"
+
+  - id: t2_research_delegation
+    tier: 2
+    query: "If I'm working on a research task, which agent should I delegate to, and what tools does that agent have access to?"
+    reasoning_category: "multi_hop_reasoning"
+    expected_entities: ["Executive Researcher", "Research Scout", "Synthesizer"]
+    judge_rubric: "Award 1.0 if answer names Executive Researcher and lists tools from its .agent.md file (search, read, agent). Award 0.5 if agent is correct but tools are incomplete/wrong. Award 0.0 if wrong agent or no tool list."
+    expected_source: ".github/agents/executive-researcher.agent.md"
+
+  - id: t2_skill_invocation
+    tier: 2
+    query: "I need to create a new session scratchpad and write an encoding checkpoint. What skills or procedures should I follow, and what script do I run?"
+    reasoning_category: "multi_hop_reasoning"
+    expected_entities: ["session-management", "prune_scratchpad.py", "Session Start"]
+    judge_rubric: "Award 1.0 if answer mentions session-management skill, prune_scratchpad.py --init, and encoding checkpoint at ## Session Start. Award 0.5 if 2/3 elements present. Award 0.0 if only 1 or none."
+    expected_source: ".github/skills/session-management/SKILL.md"
+
+  - id: t2_subagent_commit_prohibition
+    tier: 2
+    query: "Can a subagent commit directly to the repository if the Review agent has approved their changes?"
+    reasoning_category: "constraint_resolution"
+    expected_patterns: ["Subagents do not invoke GitHub agent directly", "only executives commit"]
+    judge_rubric: "Award 1.0 if answer is 'No' and explains subagents must route through executives even after approval. Award 0.5 if answer is 'No' but explanation is incomplete. Award 0.0 if answer is 'Yes' or missing prohibition."
+    expected_source: "AGENTS.md"
+
+  - id: t2_tool_restriction
+    tier: 2
+    query: "The Research Scout agent wants to fetch an external URL. According to its posture, is it allowed to use the terminal tool?"
+    reasoning_category: "constraint_resolution"
+    expected_patterns: ["read + create", "web", "no terminal"]
+    judge_rubric: "Award 1.0 if answer is 'No' and cites read + create posture (web allowed, terminal not). Award 0.5 if 'No' but reasoning unclear. Award 0.0 if 'Yes' or no posture reference."
+    expected_source: ".github/agents/research-scout.agent.md"
+
+  - id: t2_timeout_calculation
+    tier: 2
+    query: "If I run a benchmark on a model that takes 60 seconds per query, and I have 4 queries, will I stay under the 5-minute total ceiling for blocking operations?"
+    reasoning_category: "quantitative_reasoning"
+    expected_entities: ["60s", "4 queries", "300s", "240s"]
+    judge_rubric: "Award 1.0 if answer is 'Yes' with calculation (4 × 60s = 240s < 300s). Award 0.5 if 'Yes' but calculation missing or wrong. Award 0.0 if 'No' or no arithmetic shown."
+    expected_source: "AGENTS.md"
+
+  - id: t2_review_disambiguation
+    tier: 2
+    query: "What does 'review' mean in the context of a phase gate, and how is it different from a PR review?"
+    reasoning_category: "contextual_disambiguation"
+    expected_patterns: ["Review agent", "inter-phase checkpoint", "GitHub PR review", "Copilot review"]
+    judge_rubric: "Award 1.0 if answer distinguishes Review agent (phase gate validator) from GitHub/Copilot PR review with context markers. Award 0.5 if definitions present but distinction unclear. Award 0.0 if conflated or only one definition."
+    expected_source: "AGENTS.md"
+
+  - id: t2_research_workflow
+    tier: 2
+    query: "What is the full workflow for starting a multi-phase research session from scratch?"
+    reasoning_category: "cross_document_synthesis"
+    expected_patterns: ["prune_scratchpad.py --init", "Session Start", "workplan", "Executive Researcher", "Scout", "Synthesizer"]
+    judge_rubric: "Award 1.0 if answer synthesizes: (1) scratchpad init, (2) encoding checkpoint, (3) workplan creation, (4) delegation chain. Award 0.5 if 2-3 steps present. Award 0.0 if only 1 step or workflow is wrong."
+    expected_source: "AGENTS.md, session-management SKILL.md, research-epic-planning SKILL.md"
+
+  - id: t2_commit_workflow
+    tier: 2
+    query: "Walk me through the complete sequence from making a code change to getting it merged, including all required gates and agents."
+    reasoning_category: "cross_document_synthesis"
+    expected_patterns: ["Review agent", "GitHub Agent", "commit", "CI", "Copilot review", "merge"]
+    judge_rubric: "Award 1.0 if answer includes: (1) Review agent validates, (2) GitHub Agent commits, (3) CI passes, (4) PR created, (5) Copilot review triggers, (6) merge. Award 0.5 if 3-4 gates present. Award 0.0 if <3 gates or wrong order."
+    expected_source: "AGENTS.md, docs/guides/github-workflow.md"
 
   - id: t2_orchestration_cycle
     tier: 2
     query: "Describe the mandatory 6-step inter-phase checkpoint sequence."
+    reasoning_category: "cross_document_synthesis"
     expected_patterns: ["prune", "checkpoint", "commit", "grep sweep", "review", "compact"]
-    expected_source: "AGENTS.md"
+    judge_rubric: "Award 1.0 if all 6 steps named in order. Award 0.5 if 4-5 steps or wrong order. Award 0.0 if <4 steps."
+    expected_source: "AGENTS.md, phase-gate-sequence SKILL.md"
 
 # Study 2a Phase 2 Benchmark Results — 2026-03-20
 results:
