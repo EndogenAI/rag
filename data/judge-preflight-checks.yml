@@ -1,0 +1,33 @@
+version: "1.0.0"
+preflights:
+  - id: entity_presence
+    description: Check if expected entities appear in answer
+    check_type: pattern_match
+    signal_name: entity_hit_rate
+    signal_type: float  # 0.0-1.0
+    
+  - id: pattern_presence
+    description: Check if expected patterns appear in answer
+    check_type: pattern_match
+    signal_name: pattern_hit_rate
+    signal_type: float  # 0.0-1.0
+    
+  - id: answer_substantiveness
+    description: Minimum token count threshold
+    check_type: length
+    threshold: 20
+    signal_name: is_substantive
+    signal_type: bool
+    
+  - id: source_citation
+    description: Does answer reference source documents?
+    check_type: pattern_match
+    patterns: [".md", "docs/", "scripts/", "AGENTS.md", "MANIFESTO.md"]
+    signal_name: cites_source
+    signal_type: bool
+    
+  - id: retrieved_chunks_used
+    description: Non-empty retrieval payload
+    check_type: existence
+    signal_name: has_chunks
+    signal_type: bool

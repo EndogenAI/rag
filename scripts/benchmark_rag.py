@@ -244,13 +244,14 @@ def run_rag_answer(query: str, model: str, top_k: int = 10, template_path: str =
         return {"ok": False, "error": "Invalid JSON output"}
 
 
-def evaluate_response(answer: str, test_case: dict, judge_model: str = None) -> dict:
+def evaluate_response(answer: str, test_case: dict, judge_model: str = None, retrieved_chunks: list = None) -> dict:
     """Evaluate a RAG answer against expected patterns and entities.
 
     Args:
         answer: The RAG system's answer
         test_case: Test case dict with expected entities, patterns, judge_rubric
         judge_model: Optional LiteLLM model string for tier-2 LLM-as-judge eval
+        retrieved_chunks: Optional list of retrieved source files/chunks (for preflight checks)
 
     Returns:
         Dict with metrics including overall_score
@@ -259,7 +260,7 @@ def evaluate_response(answer: str, test_case: dict, judge_model: str = None) -> 
 
     # Route tier-2 queries to judge if available
     if tier == 2 and judge_model and test_case.get("judge_rubric"):
-        return evaluate_with_judge(answer, test_case, judge_model)
+        return evaluate_with_judge(answer, test_case, judge_model, retrieved_chunks)
 
     # Tier-1: Pattern matching evaluation (fallback for tier-2 if no judge)
     metrics = {
@@ -305,16 +306,82 @@ def evaluate_response(answer: str, test_case: dict, judge_model: str = None) -> 
     return metrics
 
 
-def evaluate_with_judge(answer: str, test_case: dict, judge_model: str) -> dict:
+def load_judge_template() -> str:
+    """Load the judge prompt template from data/judge-prompt-template.md.
+
+    Returns:
+        Template string with placeholders: {query}, {answer}, {rubric}, {preflight_signals}
+    """
+    template_path = REPO_ROOT / "data" / "judge-prompt-template.md"
+    with open(template_path, "r") as f:
+        content = f.read()
+
+    # Extract template body from markdown code fence
+    import re
+
+    match = re.search(r"```\n(.*?)\n```", content, re.DOTALL)
+    if not match:
+        raise ValueError("Could not extract template body from judge-prompt-template.md")
+
+    return match.group(1).strip()
+
+
+def run_preflight_checks(answer: str, test_case: dict, retrieved_chunks: list) -> dict:
+    """Run programmatic preflight checks before judge evaluation.
+
+    Args:
+        answer: RAG system's generated response
+        test_case: Test case dict with expected entities/patterns
+        retrieved_chunks: List of retrieved source filenames or chunks
+
+    Returns:
+        Dict with preflight signals: {entity_hit_rate, pattern_hit_rate, is_substantive,
+        cites_source, has_chunks}
+    """
+    signals = {}
+
+    # 1. Entity presence (0.0-1.0)
+    entities = test_case.get("expected_entities", [])
+    if entities:
+        hits = sum(1 for e in entities if e.lower() in answer.lower())
+        signals["entity_hit_rate"] = round(hits / len(entities), 2)
+    else:
+        signals["entity_hit_rate"] = 0.0
+
+    # 2. Pattern presence (0.0-1.0)
+    patterns = test_case.get("expected_patterns", [])
+    if patterns:
+        hits = sum(1 for p in patterns if p.lower() in answer.lower())
+        signals["pattern_hit_rate"] = round(hits / len(patterns), 2)
+    else:
+        signals["pattern_hit_rate"] = 0.0
+
+    # 3. Answer substantiveness (bool)
+    # Simple token count heuristic (20 tokens ~= 15-20 words)
+    token_count = len(answer.split())
+    signals["is_substantive"] = token_count >= 20
+
+    # 4. Source citation (bool)
+    citation_patterns = [".md", "docs/", "scripts/", "AGENTS.md", "MANIFESTO.md"]
+    signals["cites_source"] = any(p in answer for p in citation_patterns)
+
+    # 5. Retrieved chunks used (bool)
+    signals["has_chunks"] = len(retrieved_chunks) > 0
+
+    return signals
+
+
+def evaluate_with_judge(answer: str, test_case: dict, judge_model: str, retrieved_chunks: list = None) -> dict:
     """Evaluate a RAG answer using an LLM-as-judge with a rubric.
 
     Args:
         answer: The RAG system's answer
         test_case: Test case dict with query, judge_rubric
         judge_model: LiteLLM model string (e.g., "ollama/phi3")
+        retrieved_chunks: List of retrieved source files/chunks (for preflight checks)
 
     Returns:
-        Dict with overall_score (0.0-1.0) and judge_reasoning
+        Dict with overall_score (0.0-1.0), judge_reasoning, and preflight_signals
     """
     if litellm is None:
         print("WARNING: litellm not installed, falling back to pattern matching", file=sys.stderr)
@@ -323,7 +390,19 @@ def evaluate_with_judge(answer: str, test_case: dict, judge_model: str) -> dict:
     query = test_case["query"]
     rubric = test_case.get("judge_rubric", "")
 
-    judge_prompt = f"""Score this RAG answer on a 0-1 scale:
+    # Run preflight checks
+    if retrieved_chunks is None:
+        retrieved_chunks = []
+    preflight_signals = run_preflight_checks(answer, test_case, retrieved_chunks)
+
+    # Load template and format prompt
+    try:
+        template = load_judge_template()
+        signals_yaml = yaml.dump(preflight_signals, default_flow_style=False)
+        judge_prompt = template.format(query=query, answer=answer, rubric=rubric, preflight_signals=signals_yaml)
+    except Exception as e:
+        print(f"WARNING: Template load failed ({e}), using inline prompt", file=sys.stderr)
+        judge_prompt = f"""Score this RAG answer on a 0-1 scale:
 
 Question: {query}
 Answer: {answer}
@@ -351,7 +430,12 @@ Return only a score (0.0, 0.5, or 1.0) and brief reasoning."""
             else:
                 score = 0.0
 
-        return {"overall_score": score, "judge_reasoning": judge_text.strip(), "evaluation_method": "llm_judge"}
+        return {
+            "overall_score": score,
+            "judge_reasoning": judge_text.strip(),
+            "evaluation_method": "llm_judge",
+            "preflight_signals": preflight_signals,
+        }
     except Exception as e:
         print(f"WARNING: Judge call failed ({e}), falling back to pattern matching", file=sys.stderr)
         return evaluate_response(answer, test_case, judge_model=None)
@@ -530,7 +614,18 @@ def main():
             print(f"   [FAILED] {payload.get('error')}", flush=True)
 
         answer = payload.get("answer", "")
-        metrics = evaluate_response(answer, tc, judge_model=args.judge_model)
+
+        # Collect detailed query info for JSONL artifact
+        # Note: rag_index.py answer_query returns retrieval.sources (file list),
+        # not full chunk details. retrieved_chunks will be source files only until
+        # answer_query is enhanced to return full chunk metadata.
+        retrieval_data = payload.get("retrieval", {})
+        retrieved_sources = retrieval_data.get("sources", [])
+
+        # Format as list of source filenames (placeholder until full chunks available)
+        chunk_refs = retrieved_sources if isinstance(retrieved_sources, list) else []
+
+        metrics = evaluate_response(answer, tc, judge_model=args.judge_model, retrieved_chunks=chunk_refs)
         metrics["latency_sec"] = duration
         metrics["id"] = tc["id"]
 
@@ -539,13 +634,6 @@ def main():
 
         results["benchmarks"].append(metrics)
         total_score += metrics["overall_score"]
-
-        # Collect detailed query info for JSONL artifact
-        # Note: rag_index.py answer_query returns retrieval.sources (file list),
-        # not full chunk details. retrieved_chunks will be source files only until
-        # answer_query is enhanced to return full chunk metadata.
-        retrieval_data = payload.get("retrieval", {})
-        retrieved_sources = retrieval_data.get("sources", [])
 
         # Format as list of source filenames (placeholder until full chunks available)
         chunk_refs = retrieved_sources if isinstance(retrieved_sources, list) else []
@@ -566,6 +654,11 @@ def main():
             },
             "machine_metadata": machine_metadata,
         }
+
+        # Include preflight_signals if judge was used
+        if "preflight_signals" in metrics:
+            query_detail["preflight_signals"] = metrics["preflight_signals"]
+
         query_details.append(query_detail)
 
     avg_score = total_score / len(test_cases) if test_cases else 0
