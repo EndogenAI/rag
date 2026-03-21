@@ -19,7 +19,7 @@ Small models (<4B parameters) require explicit reasoning scaffolds (BDI tags, ve
 Model size (parameter count) correlates with synthesis accuracy more strongly than quantization level in the 3.8B–8B parameter range. A 4-bit quantized 8B model will outperform an 8-bit quantized 4B model.
 
 **2aH3: Model Family Architecture Effects**
-Qwen model family will demonstrate measurably different efficiency characteristics (latency, memory footprint, accuracy) compared to Llama/Phi families at equivalent parameter counts, due to architectural differences in attention mechanisms and tokenization.
+Qwen model family will demonstrate measurably different efficiency characteristics (latency, memory footprint, accuracy) compared to Mistral/Gemma/TinyLlama/Phi families at equivalent parameter counts, due to architectural differences in attention mechanisms and tokenization.
 
 **2aH4: Governance Boosting Robustness**
 Governance Boosting (SQL rank multiplication for `AGENTS.md` and `MANIFESTO.md`) effectiveness is model-agnostic for models ≥3B parameters. Core dogma files will consistently occupy top-k 1 slot regardless of model selection.
@@ -35,6 +35,11 @@ Governance Boosting (SQL rank multiplication for `AGENTS.md` and `MANIFESTO.md`)
 | Phi-3 | `phi3:mini` | 2.3 | 4-bit | Baseline (prior Reasoning Floor discovery) |
 | Llama 3 | `llama3:8b-instruct-q4_K_M` | 4.9 | 4-bit | Quantization reference |
 | Llama 3 | `llama3:latest` | ~8 | 8-bit | High-fidelity reference |
+| Gemma 2 | `gemma2:2b` | 1.6 | 4-bit | Modern small-model reasoning |
+| Mistral | `mistral:7b` | 4.1 | 4-bit | Standard 7B family baseline |
+| TinyLlama | `tinyllama:1.1b` | 0.6 | 4-bit | Ultra-lightweight reasoning test |
+| Gemma | `gemma:2b` | 1.6 | 4-bit | Older baseline comparison |
+| Orca Mini | `orca-mini:3b` | 2.0 | 4-bit | Microsoft/Open-Source reasoning variant |
 
 **Exclusions**: `qwen:14b`, `qwen:72b` (will cause machine lockup on 16GB hardware).
 
@@ -44,7 +49,7 @@ This study varies the following dimensions:
 
 1. **Model Size** — 0.5B to 8B parameters
 2. **Quantization Level** — 4-bit vs 8-bit (Llama 3 pair only)
-3. **Model Family** — Qwen, Phi-3, Llama 3
+3. **Model Family** — Qwen, Phi-3, Llama 3, Mistral, Gemma, TinyLlama, Orca Mini
 4. **Prompt Scaffolding** — Minimalist vs BDI-tagged (reasoning scaffold test)
 5. **Governance Boosting** — SQL rank multiplication on/off (robustness test)
 
@@ -56,6 +61,7 @@ Each hypothesis has one measurable acceptance criterion:
 2. **2aH2 (Size vs Quantization)**: Llama 3 4-bit (4.9GB) accuracy > Phi-3 8-bit (hypothetical) by ≥0.05
 3. **2aH3 (Model Family)**: Qwen 4B vs Phi-3 Mini latency differs by ≥15% OR accuracy differs by ≥0.08
 4. **2aH4 (Governance Boosting)**: `AGENTS.md` and `MANIFESTO.md` occupy top-k 1 slot in ≥95% of queries across all models ≥3B
+5. **Dry-Run Validation**: Successful completion of a full sequential loop using `--dry-run` (verified logs, no RAM lockup or inference burn) is a hard gate for Phase 2.
 
 ## Phase Structure
 
@@ -63,21 +69,22 @@ Each hypothesis has one measurable acceptance criterion:
 - **Deliverables**: This workplan document; hypothesis definition; model matrix; acceptance criteria
 - **Gate**: Review agent validation
 
-### Phase 1: Script Hardening
+### Phase 1: Script Hardening & Dry-Run Validation
 - **Deliverables**: 
-  - Update `scripts/benchmark_rag.py` to support `--governance-boost-off` flag
-  - Add `--template-path` support for BDI-tagged vs minimalist prompts
-  - Verify `ollama ps` clean state before each run
+  - Update `scripts/benchmark_rag.py` to support `--governance-boost-off` and `--dry-run` flags.
+  - Implement `--dry-run` to exercise full sequential loop, pre-flight checks, and telemetry logging without performing actual inference burn.
+  - Add `--template-path` support for BDI-tagged vs minimalist prompts.
+  - Verify `ollama ps` clean state before each run.
 - **Dependencies**: Existing `scripts/benchmark_rag.py`
-- **Gate**: Test run on single model (e.g., `phi3:mini`) produces valid JSON output
+- **Gate**: Successful `--dry-run` execution on a model subset (no RAM lockup, valid telemetry logs).
 
 ### Phase 2: Benchmark Sweep
 - **Deliverables**: 
   - Pull all models in matrix: `ollama pull <tag>` for each
-  - Execute benchmark runs (7 models × 2 prompt variants × 2 governance states = 28 runs)
+  - Execute benchmark runs (12 models × 2 prompt variants × 2 governance states = 48 runs)
   - Capture results in `data/rag-benchmarks.yml`
 - **Dependencies**: Phase 1 (script ready); disk space ≥14GB free
-- **Gate**: All 28 runs complete; no OOM crashes; results parseable
+- **Gate**: All 48 runs complete; no OOM crashes; results parseable
 
 ### Phase 3: Synthesis & Archival
 - **Deliverables**: 

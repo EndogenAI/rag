@@ -115,6 +115,7 @@ Re-deriving command syntax or re-encountering known failure modes each session w
 | `ruff` (lint/format) | [`docs/toolchain/ruff.md`](docs/toolchain/ruff.md) |
 | `git` | [`docs/toolchain/git.md`](docs/toolchain/git.md) |
 | `pytest` | [`docs/toolchain/pytest.md`](docs/toolchain/pytest.md) |
+| `ollama` (local model serving) | [`docs/toolchain/ollama.md`](docs/toolchain/ollama.md) |
 
 To refresh the auto-generated raw reference cache: `uv run python scripts/fetch_toolchain_docs.py --tool all --check`
 
@@ -356,6 +357,40 @@ After launching a service, verify health via its status API — do not treat a z
 | Docker container | `docker inspect --format '{{.State.Health.Status}}' <name>` | `healthy` |
 | Ollama | `curl -sf http://localhost:11434/` | `Ollama is running` |
 | Local HTTP service | `curl -sf http://localhost:<port>/health` | exit 0 |
+
+### Ollama Model Management
+
+**Never use `ollama run <model>`** — it pins the model in RAM for the lifetime of the terminal session. On constrained hardware (≤16 GB), two concurrently-pinned models cause OOM swap or crash. The Ollama daemon auto-loads models on first API request and auto-unloads them when idle; there is never a need to pre-pin a model with `ollama run`.
+
+**Pre-benchmark checklist** (run before any `benchmark_rag.py` invocation):
+
+```bash
+# 1. Verify no model is currently pinned
+ollama ps   # should show an empty table
+
+# 2. If a model is pinned, unload it
+ollama stop <model-name>
+
+# 3. Check available disk space (need ≥ model_size + 2 GB headroom)
+df -h /
+```
+
+**Disk space management** — models accumulate quickly. When disk is tight, remove unused models temporarily and re-pull later:
+
+```bash
+# List all downloaded models with sizes
+ollama list
+
+# Remove a model to free disk (re-pull with `ollama pull <model>` when needed)
+ollama rm <model-name>
+```
+
+**Rule of thumb for MacBook Air (16 GB RAM, <20 GB free disk):**
+- Keep at most **two quantized models** on disk simultaneously during an active sweep
+- Remove the larger baseline model before pulling a new quantized variant
+- Always confirm with `ollama ps` that the previous model is unloaded before starting the next benchmark run
+
+Full reference: [`docs/toolchain/ollama.md`](docs/toolchain/ollama.md)
 
 ### Substrate Note
 
@@ -1154,6 +1189,7 @@ uv run pre-commit install --hook-type pre-push
 - Use heredocs (`cat >> file << 'EOF'` or Python inline `<< 'PYEOF'`) to write Markdown content — backticks, triple-backtick fences, and special characters silently corrupt or truncate output through the terminal tool. **Always use `replace_string_in_file` or `create_file` (the built-in VS Code tools) for any file write that contains Markdown, code blocks, or backtick-containing content.**
 - Use terminal file I/O redirection (`> file`, `>> file`, `| tee file`, `| cat >> file`) in scripts — shell quoting causes interleaving and corruption. **Always use `create_file` or `replace_string_in_file` (the built-in VS Code tools).** Enforced via pre-commit hook `no-terminal-file-io-redirect` (Programmatic-First principle; §75–76).
 - Pass multi-line `gh issue` bodies via `--body "..."` on the command line — shell quoting and backtick interpolation cause `gh` to hang or silently corrupt content. **Always write the body to a temp file and use `--body-file <path>`, or use Python `subprocess` with a list of args.**
+- Use `ollama run <model>` to pre-load a model or interact with it in an active terminal — this pins the model in RAM until the process is killed, preventing other models from loading concurrently. **Use `ollama pull <model>` to fetch a model to disk, and let the API load it on demand. Run `ollama ps` to verify nothing is pinned before a benchmark sweep; run `ollama stop <model>` to release a pinned model.** See [Ollama Model Management](#ollama-model-management).
 
 **Prefer caution over assumption for:**
 
