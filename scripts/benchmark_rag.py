@@ -47,6 +47,8 @@ except ImportError:
 REPO_ROOT = Path(__file__).parent.parent
 BENCHMARK_DATA = REPO_ROOT / "data" / "rag-benchmarks.yml"
 BENCHMARK_RESULTS = REPO_ROOT / ".cache" / "rag-benchmarks"
+ARTIFACT_ROOT = REPO_ROOT / "data" / "benchmark-results"
+INDEX_FILE = ARTIFACT_ROOT / "index.jsonl"
 
 # Minimum free disk space required before benchmarking (bytes)
 _MIN_FREE_DISK_BYTES = 2 * 1024 ** 3  # 2 GB headroom
@@ -240,10 +242,89 @@ def evaluate_response(answer: str, test_case: dict) -> dict:
         
     return metrics
 
+
+def detect_study_id(model: str, tier: int = None) -> str:
+    """Auto-detect study identifier based on model characteristics.
+    
+    Heuristic:
+    - study-2b: models with "0.5b", "2b", "3b" in name (small models)
+    - study-2a: all other models (baseline/larger models)
+    
+    Args:
+        model: LiteLLM model string (e.g., "ollama/phi3" or "ollama/qwen:0.5b")
+        tier: Optional tier filter (1 or 2)
+    
+    Returns:
+        Study identifier string ("study-2a" or "study-2b")
+    """
+    model_lower = model.lower()
+    small_model_indicators = ["0.5b", "2b", "3b", "tinyllama", "orca-mini"]
+    
+    if any(indicator in model_lower for indicator in small_model_indicators):
+        return "study-2b"
+    return "study-2a"
+
+
+def write_jsonl_artifacts(
+    model: str,
+    study_id: str,
+    test_cases: list,
+    results: dict,
+    query_details: list
+) -> tuple[Path, Path]:
+    """Write structured JSONL artifacts for individual model run and update index.
+    
+    Args:
+        model: LiteLLM model string
+        study_id: Study identifier (e.g., "study-2a")
+        test_cases: List of test case dicts
+        results: Aggregate results dict
+        query_details: List of per-query detail dicts (query, response, latency, chunks, etc.)
+    
+    Returns:
+        (model_report_path, index_path): Paths to written artifacts
+    """
+    timestamp = datetime.utcnow().isoformat() + "Z"
+    
+    # Create study directory
+    study_dir = ARTIFACT_ROOT / study_id
+    study_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate model report filename
+    model_tag = model.replace("ollama/", "").replace("/", "-").replace(":", "-")
+    report_filename = f"{model_tag}-{timestamp.replace(':', '-')}.jsonl"
+    report_path = study_dir / report_filename
+    
+    # Write individual model report (one line per query)
+    with open(report_path, "w") as f:
+        for detail in query_details:
+            line = json.dumps(detail, separators=(',', ':'))
+            f.write(line + "\n")
+    
+    # Append to index file
+    INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
+    index_entry = {
+        "timestamp": timestamp,
+        "model": model,
+        "study": study_id,
+        "phase": results.get("tier"),
+        "score_avg": results.get("average_score", 0.0),
+        "latency_avg_sec": sum(d.get("latency_sec", 0) for d in query_details) / len(query_details) if query_details else 0,
+        "queries_total": len(test_cases),
+        "queries_passed": sum(1 for d in query_details if d.get("score", 0) > 0.5),
+        "report_path": f"{study_id}/{report_filename}"
+    }
+    with open(INDEX_FILE, "a") as f:
+        line = json.dumps(index_entry, separators=(',', ':'))
+        f.write(line + "\n")
+    
+    return report_path, INDEX_FILE
+
 def main():
     parser = argparse.ArgumentParser(description="Benchmark RAG models")
     parser.add_argument("--model", required=True, help="LiteLLM model string (e.g. ollama/phi3)")
     parser.add_argument("--tier", type=int, choices=[1, 2], help="Filter by test tier")
+    parser.add_argument("--study-id", help="Study identifier (e.g., study-2a, study-2b). Auto-detected if not specified.")
     parser.add_argument("--top-k", type=int, default=10, help="Retrieval top-k")
     parser.add_argument("--template-path", help="Path to custom prompt template")
     parser.add_argument("--governance-boost-off", action="store_true", help="Disable governance boost in retrieval")
@@ -262,15 +343,20 @@ def main():
         skip_ram_check=args.skip_ram_check,
         dry_run=args.dry_run
     )
+    
+    # Auto-detect study ID if not provided
+    study_id = args.study_id or detect_study_id(args.model, args.tier)
         
     with open(BENCHMARK_DATA, "r") as f:
-        all_tests = yaml.safe_load(f)
+        data = yaml.safe_load(f)
+        all_tests = data.get("test_cases", data) if isinstance(data, dict) else data
         
     test_cases = [t for t in all_tests if args.tier is None or t["tier"] == args.tier]
     
     if args.dry_run:
         print(f"\n=== DRY RUN MODE ===")
         print(f"Model: {args.model}")
+        print(f"Study ID: {study_id}")
         print(f"Tier filter: {args.tier or 'all'}")
         print(f"Top-k: {args.top_k}")
         print(f"Template: {args.template_path or 'default'}")
@@ -279,20 +365,9 @@ def main():
         print(f"\nPlanned inference calls:")
         for i, tc in enumerate(test_cases, 1):
             print(f"  {i}. [{tc['id']}] {tc['query'][:60]}...")
-        print(f"\nDry-run complete — {len(test_cases)} test cases planned, 0 models loaded")
-        return 0
-    
-    if args.dry_run:
-        print(f"\n=== DRY RUN MODE ===")
-        print(f"Model: {args.model}")
-        print(f"Tier filter: {args.tier or 'all'}")
-        print(f"Top-k: {args.top_k}")
-        print(f"Template: {args.template_path or 'default'}")
-        print(f"Governance boost: {'OFF' if args.governance_boost_off else 'ON'}")
-        print(f"Test cases: {len(test_cases)}")
-        print(f"\nPlanned inference calls:")
-        for i, tc in enumerate(test_cases, 1):
-            print(f"  {i}. [{tc['id']}] {tc['query'][:60]}...")
+        print(f"\nArtifact output:")
+        print(f"  Model report: data/benchmark-results/{study_id}/<model>-<timestamp>.jsonl")
+        print(f"  Index: data/benchmark-results/index.jsonl")
         print(f"\nDry-run complete — {len(test_cases)} test cases planned, 0 models loaded")
         return 0
     
@@ -305,8 +380,9 @@ def main():
         "benchmarks": []
     }
     
+    query_details = []  # Collect detailed per-query results for JSONL artifacts
     total_score = 0
-    print(f"Benchmarking {args.model} on {len(test_cases)} cases...")
+    print(f"Benchmarking {args.model} on {len(test_cases)} cases (study: {study_id})...")
     
     for tc in test_cases:
         print(f" - Running '{tc['id']}'...", flush=True)
@@ -327,16 +403,50 @@ def main():
         
         results["benchmarks"].append(metrics)
         total_score += metrics["overall_score"]
+        
+        # Collect detailed query info for JSONL artifact
+        retrieved_chunks = payload.get("chunks", [])
+        chunk_refs = [f"{c.get('file', 'unknown')}:{c.get('line', '?')}" for c in retrieved_chunks] if isinstance(retrieved_chunks, list) else []
+        
+        query_detail = {
+            "query_id": tc["id"],
+            "query": tc["query"],
+            "response": answer,
+            "latency_sec": round(duration, 2),
+            "retrieved_chunks": chunk_refs,
+            "score": round(metrics["overall_score"], 3),
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "model_metadata": {
+                "tag": args.model,
+                "size_params": "unknown",  # Could be extracted from model name if needed
+                "quantization": "default",
+                "ollama_version": "unknown"
+            }
+        }
+        query_details.append(query_detail)
 
     avg_score = total_score / len(test_cases) if test_cases else 0
     results["average_score"] = avg_score
     print(f"\nFinal Average Score: {avg_score:.2f}", flush=True)
     
+    # Write existing JSON output (backward compat)
     filename = f"bench_{args.model.replace('/', '_')}_t{args.tier or 'all'}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     out_path = BENCHMARK_RESULTS / filename
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
     print(f"Saved results to {out_path}")
+    
+    # Write new JSONL artifacts
+    report_path, index_path = write_jsonl_artifacts(
+        args.model,
+        study_id,
+        test_cases,
+        results,
+        query_details
+    )
+    print(f"JSONL artifacts written:")
+    print(f"  Model report: {report_path}")
+    print(f"  Index updated: {index_path}")
     
     if args.output_json:
         print(json.dumps(results, indent=2))
