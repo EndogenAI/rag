@@ -111,7 +111,10 @@ def check_ram_availability(min_ram_bytes: int = _MIN_RAM_BYTES, warn_only: bool 
     total_gb = total_bytes / 1024**3
 
     if available_bytes < required_bytes:
-        return False, f"Insufficient RAM: {available_gb:.1f} GB available, {required_gb:.1f} GB required (50% of {total_gb:.1f} GB total)"
+        msg = f"Insufficient RAM: {available_gb:.1f} GB available, {required_gb:.1f} GB required (50% of {total_gb:.1f} GB total)"
+        if warn_only:
+            return True, f"⚠️  {msg} (--no-ram-block: proceeding anyway)"
+        return False, msg
 
     return True, f"RAM OK: {available_gb:.1f} GB available (≥{required_gb:.1f} GB required, 50% of {total_gb:.1f} GB total)"
 
