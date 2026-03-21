@@ -4,6 +4,18 @@ Benchmark local RAG performance across different models using defined test suite
 
 Usage: uv run python scripts/benchmark_rag.py --model ollama/phi3 --tier 1
 
+Copilot-based judge workflow (tier-2 evaluation without litellm API keys):
+  1. Generate prompts:
+     uv run python scripts/benchmark_rag.py --model ollama/phi3 --tier 2 --judge-prompts-only
+  2. Feed .tmp/judge-prompts-*.jsonl to @RAG Judge in Copilot Chat
+  3. Save Copilot responses to .tmp/judge-responses-*.jsonl (format below)
+  4. Score responses:
+     uv run python scripts/benchmark_rag.py --model ollama/phi3 --tier 2 --judge-responses .tmp/judge-responses-*.jsonl
+
+  Response file format (JSONL):
+    {"query_id": "t2-001", "judge_response": "Score: 0.8\nReasoning: ..."}
+    {"query_id": "t2-002", "judge_response": "Score: 1.0\nReasoning: ..."}
+
 Model Lifecycle Safety (One-In, One-Out Protocol):
   Before loading any model, this script verifies no other models are pinned in RAM
   via `ollama ps`. If a model is loaded, use `ollama stop <model>` to unload it.
@@ -371,22 +383,132 @@ def run_preflight_checks(answer: str, test_case: dict, retrieved_chunks: list) -
     return signals
 
 
-def evaluate_with_judge(answer: str, test_case: dict, judge_model: str, retrieved_chunks: list = None) -> dict:
+def generate_judge_prompts_file(test_cases: list, model: str, top_k: int, template_path: str = None) -> Path:
+    """Generate judge prompts file for Copilot-based evaluation workflow.
+
+    Args:
+        test_cases: List of tier-2 test case dicts
+        model: LiteLLM model string for RAG inference
+        top_k: Retrieval top-k parameter
+        template_path: Optional custom prompt template path
+
+    Returns:
+        Path to written prompts file (.tmp/judge-prompts-<timestamp>.jsonl)
+    """
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    prompts_file = REPO_ROOT / ".tmp" / f"judge-prompts-{timestamp}.jsonl"
+    prompts_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(prompts_file, "w") as f:
+        # Write header comment
+        f.write("# Judge Prompts for Copilot RAG Evaluation\n")
+        f.write("# Instructions:\n")
+        f.write("#   1. Copy this file to a new file: .tmp/judge-responses-<timestamp>.jsonl\n")
+        f.write("#   2. For each line (query), use @RAG Judge in Copilot Chat to evaluate\n")
+        f.write(
+            "#   3. Replace judge_prompt field with: "
+            '{"query_id": "...", "judge_response": "Score: X.X\\nReasoning: ..."}\n'
+        )
+        f.write("#   4. Run: --tier 2 --judge-responses .tmp/judge-responses-<timestamp>.jsonl\n")
+        f.write("#\n")
+
+        for tc in test_cases:
+            # Run RAG inference for this query
+            payload = run_rag_answer(tc["query"], model, top_k, template_path)
+            answer = payload.get("answer", "")
+            retrieved_sources = payload.get("retrieval", {}).get("sources", [])
+            chunk_refs = retrieved_sources if isinstance(retrieved_sources, list) else []
+
+            # Run preflight checks
+            preflight_signals = run_preflight_checks(answer, tc, chunk_refs)
+
+            # Build judge prompt
+            rubric = tc.get("judge_rubric", "")
+            try:
+                template = load_judge_template()
+                signals_yaml = yaml.dump(preflight_signals, default_flow_style=False)
+                judge_prompt = template.format(
+                    query=tc["query"], answer=answer, rubric=rubric, preflight_signals=signals_yaml
+                )
+            except Exception:
+                judge_prompt = f"""Score this RAG answer on a 0-1 scale:
+
+Question: {tc["query"]}
+Answer: {answer}
+
+Rubric: {rubric}
+
+Return only a score (0.0, 0.5, or 1.0) and brief reasoning."""
+
+            # Write JSONL entry
+            entry = {
+                "query_id": tc["id"],
+                "query": tc["query"],
+                "answer": answer,
+                "rubric": rubric,
+                "preflight_signals": preflight_signals,
+                "judge_prompt": judge_prompt,
+            }
+            f.write(json.dumps(entry, separators=(",", ":")) + "\n")
+
+    return prompts_file
+
+
+def load_judge_responses(responses_file: Path, expected_query_ids: list) -> dict:
+    """Load judge responses from Copilot evaluation workflow.
+
+    Args:
+        responses_file: Path to judge responses JSONL file
+        expected_query_ids: List of query IDs that should have responses
+
+    Returns:
+        Dict mapping query_id -> judge_response text
+
+    Raises:
+        ValueError: If response file is missing query IDs
+    """
+    responses = {}
+    with open(responses_file, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            try:
+                entry = json.loads(line)
+                responses[entry["query_id"]] = entry["judge_response"]
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"WARNING: Skipping malformed response line: {e}", file=sys.stderr)
+
+    # Validate all expected query IDs are present
+    missing = set(expected_query_ids) - set(responses.keys())
+    if missing:
+        raise ValueError(f"Missing responses for query IDs: {sorted(missing)}")
+
+    return responses
+
+
+def evaluate_with_judge(
+    answer: str,
+    test_case: dict,
+    judge_model: str,
+    retrieved_chunks: list = None,
+    prompts_only: bool = False,
+    judge_response: str = None,
+) -> dict:
     """Evaluate a RAG answer using an LLM-as-judge with a rubric.
 
     Args:
         answer: The RAG system's answer
         test_case: Test case dict with query, judge_rubric
-        judge_model: LiteLLM model string (e.g., "ollama/phi3")
+        judge_model: LiteLLM model string (e.g., "ollama/phi3") — ignored if prompts_only or judge_response
         retrieved_chunks: List of retrieved source files/chunks (for preflight checks)
+        prompts_only: If True, return prompt without calling judge API
+        judge_response: Pre-evaluated judge response text (from Copilot workflow)
 
     Returns:
         Dict with overall_score (0.0-1.0), judge_reasoning, and preflight_signals
+        If prompts_only=True, returns {"judge_prompt": str, "preflight_signals": dict}
     """
-    if litellm is None:
-        print("WARNING: litellm not installed, falling back to pattern matching", file=sys.stderr)
-        return evaluate_response(answer, test_case, judge_model=None)
-
     query = test_case["query"]
     rubric = test_case.get("judge_rubric", "")
 
@@ -411,34 +533,46 @@ Rubric: {rubric}
 
 Return only a score (0.0, 0.5, or 1.0) and brief reasoning."""
 
-    try:
-        response = litellm.completion(
-            model=judge_model, messages=[{"role": "user", "content": judge_prompt}], max_tokens=200, temperature=0
-        )
-        judge_text = response.choices[0].message.content
+    # Prompts-only mode: return prompt without judge API call
+    if prompts_only:
+        return {"judge_prompt": judge_prompt, "preflight_signals": preflight_signals}
 
-        # Parse score with regex
-        score_match = re.search(r"([01]\.\d+)", judge_text)
-        if score_match:
-            score = float(score_match.group(1))
-        else:
-            # Fallback: look for standalone 0 or 1
-            if "1.0" in judge_text or "Award 1.0" in judge_text:
-                score = 1.0
-            elif "0.5" in judge_text or "Award 0.5" in judge_text:
-                score = 0.5
-            else:
-                score = 0.0
-
-        return {
-            "overall_score": score,
-            "judge_reasoning": judge_text.strip(),
-            "evaluation_method": "llm_judge",
-            "preflight_signals": preflight_signals,
-        }
-    except Exception as e:
-        print(f"WARNING: Judge call failed ({e}), falling back to pattern matching", file=sys.stderr)
+    # Copilot responses mode: use pre-evaluated response
+    if judge_response is not None:
+        judge_text = judge_response
+    # Litellm API mode: call judge model
+    elif litellm is not None:
+        try:
+            response = litellm.completion(
+                model=judge_model, messages=[{"role": "user", "content": judge_prompt}], max_tokens=200, temperature=0
+            )
+            judge_text = response.choices[0].message.content
+        except Exception as e:
+            print(f"WARNING: Judge call failed ({e}), falling back to pattern matching", file=sys.stderr)
+            return evaluate_response(answer, test_case, judge_model=None)
+    else:
+        print("WARNING: litellm not installed, falling back to pattern matching", file=sys.stderr)
         return evaluate_response(answer, test_case, judge_model=None)
+
+    # Parse score from judge response
+    score_match = re.search(r"([01]\.\d+)", judge_text)
+    if score_match:
+        score = float(score_match.group(1))
+    else:
+        # Fallback: look for standalone 0 or 1
+        if "1.0" in judge_text or "Award 1.0" in judge_text:
+            score = 1.0
+        elif "0.5" in judge_text or "Award 0.5" in judge_text:
+            score = 0.5
+        else:
+            score = 0.0
+
+    return {
+        "overall_score": score,
+        "judge_reasoning": judge_text.strip(),
+        "evaluation_method": "llm_judge",
+        "preflight_signals": preflight_signals,
+    }
 
 
 def detect_study_id(model: str, tier: int = None, localization: str = None) -> str:
@@ -528,6 +662,14 @@ def main():
     parser.add_argument("--tier", type=int, choices=[1, 2], help="Filter by test tier")
     parser.add_argument("--judge-model", help="LiteLLM model string for tier-2 LLM-as-judge evaluation")
     parser.add_argument(
+        "--judge-prompts-only",
+        action="store_true",
+        help="Generate judge prompts to file without running inference (Copilot workflow pass 1)",
+    )
+    parser.add_argument(
+        "--judge-responses", type=str, help="Path to Copilot judge responses file (JSONL, Copilot workflow pass 2)"
+    )
+    parser.add_argument(
         "--study-id", help="Study identifier (e.g., study-2a, study-2b). Auto-detected if not specified."
     )
     parser.add_argument(
@@ -566,6 +708,38 @@ def main():
         all_tests = data.get("test_cases", data) if isinstance(data, dict) else data
 
     test_cases = [t for t in all_tests if args.tier is None or t["tier"] == args.tier]
+
+    # Copilot workflow Pass 1: Generate judge prompts only
+    if args.judge_prompts_only:
+        tier2_cases = [tc for tc in test_cases if tc.get("tier") == 2]
+        if not tier2_cases:
+            print("ERROR: No tier-2 test cases found. Use --tier 2 with --judge-prompts-only.")
+            return 1
+        prompts_file = generate_judge_prompts_file(tier2_cases, args.model, args.top_k, args.template_path)
+        print("\n=== JUDGE PROMPTS GENERATED ===")
+        print(f"Prompts file: {prompts_file}")
+        print(f"Test cases: {len(tier2_cases)}")
+        print("\nNext steps:")
+        print("  1. Copy to: .tmp/judge-responses-<timestamp>.jsonl")
+        print("  2. For each query, use @RAG Judge in Copilot to evaluate")
+        print('  3. Format: {"query_id": "...", "judge_response": "Score: X.X\\nReasoning: ..."}')
+        print("  4. Run: --tier 2 --judge-responses .tmp/judge-responses-<timestamp>.jsonl")
+        return 0
+
+    # Copilot workflow Pass 2: Load pre-evaluated responses
+    judge_responses_map = None
+    if args.judge_responses:
+        tier2_cases = [tc for tc in test_cases if tc.get("tier") == 2]
+        if not tier2_cases:
+            print("ERROR: No tier-2 test cases found. Use --tier 2 with --judge-responses.")
+            return 1
+        expected_ids = [tc["id"] for tc in tier2_cases]
+        try:
+            judge_responses_map = load_judge_responses(Path(args.judge_responses), expected_ids)
+            print(f"Loaded {len(judge_responses_map)} judge responses from {args.judge_responses}")
+        except ValueError as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            return 1
 
     if args.dry_run:
         print("\n=== DRY RUN MODE ===")
@@ -625,7 +799,14 @@ def main():
         # Format as list of source filenames (placeholder until full chunks available)
         chunk_refs = retrieved_sources if isinstance(retrieved_sources, list) else []
 
-        metrics = evaluate_response(answer, tc, judge_model=args.judge_model, retrieved_chunks=chunk_refs)
+        # Tier-2 with Copilot responses: use pre-evaluated judge response
+        if tc.get("tier") == 2 and judge_responses_map:
+            judge_resp = judge_responses_map.get(tc["id"])
+            metrics = evaluate_with_judge(
+                answer, tc, judge_model=args.judge_model, retrieved_chunks=chunk_refs, judge_response=judge_resp
+            )
+        else:
+            metrics = evaluate_response(answer, tc, judge_model=args.judge_model, retrieved_chunks=chunk_refs)
         metrics["latency_sec"] = duration
         metrics["id"] = tc["id"]
 
