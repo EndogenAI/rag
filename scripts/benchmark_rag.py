@@ -29,8 +29,9 @@ Configuration Validation:
 RAM Readiness Check:
   On systems with ≥12GB total RAM: requires ≥6GB available before loading models.
   On systems with <12GB total RAM: requires ≥50% of total RAM available (adaptive).
-  If available RAM is insufficient, exits with code 2. Override with --skip-ram-check
-  (useful on 8GB systems where 75% free RAM is unrealistic under normal usage).
+  If available RAM is insufficient, exits with code 2. Override with --no-ram-block
+  (logs warnings but proceeds; useful on 8GB systems where 75% free RAM is unrealistic).
+  RAM floor monitoring: Checks available RAM before each query to detect pinned models.
 
 Dry-Run Mode:
   Use --dry-run to validate configuration and pre-flight checks without running
@@ -79,18 +80,19 @@ _MIN_FREE_DISK_BYTES = 2 * 1024**3  # 2 GB headroom
 _MIN_RAM_BYTES = 6 * 1024**3  # 6 GB
 
 
-def check_ram_availability(min_ram_bytes: int = _MIN_RAM_BYTES, skip_check: bool = False) -> tuple[bool, str]:
+def check_ram_availability(min_ram_bytes: int = _MIN_RAM_BYTES, warn_only: bool = False) -> tuple[bool, str]:
     """Check available RAM meets minimum threshold.
 
     On systems with <12GB total RAM, the requirement scales to 50% of total RAM
     (more realistic for consumer hardware). On larger systems, uses the default 6GB.
 
-    Returns:
-        (is_ok, message): (True, info_msg) if OK or skipped; (False, error_msg) if insufficient.
-    """
-    if skip_check:
-        return True, "RAM check skipped (--skip-ram-check)"
+    Args:
+        min_ram_bytes: Minimum RAM threshold (default 6GB)
+        warn_only: If True, log warning but return success (--no-ram-block mode)
 
+    Returns:
+        (is_ok, message): (True, info_msg) if OK or warn-only; (False, error_msg) if insufficient.
+    """
     if psutil is None:
         return True, "RAM check unavailable (psutil not installed)"
 
@@ -146,7 +148,75 @@ def check_model_lifecycle(enforce: bool = False) -> tuple[bool, str, list[str]]:
         return True, "WARNING: `ollama ps` timed out", []
 
 
-def run_ollama_preflight(model_lifecycle_check: bool = False, skip_ram_check: bool = False, dry_run: bool = False):
+def get_available_ram_gb() -> float:
+    """Get current available RAM in GB."""
+    if psutil is None:
+        return 0.0
+    return round(psutil.virtual_memory().available / (1024**3), 1)
+
+
+def check_ollama_loaded_models() -> list[str]:
+    """Check if any models are currently loaded in Ollama. Returns list of model names."""
+    try:
+        result = subprocess.run(["ollama", "ps"], capture_output=True, text=True, timeout=5)
+        if result.returncode != 0:
+            return []
+        # Parse output: NAME    ID    SIZE    PROCESSOR    UNTIL
+        # Skip header, extract NAME column from loaded models
+        lines = result.stdout.strip().split("\n")[1:]  # Skip header
+        loaded = [line.split()[0] for line in lines if line.strip()]
+        return loaded
+    except (subprocess.TimeoutExpired, FileNotFoundError, IndexError):
+        return []
+
+
+def estimate_model_timeout(model: str) -> int:
+    """Estimate query timeout in seconds based on model size.
+    
+    Parses model name to extract parameter count, then applies scaling:
+    - <4B params: 300s (5 min)
+    - 4-8B params: 420s (7 min)
+    - 8-13B params: 600s (10 min)
+    - 13B+ params: 900s (15 min)
+    
+    For tier-2 queries (longer context), applies 1.5x multiplier.
+    
+    Returns:
+        Timeout in seconds (conservative for low-resource hardware)
+    """
+    # Common model name patterns: phi3:mini (~3.8B), llama3:8b, mistral:7b, etc.
+    # Extract numeric size from model string (e.g., "8b", "7B", "mini", "13b-instruct")
+    name_lower = model.lower()
+    
+    # Heuristic mapping for common size indicators
+    if "mini" in name_lower or "3b" in name_lower or "2b" in name_lower:
+        params_b = 3
+    elif "7b" in name_lower or "8b" in name_lower:
+        params_b = 7
+    elif "13b" in name_lower:
+        params_b = 13
+    elif "70b" in name_lower or "65b" in name_lower:
+        params_b = 70
+    else:
+        # Try parsing numeric pattern like "llama-3.1-8b" or "mistral-7b-instruct"
+        match = re.search(r'(\d+)b', name_lower)
+        if match:
+            params_b = int(match.group(1))
+        else:
+            params_b = 7  # Conservative default (medium model)
+    
+    # Apply timeout scaling
+    if params_b < 4:
+        return 300  # 5 min
+    elif params_b < 8:
+        return 420  # 7 min
+    elif params_b < 13:
+        return 600  # 10 min
+    else:
+        return 900  # 15 min
+
+
+def run_ollama_preflight(model_lifecycle_check: bool = False, warn_only_ram: bool = False, dry_run: bool = False):
     """Check that no Ollama models are pinned in RAM and disk space is adequate.
 
     Warns and optionally aborts if:
@@ -158,7 +228,7 @@ def run_ollama_preflight(model_lifecycle_check: bool = False, skip_ram_check: bo
 
     Args:
         model_lifecycle_check: If True, exit with code 3 if models are loaded.
-        skip_ram_check: If True, skip RAM availability check.
+        warn_only_ram: If True, check RAM but proceed even if insufficient (warn-only mode).
         dry_run: If True, print all checks but don't abort.
     """
     warnings = []
@@ -174,7 +244,7 @@ def run_ollama_preflight(model_lifecycle_check: bool = False, skip_ram_check: bo
         print(f"✓ {lifecycle_msg}", file=sys.stderr if not dry_run else sys.stdout, flush=True)
 
     # 2. RAM Check
-    ram_ok, ram_msg = check_ram_availability(skip_check=skip_ram_check)
+    ram_ok, ram_msg = check_ram_availability(warn_only=warn_only_ram)
     if not ram_ok:
         errors.append(ram_msg)
     else:
@@ -243,8 +313,12 @@ def get_machine_metadata() -> dict:
     return metadata
 
 
-def run_rag_answer(query: str, model: str, top_k: int = 10, template_path: str = None) -> dict:
-    """Run the rag_index.py answer command and return JSON."""
+def run_rag_answer(query: str, model: str, top_k: int = 10, template_path: str = None, timeout_sec: int = 300) -> dict:
+    """Run the rag_index.py answer command and return JSON.
+    
+    Args:
+        timeout_sec: Timeout in seconds (default 300s/5min; dynamically scaled by caller)
+    """
     cmd = [
         "uv",
         "run",
@@ -263,8 +337,10 @@ def run_rag_answer(query: str, model: str, top_k: int = 10, template_path: str =
     if template_path:
         cmd.extend(["--template-path", template_path])
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=timeout_sec)
         return json.loads(result.stdout)
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": f"Query timed out after {timeout_sec}s"}
     except subprocess.CalledProcessError as e:
         return {"ok": False, "error": e.stderr}
     except json.JSONDecodeError:
@@ -703,7 +779,9 @@ def main():
         "--model-lifecycle-check", action="store_true", help="Enforce One-In, One-Out: exit if models already loaded"
     )
     parser.add_argument(
-        "--skip-ram-check", action="store_true", help="Skip 6GB RAM requirement check (not recommended)"
+        "--no-ram-block",
+        action="store_true",
+        help="Check RAM but proceed anyway if insufficient (logs warning; useful for low-resource systems)",
     )
     args = parser.parse_args()
 
@@ -712,7 +790,7 @@ def main():
         return 1
 
     run_ollama_preflight(
-        model_lifecycle_check=args.model_lifecycle_check, skip_ram_check=args.skip_ram_check, dry_run=args.dry_run
+        model_lifecycle_check=args.model_lifecycle_check, warn_only_ram=args.no_ram_block, dry_run=args.dry_run
     )
 
     # Auto-detect study ID if not provided
@@ -788,21 +866,46 @@ def main():
     # Collect machine metadata once at the start of benchmarking
     machine_metadata = get_machine_metadata()
 
+    # Establish RAM floor for monitoring between queries
+    initial_ram_gb = get_available_ram_gb()
+    ram_floor_gb = initial_ram_gb - 0.5  # Allow 0.5GB tolerance
+    print(f"RAM floor established: {ram_floor_gb:.1f} GB (initial: {initial_ram_gb:.1f} GB)\n")
+
+    # Calculate timeout based on model size (conservative for low-resource hardware)
+    query_timeout_sec = estimate_model_timeout(args.model)
+    print(f"Query timeout: {query_timeout_sec}s ({query_timeout_sec // 60} min)\n")
+
     query_details = []  # Collect detailed per-query results for JSONL artifacts
     total_score = 0
     print(f"Benchmarking {args.model} on {len(test_cases)} cases (study: {study_id})...")
 
     for tc in test_cases:
+        # RAM floor check: detect pinned models or memory leaks
+        current_ram_gb = get_available_ram_gb()
+        if current_ram_gb > 0 and current_ram_gb < ram_floor_gb:
+            print(f"⚠️  RAM below floor: {current_ram_gb:.1f} GB (expected ≥{ram_floor_gb:.1f} GB)", flush=True)
+            print(f"   Previous model may still be loaded. Checking `ollama ps`...", flush=True)
+            pinned_models = check_ollama_loaded_models()
+            if pinned_models:
+                print(f"   FOUND: {', '.join(pinned_models)} still loaded", flush=True)
+                print(f"   Auto-unloading with `ollama stop {pinned_models[0]}`...", flush=True)
+                try:
+                    subprocess.run(["ollama", "stop", pinned_models[0]], timeout=10, check=False)
+                    time.sleep(2)  # Wait for unload
+                    current_ram_gb = get_available_ram_gb()
+                    print(f"   RAM after unload: {current_ram_gb:.1f} GB\n", flush=True)
+                except (subprocess.TimeoutExpired, FileNotFoundError):
+                    print(f"   Failed to unload model. Proceeding anyway.\n", flush=True)
+            else:
+                print("   No pinned models found. System may be under load.\n", flush=True)
+        
         print(f" - Running '{tc['id']}'...", flush=True)
         
         # Capture available RAM before query execution
-        if psutil is not None:
-            ram_available_gb = round(psutil.virtual_memory().available / (1024**3), 1)
-        else:
-            ram_available_gb = None
+        ram_available_gb = get_available_ram_gb() if psutil is not None else None
         
         start_time = time.time()
-        payload = run_rag_answer(tc["query"], args.model, args.top_k, args.template_path)
+        payload = run_rag_answer(tc["query"], args.model, args.top_k, args.template_path, timeout_sec=query_timeout_sec)
         duration = time.time() - start_time
 
         # Log basic status regardless of success
