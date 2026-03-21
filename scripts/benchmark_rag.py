@@ -32,6 +32,7 @@ Exit Codes:
 import argparse
 import json
 import os
+import platform
 import subprocess
 import sys
 import yaml
@@ -178,6 +179,29 @@ def run_ollama_preflight(model_lifecycle_check: bool = False, skip_ram_check: bo
             file=sys.stderr,
             flush=True,
         )
+
+def get_machine_metadata() -> dict:
+    """Collect machine metadata for benchmark reproducibility.
+    
+    Returns:
+        Dict with machine_type, system, ram_gb, processor, python_version
+    """
+    metadata = {
+        "machine_type": platform.machine(),  # e.g., "arm64", "x86_64"
+        "system": platform.system(),  # e.g., "Darwin", "Linux", "Windows"
+        "processor": platform.processor(),  # e.g., "arm"
+        "python_version": platform.python_version()
+    }
+    
+    # RAM detection (prefer psutil if available)
+    if psutil is not None:
+        total_ram_gb = psutil.virtual_memory().total / (1024 ** 3)
+        metadata["ram_gb"] = round(total_ram_gb, 1)
+    else:
+        metadata["ram_gb"] = "unknown"
+    
+    return metadata
+
 
 def run_rag_answer(query: str, model: str, top_k: int = 10, template_path: str = None) -> dict:
     """Run the rag_index.py answer command and return JSON."""
@@ -387,6 +411,9 @@ def main():
         "benchmarks": []
     }
     
+    # Collect machine metadata once at the start of benchmarking
+    machine_metadata = get_machine_metadata()
+    
     query_details = []  # Collect detailed per-query results for JSONL artifacts
     total_score = 0
     print(f"Benchmarking {args.model} on {len(test_cases)} cases (study: {study_id})...")
@@ -412,8 +439,14 @@ def main():
         total_score += metrics["overall_score"]
         
         # Collect detailed query info for JSONL artifact
-        retrieved_chunks = payload.get("chunks", [])
-        chunk_refs = [f"{c.get('file', 'unknown')}:{c.get('line', '?')}" for c in retrieved_chunks] if isinstance(retrieved_chunks, list) else []
+        # Note: rag_index.py answer_query returns retrieval.sources (file list),
+        # not full chunk details. retrieved_chunks will be source files only until
+        # answer_query is enhanced to return full chunk metadata.
+        retrieval_data = payload.get("retrieval", {})
+        retrieved_sources = retrieval_data.get("sources", [])
+        
+        # Format as list of source filenames (placeholder until full chunks available)
+        chunk_refs = retrieved_sources if isinstance(retrieved_sources, list) else []
         
         query_detail = {
             "query_id": tc["id"],
@@ -428,7 +461,8 @@ def main():
                 "size_params": "unknown",  # Could be extracted from model name if needed
                 "quantization": "default",
                 "ollama_version": "unknown"
-            }
+            },
+            "machine_metadata": machine_metadata
         }
         query_details.append(query_detail)
 
