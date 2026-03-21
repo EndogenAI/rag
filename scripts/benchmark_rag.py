@@ -243,25 +243,30 @@ def evaluate_response(answer: str, test_case: dict) -> dict:
     return metrics
 
 
-def detect_study_id(model: str, tier: int = None) -> str:
-    """Auto-detect study identifier based on model characteristics.
+def detect_study_id(model: str, tier: int = None, localization: str = None) -> str:
+    """Auto-detect study identifier based on research purpose.
     
-    Heuristic:
-    - study-2b: models with "0.5b", "2b", "3b" in name (small models)
-    - study-2a: all other models (baseline/larger models)
+    Study mapping:
+    - study-2a: Local Model Landscape for RAG Synthesis (model selection/evaluation)
+      All model benchmarks default here unless localization variant is specified
+    
+    - study-2b: Token Savings from RAG Component Localization (efficiency measurement)
+      Activated when localization configuration is specified (future: --localization flag)
+      Uses Study 2a's recommended model subset
     
     Args:
         model: LiteLLM model string (e.g., "ollama/phi3" or "ollama/qwen:0.5b")
         tier: Optional tier filter (1 or 2)
+        localization: Optional localization variant (e.g., "r-local", "ra-local", "fully-local")
     
     Returns:
         Study identifier string ("study-2a" or "study-2b")
     """
-    model_lower = model.lower()
-    small_model_indicators = ["0.5b", "2b", "3b", "tinyllama", "orca-mini"]
-    
-    if any(indicator in model_lower for indicator in small_model_indicators):
+    # Study 2b: Token savings measurement (requires explicit localization configuration)
+    if localization and localization in ["r-local", "ra-local", "fully-local", "fully-remote"]:
         return "study-2b"
+    
+    # Study 2a: Model landscape exploration (default for all basic benchmarking)
     return "study-2a"
 
 
@@ -325,6 +330,8 @@ def main():
     parser.add_argument("--model", required=True, help="LiteLLM model string (e.g. ollama/phi3)")
     parser.add_argument("--tier", type=int, choices=[1, 2], help="Filter by test tier")
     parser.add_argument("--study-id", help="Study identifier (e.g., study-2a, study-2b). Auto-detected if not specified.")
+    parser.add_argument("--localization", choices=["fully-remote", "r-local", "ra-local", "fully-local"], 
+                        help="Localization configuration for Study 2b token savings measurement")
     parser.add_argument("--top-k", type=int, default=10, help="Retrieval top-k")
     parser.add_argument("--template-path", help="Path to custom prompt template")
     parser.add_argument("--governance-boost-off", action="store_true", help="Disable governance boost in retrieval")
@@ -345,7 +352,7 @@ def main():
     )
     
     # Auto-detect study ID if not provided
-    study_id = args.study_id or detect_study_id(args.model, args.tier)
+    study_id = args.study_id or detect_study_id(args.model, args.tier, args.localization)
         
     with open(BENCHMARK_DATA, "r") as f:
         data = yaml.safe_load(f)
