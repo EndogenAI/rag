@@ -1,30 +1,32 @@
-- id: t1_commit_format
-  tier: 1
-  query: "What is the commit message format and what are the allowed types?"
-  expected_entities: ["feat", "fix", "docs", "chore", "test", "refactor", "ci", "perf"]
-  expected_source: "CONTRIBUTING.md"
+test_cases:
+  - id: t1_commit_format
+    tier: 1
+    query: "What is the commit message format and what are the allowed types?"
+    expected_entities: ["feat", "fix", "docs", "chore", "test", "refactor", "ci", "perf"]
+    expected_source: "CONTRIBUTING.md"
 
-- id: t1_heredoc_prohibition
-  tier: 1
-  query: "What is the rule regarding the use of heredocs for writing file content?"
-  expected_patterns: ["NEVER use heredocs", "replace_string_in_file", "create_file"]
-  expected_source: "AGENTS.md"
+  - id: t1_heredoc_prohibition
+    tier: 1
+    query: "What is the rule regarding the use of heredocs for writing file content?"
+    expected_patterns: ["NEVER use heredocs", "replace_string_in_file", "create_file"]
+    expected_source: "AGENTS.md"
 
-- id: t2_subagent_commit
-  tier: 2
-  query: "Who is authorized to commit to the repository, and which agents are prohibited from doing so?"
-  expected_entities: ["Executive Orchestrator", "Executive Docs", "GitHub Agent"]
-  expected_patterns: ["Subagents do not invoke GitHub agent directly"]
-  expected_source: "AGENTS.md"
+  - id: t2_subagent_commit
+    tier: 2
+    query: "Who is authorized to commit to the repository, and which agents are prohibited from doing so?"
+    expected_entities: ["Executive Orchestrator", "Executive Docs", "GitHub Agent"]
+    expected_patterns: ["Subagents do not invoke GitHub agent directly"]
+    expected_source: "AGENTS.md"
 
-- id: t2_orchestration_cycle
-  tier: 2
-  query: "Describe the mandatory 6-step inter-phase checkpoint sequence."
-  expected_patterns: ["prune", "checkpoint", "commit", "grep sweep", "review", "compact"]
-  expected_source: "AGENTS.md"
+  - id: t2_orchestration_cycle
+    tier: 2
+    query: "Describe the mandatory 6-step inter-phase checkpoint sequence."
+    expected_patterns: ["prune", "checkpoint", "commit", "grep sweep", "review", "compact"]
+    expected_source: "AGENTS.md"
 
 # Study 2a Phase 2 Benchmark Results — 2026-03-20
-study_2a_phase2:
+results:
+  study_2a_phase2:
   date: "2026-03-20"
   models_tested: 12
   models_completed: 11
