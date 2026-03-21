@@ -1,11 +1,11 @@
-# Study 2b: Token Savings from RAG Component Localization
-
 ---
 title: "Study 2b: Token Savings from RAG Component Localization"
 status: Draft
 created: 2026-03-20
 depends_on: 2026-03-20-research-2a-model-landscape.md
 ---
+
+# Study 2b: Token Savings from RAG Component Localization
 
 ## Sprint Objective
 
@@ -118,6 +118,7 @@ Each hypothesis has a measurable acceptance criterion tied to token burn reducti
 | **2bH1** | Local R reduces external token burn by ≥20% | Compare Fully Remote vs R-Local token counts |
 | **2bH2** | Local RA reduces external token burn by ≥40% | Compare Fully Remote vs RA-Local token counts |
 | **2bH3** | Fully Local reduces external token burn by ≥60% | Compare Fully Remote vs Fully Local token counts |
+| **Dry-Run** | Dry-Run Validation Gate | Successful completion of `--dry-run` across all 4 configurations is a hard gate for Phase 2. |
 
 **Pass Threshold**: A hypothesis passes if the measured token savings meet or exceed the stated percentage threshold across ≥5 governance queries.
 
@@ -136,19 +137,20 @@ Each hypothesis has a measurable acceptance criterion tied to token burn reducti
 - Dependency on Study 2a explicit
 - Token measurement methodology defined
 
-### Phase 1: Token Instrumentation
+### Phase 1: Token Instrumentation & Dry-Run Validation
 
 **Agent**: Executive Scripter
 
 **Deliverables**:
 - `scripts/count_tokens.py`: Token counting module for Claude API + Ollama estimation
-- `scripts/benchmark_rag.py`: Modified to accept `--localization` flag and call token counter
+- `scripts/benchmark_rag.py`: Modified to accept `--localization` and `--dry-run` flags; implements dry-run loop over all configurations without inference burn.
 - Unit tests for token counting accuracy
 
 **Gate Conditions**:
 - Token counter returns accurate counts for Claude API responses
 - Ollama token estimation validated against known prompts
 - `uv run pytest tests/test_count_tokens.py` passes
+- Successful `--dry-run` execution over all 4 localization configurations.
 
 ### Phase 2: Localization Comparison Runs
 
