@@ -4,6 +4,20 @@ Benchmark local RAG performance across different models using defined test suite
 
 Usage: uv run python scripts/benchmark_rag.py --model ollama/phi3 --tier 1
 
+Cooldown-Based RAM Management (Recommended):
+  Ollama releases internal buffers passively during 2-5s cooldown periods, recovering
+  ~1.8 GB on 8GB systems without explicit model unload. The benchmark uses cooldown-based
+  recovery for same-model queries to minimize latency overhead.
+  
+  Behavior:
+    - Same model, RAM < floor: Apply cooldown (default 3s), re-check RAM, unload only if still low
+    - Model switch or persistent low RAM: Explicit unload (safeguard mode)
+    - Preflight cleanup: Unloads any pinned models before benchmarking begins
+    - Post-benchmark cleanup: Unloads model after all queries complete
+  
+  Configure: --query-cooldown <seconds> (default: 3, range: 0-10)
+  Disable cooldown: --query-cooldown 0 (reverts to aggressive auto-unload between every query)
+
 Copilot-based judge workflow (tier-2 evaluation without litellm API keys):
   1. Generate prompts:
      uv run python scripts/benchmark_rag.py --model ollama/phi3 --tier 2 --judge-prompts-only
@@ -31,7 +45,6 @@ RAM Readiness Check:
   On systems with <12GB total RAM: requires ≥50% of total RAM available (adaptive).
   If available RAM is insufficient, exits with code 2. Override with --no-ram-block
   (logs warnings but proceeds; useful on 8GB systems where 75% free RAM is unrealistic).
-  RAM floor monitoring: Checks available RAM before each query to detect pinned models.
 
 Dry-Run Mode:
   Use --dry-run to validate configuration and pre-flight checks without running
@@ -245,6 +258,25 @@ def run_ollama_preflight(model_lifecycle_check: bool = False, warn_only_ram: boo
         warnings.append(lifecycle_msg)
     else:
         print(f"✓ {lifecycle_msg}", file=sys.stderr if not dry_run else sys.stdout, flush=True)
+    
+    # Preflight: Unload any loaded models for clean slate
+    if loaded_models and not dry_run:
+        print("🧹 Preflight cleanup: Unloading all loaded models...", file=sys.stderr, flush=True)
+        for model_name in loaded_models:
+            try:
+                subprocess.run(
+                    ["ollama", "stop", model_name],
+                    check=True,
+                    capture_output=True,
+                    timeout=10
+                )
+                print(f"   ✓ Unloaded {model_name}", file=sys.stderr, flush=True)
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+                print(f"   ⚠️  Failed to unload {model_name}: {e}", file=sys.stderr, flush=True)
+        # Give Ollama time to release memory
+        time.sleep(2)
+        ram_after = get_available_ram_gb()
+        print(f"   RAM after preflight cleanup: {ram_after:.1f} GB\n", file=sys.stderr, flush=True)
 
     # 2. RAM Check
     ram_ok, ram_msg = check_ram_availability(warn_only=warn_only_ram)
@@ -786,6 +818,12 @@ def main():
         action="store_true",
         help="Check RAM but proceed anyway if insufficient (logs warning; useful for low-resource systems)",
     )
+    parser.add_argument(
+        "--query-cooldown",
+        type=int,
+        default=3,
+        help="Cooldown period (seconds) between queries for passive RAM recovery (default: 3s, range: 0-10)",
+    )
     args = parser.parse_args()
 
     if not BENCHMARK_DATA.exists():
@@ -878,6 +916,12 @@ def main():
     query_timeout_sec = estimate_model_timeout(args.model)
     print(f"Query timeout: {query_timeout_sec}s ({query_timeout_sec // 60} min)\n")
 
+    # Track last model used for cooldown-based RAM recovery
+    last_model_used = None
+    cooldown_sec = args.query_cooldown
+    if cooldown_sec > 0:
+        print(f"Cooldown strategy: {cooldown_sec}s passive recovery for same-model queries\n")
+
     query_details = []  # Collect detailed per-query results for JSONL artifacts
     total_score = 0
     print(f"Benchmarking {args.model} on {len(test_cases)} cases (study: {study_id})...")
@@ -887,22 +931,39 @@ def main():
         current_ram_gb = get_available_ram_gb()
         if current_ram_gb > 0 and current_ram_gb < ram_floor_gb:
             print(f"⚠️  RAM below floor: {current_ram_gb:.1f} GB (expected ≥{ram_floor_gb:.1f} GB)", flush=True)
-            print(f"   Previous model may still be loaded. Checking `ollama ps`...", flush=True)
-            pinned_models = check_ollama_loaded_models()
-            if pinned_models:
-                print(f"   FOUND: {', '.join(pinned_models)} still loaded", flush=True)
-                print(f"   Auto-unloading with `ollama stop {pinned_models[0]}`...", flush=True)
-                try:
-                    subprocess.run(["ollama", "stop", pinned_models[0]], timeout=10, check=False)
-                    time.sleep(2)  # Wait for unload
-                    current_ram_gb = get_available_ram_gb()
-                    print(f"   RAM after unload: {current_ram_gb:.1f} GB\n", flush=True)
-                except (subprocess.TimeoutExpired, FileNotFoundError):
-                    print(f"   Failed to unload model. Proceeding anyway.\n", flush=True)
+            
+            # Strategy: For same-model queries, try cooldown-based recovery first
+            # Only unload if RAM still insufficient OR switching models
+            same_model = (last_model_used == args.model)
+            if same_model and cooldown_sec > 0:
+                print(f"   Same model as previous query — applying {cooldown_sec}s cooldown for passive recovery...", flush=True)
+                time.sleep(cooldown_sec)
+                current_ram_gb = get_available_ram_gb()
+                print(f"   RAM after cooldown: {current_ram_gb:.1f} GB", flush=True)
+            
+            # If still below floor after cooldown (or different model), auto-unload
+            if current_ram_gb < ram_floor_gb:
+                print(f"   RAM still below floor — checking `ollama ps` for pinned models...", flush=True)
+                pinned_models = check_ollama_loaded_models()
+                if pinned_models:
+                    print(f"   FOUND: {', '.join(pinned_models)} still loaded", flush=True)
+                    print(f"   Auto-unloading with `ollama stop {pinned_models[0]}`...", flush=True)
+                    try:
+                        subprocess.run(["ollama", "stop", pinned_models[0]], timeout=10, check=False)
+                        time.sleep(2)  # Wait for unload
+                        current_ram_gb = get_available_ram_gb()
+                        print(f"   RAM after unload: {current_ram_gb:.1f} GB\n", flush=True)
+                    except (subprocess.TimeoutExpired, FileNotFoundError):
+                        print(f"   Failed to unload model. Proceeding anyway.\n", flush=True)
+                else:
+                    print("   No pinned models found. System may be under load.\n", flush=True)
             else:
-                print("   No pinned models found. System may be under load.\n", flush=True)
+                print(f"   ✓ Cooldown recovery successful — RAM adequate\n", flush=True)
         
         print(f" - Running '{tc['id']}'...", flush=True)
+        
+        # Track model for next iteration's cooldown strategy
+        last_model_used = args.model
         
         # Capture available RAM before query execution
         ram_available_gb = get_available_ram_gb() if psutil is not None else None
@@ -976,6 +1037,28 @@ def main():
     avg_score = total_score / len(test_cases) if test_cases else 0
     results["average_score"] = avg_score
     print(f"\nFinal Average Score: {avg_score:.2f}", flush=True)
+
+    # Post-benchmark cleanup: Unload all models
+    print("\n🧹 Post-benchmark cleanup: Unloading all models...", flush=True)
+    loaded = check_ollama_loaded_models()
+    if loaded:
+        for model_name in loaded:
+            try:
+                subprocess.run(
+                    ["ollama", "stop", model_name],
+                    check=True,
+                    capture_output=True,
+                    timeout=10
+                )
+                print(f"   ✓ Unloaded {model_name}", flush=True)
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+                print(f"   ⚠️  Failed to unload {model_name}: {e}", flush=True)
+        time.sleep(1)
+        ram_final = get_available_ram_gb() if psutil is not None else None
+        if ram_final:
+            print(f"   Final RAM available: {ram_final:.1f} GB\n", flush=True)
+    else:
+        print("   No models loaded. System already clean.\n", flush=True)
 
     # Write existing JSON output (backward compat)
     filename = (
