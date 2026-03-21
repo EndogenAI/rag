@@ -92,6 +92,7 @@ FROZEN_H2_FALLBACK_HEADING = "__FROZEN_H2_FALLBACK__"
 CORPUS_GLOBS: tuple[str, ...] = (
     "AGENTS.md",
     "MANIFESTO.md",
+    "CONTRIBUTING.md",
     "client-values.yml",
     "docs/**/*.md",
     "{{cookiecutter.project_slug}}/**/*.md",
@@ -643,15 +644,13 @@ def _validate_filter_scope(filter_scope: str | None) -> str | None:
 def _normalize_query_for_fts(query: str) -> str:
     """Convert user query text into a safe FTS token query.
 
-    Natural-language punctuation (e.g. '?', '-', ':') can break SQLite FTS5
-    MATCH parsing. We fail closed to alphanumeric tokens and let FTS handle
-    ranking across those normalized terms.
+    Uses ' OR ' union to avoid 0-result 'starvation' in long natural language
+    questions while relying on BM25 to rank the most relevant overlaps.
     """
     tokens = re.findall(r"[A-Za-z0-9]+", query)
-    normalized = " ".join(tokens).strip()
-    if not normalized:
+    if not tokens:
         raise ValueError("query must contain at least one alphanumeric token")
-    return normalized
+    return " OR ".join(tokens)
 
 
 def query_index(
@@ -693,7 +692,10 @@ def query_index(
         sql = (
             "SELECT c.chunk_id, c.source_file, c.scope, c.governance_tier, c.partition_id, c.retention_policy, "
             "c.heading, c.governs_csv, c.fallback_h2, "
-            "c.start_line, c.end_line, c.content, bm25(rag_fts) AS score "
+            "c.start_line, c.end_line, c.content, "
+            "(bm25(rag_fts) + "
+            " (CASE WHEN c.source_file IN ('AGENTS.md', 'MANIFESTO.md', 'CONTRIBUTING.md', 'CLAUDE.md') THEN -5.0 ELSE 0.0 END) + "
+            " (CASE WHEN c.source_file LIKE 'docs/research/%' THEN 2.0 ELSE 0.0 END)) AS score "
             "FROM rag_fts "
             "JOIN chunks c ON c.chunk_id = rag_fts.chunk_id "
             "WHERE rag_fts MATCH ?"

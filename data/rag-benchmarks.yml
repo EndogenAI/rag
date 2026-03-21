@@ -1,0 +1,124 @@
+- id: t1_commit_format
+  tier: 1
+  query: "What is the commit message format and what are the allowed types?"
+  expected_entities: ["feat", "fix", "docs", "chore", "test", "refactor", "ci", "perf"]
+  expected_source: "CONTRIBUTING.md"
+
+- id: t1_heredoc_prohibition
+  tier: 1
+  query: "What is the rule regarding the use of heredocs for writing file content?"
+  expected_patterns: ["NEVER use heredocs", "replace_string_in_file", "create_file"]
+  expected_source: "AGENTS.md"
+
+- id: t2_subagent_commit
+  tier: 2
+  query: "Who is authorized to commit to the repository, and which agents are prohibited from doing so?"
+  expected_entities: ["Executive Orchestrator", "Executive Docs", "GitHub Agent"]
+  expected_patterns: ["Subagents do not invoke GitHub agent directly"]
+  expected_source: "AGENTS.md"
+
+- id: t2_orchestration_cycle
+  tier: 2
+  query: "Describe the mandatory 6-step inter-phase checkpoint sequence."
+  expected_patterns: ["prune", "checkpoint", "commit", "grep sweep", "review", "compact"]
+  expected_source: "AGENTS.md"
+
+# Study 2a Phase 2 Benchmark Results — 2026-03-20
+study_2a_phase2:
+  date: "2026-03-20"
+  models_tested: 12
+  models_completed: 11
+  models_failed: 1
+  
+  results:
+    - model: "qwen:0.5b"
+      score: 0.03
+      latency_range: "4-6s"
+      size_params: "0.5B"
+      notes: "Baseline ultra-small model"
+      
+    - model: "qwen:1.8b"
+      score: 0.03
+      latency_range: "6-41s"
+      size_params: "1.8B"
+      notes: "High latency variance on t1_commit_format"
+      
+    - model: "qwen:4b"
+      score: 0.03
+      latency_range: "13-16s"
+      size_params: "4B"
+      notes: "Consistent latency, same score as smaller Qwen models"
+      
+    - model: "qwen:7b"
+      score: null
+      latency_range: "TIMEOUT"
+      size_params: "7B"
+      status: "FAILED"
+      notes: "Hung on t1_commit_format after multiple attempts, interrupted"
+      
+    - model: "phi3:mini"
+      score: 0.38
+      latency_range: "28-100s"
+      size_params: "3.8B"
+      notes: "Strong performer, 12x better than Qwen models"
+      
+    - model: "llama3:8b-instruct-q4_K_M"
+      score: 0.41
+      latency_range: "54-94s"
+      size_params: "8B"
+      quantization: "q4_K_M"
+      notes: "⭐ BEST SCORE - quantized model outperformed non-quantized variant"
+      
+    - model: "llama3:latest"
+      score: 0.26
+      latency_range: "32-58s"
+      size_params: "8B"
+      quantization: "none"
+      notes: "Lower score than quantized q4_K_M variant - contradicts H2"
+      
+    - model: "gemma2:2b"
+      score: 0.22
+      latency_range: "11-23s"
+      size_params: "2B"
+      notes: "Fast inference, moderate accuracy"
+      
+    - model: "gemma:2b"
+      score: 0.13
+      latency_range: "9-15s"
+      size_params: "2B"
+      notes: "Fastest inference, low accuracy"
+      
+    - model: "mistral:latest"
+      score: 0.28
+      latency_range: "38-94s"
+      size_params: "7B"
+      notes: "Mid-tier performance across all test cases"
+      
+    - model: "tinyllama:latest"
+      score: 0.04
+      latency_range: "7-16s"
+      size_params: "1.1B"
+      notes: "Ultra-fast, ultra-small, minimal accuracy"
+      
+    - model: "orca-mini:latest"
+      score: 0.11
+      latency_range: "45-105s"
+      size_params: "3B"
+      notes: "Slow inference for size tier, low accuracy"
+  
+  hypothesis_verdicts:
+    H1_reasoning_floor:
+      verdict: "CONFIRMED"
+      evidence: "All models <1.5B scored ≤0.04 (qwen:0.5b, tinyllama). Models ≥3.8B scored ≥0.11 except Qwen family which plateaued at 0.03 across all sizes."
+      
+    H2_size_vs_quant:
+      verdict: "REFUTED"
+      evidence: "llama3:8b-instruct-q4_K_M (0.41) outperformed llama3:latest (0.26) by 58%. Quantization did NOT degrade performance - it improved it."
+      
+    H3_family:
+      verdict: "CONFIRMED"
+      evidence: "Qwen family (0.5b, 1.8b, 4b) all scored 0.03 regardless of size - clear family ceiling. Llama3 and Phi3 families achieved 0.26-0.41."
+      
+    H4_governance_boost:
+      verdict: "NOT_TESTED"
+      evidence: "This phase tested baseline (no governance injection). Governance variants deferred to Phase 3."
