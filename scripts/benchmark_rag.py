@@ -909,7 +909,7 @@ def main():
 
     # Establish RAM floor for monitoring between queries
     initial_ram_gb = get_available_ram_gb()
-    ram_floor_gb = initial_ram_gb - 0.5  # Allow 0.5GB tolerance
+    ram_floor_gb = initial_ram_gb - 1.5  # Allow 1.5GB tolerance (adaptive for ≤8GB systems)
     print(f"RAM floor established: {ram_floor_gb:.1f} GB (initial: {initial_ram_gb:.1f} GB)\n")
 
     # Calculate timeout based on model size (conservative for low-resource hardware)
@@ -924,9 +924,10 @@ def main():
 
     query_details = []  # Collect detailed per-query results for JSONL artifacts
     total_score = 0
-    print(f"Benchmarking {args.model} on {len(test_cases)} cases (study: {study_id})...")
+    total_cases = len(test_cases)
+    print(f"Benchmarking {args.model} on {total_cases} cases (study: {study_id})...")
 
-    for tc in test_cases:
+    for idx, tc in enumerate(test_cases, 1):
         # RAM floor check: detect pinned models or memory leaks
         current_ram_gb = get_available_ram_gb()
         if current_ram_gb > 0 and current_ram_gb < ram_floor_gb:
@@ -960,7 +961,7 @@ def main():
             else:
                 print(f"   ✓ Cooldown recovery successful — RAM adequate\n", flush=True)
         
-        print(f" - Running '{tc['id']}'...", flush=True)
+        print(f" - ({idx}/{total_cases}) Running '{tc['id']}'...", flush=True)
         
         # Track model for next iteration's cooldown strategy
         last_model_used = args.model
