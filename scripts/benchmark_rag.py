@@ -27,8 +27,10 @@ Configuration Validation:
   If missing, exits with code 1.
 
 RAM Readiness Check:
-  Requires ≥6GB available RAM before loading any model. If RAM < 6GB, exits with
-  code 2. Override with --skip-ram-check (not recommended on constrained hardware).
+  On systems with ≥12GB total RAM: requires ≥6GB available before loading models.
+  On systems with <12GB total RAM: requires ≥50% of total RAM available (adaptive).
+  If available RAM is insufficient, exits with code 2. Override with --skip-ram-check
+  (useful on 8GB systems where 75% free RAM is unrealistic under normal usage).
 
 Dry-Run Mode:
   Use --dry-run to validate configuration and pre-flight checks without running
@@ -80,6 +82,9 @@ _MIN_RAM_BYTES = 6 * 1024**3  # 6 GB
 def check_ram_availability(min_ram_bytes: int = _MIN_RAM_BYTES, skip_check: bool = False) -> tuple[bool, str]:
     """Check available RAM meets minimum threshold.
 
+    On systems with <12GB total RAM, the requirement scales to 50% of total RAM
+    (more realistic for consumer hardware). On larger systems, uses the default 6GB.
+
     Returns:
         (is_ok, message): (True, info_msg) if OK or skipped; (False, error_msg) if insufficient.
     """
@@ -89,14 +94,24 @@ def check_ram_availability(min_ram_bytes: int = _MIN_RAM_BYTES, skip_check: bool
     if psutil is None:
         return True, "RAM check unavailable (psutil not installed)"
 
-    available_bytes = psutil.virtual_memory().available
+    mem = psutil.virtual_memory()
+    total_bytes = mem.total
+    available_bytes = mem.available
+
+    # Adaptive threshold: scale to 50% of total on systems <12GB
+    if total_bytes < 12 * 1024**3:
+        required_bytes = int(total_bytes * 0.5)
+    else:
+        required_bytes = min_ram_bytes
+
     available_gb = available_bytes / 1024**3
-    required_gb = min_ram_bytes / 1024**3
+    required_gb = required_bytes / 1024**3
+    total_gb = total_bytes / 1024**3
 
-    if available_bytes < min_ram_bytes:
-        return False, f"Insufficient RAM: {available_gb:.1f} GB available, {required_gb:.1f} GB required"
+    if available_bytes < required_bytes:
+        return False, f"Insufficient RAM: {available_gb:.1f} GB available, {required_gb:.1f} GB required (50% of {total_gb:.1f} GB total)"
 
-    return True, f"RAM OK: {available_gb:.1f} GB available (≥{required_gb:.1f} GB required)"
+    return True, f"RAM OK: {available_gb:.1f} GB available (≥{required_gb:.1f} GB required, 50% of {total_gb:.1f} GB total)"
 
 
 def check_model_lifecycle(enforce: bool = False) -> tuple[bool, str, list[str]]:
@@ -779,6 +794,13 @@ def main():
 
     for tc in test_cases:
         print(f" - Running '{tc['id']}'...", flush=True)
+        
+        # Capture available RAM before query execution
+        if psutil is not None:
+            ram_available_gb = round(psutil.virtual_memory().available / (1024**3), 1)
+        else:
+            ram_available_gb = None
+        
         start_time = time.time()
         payload = run_rag_answer(tc["query"], args.model, args.top_k, args.template_path)
         duration = time.time() - start_time
@@ -819,6 +841,9 @@ def main():
         # Format as list of source filenames (placeholder until full chunks available)
         chunk_refs = retrieved_sources if isinstance(retrieved_sources, list) else []
 
+        # Run preflight checks for ALL queries (tier-1 and tier-2, regardless of judge)
+        preflight_signals = run_preflight_checks(answer, tc, chunk_refs)
+
         query_detail = {
             "query_id": tc["id"],
             "query": tc["query"],
@@ -833,12 +858,12 @@ def main():
                 "quantization": "default",
                 "ollama_version": "unknown",
             },
-            "machine_metadata": machine_metadata,
+            "machine_metadata": {
+                **machine_metadata,
+                "ram_available_gb": ram_available_gb,
+            },
+            "preflight_signals": preflight_signals,
         }
-
-        # Include preflight_signals if judge was used
-        if "preflight_signals" in metrics:
-            query_detail["preflight_signals"] = metrics["preflight_signals"]
 
         query_details.append(query_detail)
 
