@@ -827,6 +827,11 @@ def main():
         default=3,
         help="Cooldown period (seconds) between queries for passive RAM recovery (default: 3s, range: 0-10)",
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        help="Override query timeout in seconds (default: auto-estimated by model size). Use for extended testing of large models on RAM-constrained systems.",
+    )
     args = parser.parse_args()
 
     if not BENCHMARK_DATA.exists():
@@ -916,7 +921,8 @@ def main():
     print(f"RAM floor established: {ram_floor_gb:.1f} GB (initial: {initial_ram_gb:.1f} GB)\n")
 
     # Calculate timeout based on model size (conservative for low-resource hardware)
-    query_timeout_sec = estimate_model_timeout(args.model)
+    # Query timeout (override if specified, else auto-estimate)
+    query_timeout_sec = args.timeout if args.timeout else estimate_model_timeout(args.model)
     print(f"Query timeout: {query_timeout_sec}s ({query_timeout_sec // 60} min)\n")
 
     # Track last model used for cooldown-based RAM recovery
