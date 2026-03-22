@@ -42,7 +42,7 @@ Preflight signals are computed before judge invocation and inform scoring decisi
 
 - **`has_chunks`** (bool): Retrieval returned non-empty chunks. False indicates retrieval failure; answer is likely hallucinated.
 
-- **`source_coverage`** (float, 0.0–1.0): Fraction of expected source files present in retrieval. For multi-document questions requiring synthesis across 2+ files, low coverage (< 0.5) suggests retrieval missed key sources. A question expecting ["AGENTS.md", "session-management SKILL.md", "research-epic-planning SKILL.md"] that retrieves only ["AGENTS.md"] gets coverage = 0.33.
+- **`source_coverage`** (float, 0.0–1.0): Fraction of expected source files present in retrieval. For multi-document questions requiring synthesis across 2+ files, low coverage (< 0.5) suggests retrieval missed key sources. A question expecting ["AGENTS.md", "session-management SKILL.md", "research-epic-planning SKILL.md"] that retrieves only ["AGENTS.md"] gets `source_coverage = 0.33` (fraction of expected source files present in retrieval).
 
 **Interpretation**: Preflight signals are advisory, not deterministic. A low `entity_hit_rate` may still yield a 1.0 score if the answer is semantically complete and rubric-compliant. Conversely, high hit rates do not guarantee quality if reasoning is flawed.
 
@@ -59,7 +59,7 @@ with open("data/judge-prompt-template.md") as f:
 
 **Step 2**: Substitute placeholders:
 
-- `{query}` → tier-2 question text
+- `{question}` → tier-2 question text
 - `{answer}` → RAG system output
 - `{rubric}` → question-specific scoring criteria from `data/rag-benchmarks.yml`
 - `{preflight_signals}` → YAML-formatted preflight signal dict
