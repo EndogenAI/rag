@@ -477,7 +477,7 @@ def run_preflight_checks(answer: str, test_case: dict, retrieved_chunks: list) -
 
     Returns:
         Dict with preflight signals: {entity_hit_rate, pattern_hit_rate, is_substantive,
-        cites_source, has_chunks}
+        cites_source, has_chunks, source_coverage}
     """
     signals = {}
 
@@ -508,6 +508,24 @@ def run_preflight_checks(answer: str, test_case: dict, retrieved_chunks: list) -
 
     # 5. Retrieved chunks used (bool)
     signals["has_chunks"] = len(retrieved_chunks) > 0
+
+    # 6. Source coverage (0.0-1.0)
+    # Fraction of expected source files that appear in retrieval
+    # Helps identify when multi-document synthesis questions can't be answered due to incomplete retrieval
+    expected_source = test_case.get("expected_source", "")
+    if expected_source and retrieved_chunks:
+        # Parse comma-separated expected sources
+        expected_files = [f.strip() for f in expected_source.split(",")]
+        
+        # Check how many expected files appear in retrieved chunks
+        # Use substring match (e.g., "AGENTS.md" in "path/to/AGENTS.md")
+        coverage_hits = sum(
+            1 for expected in expected_files
+            if any(expected in chunk for chunk in retrieved_chunks)
+        )
+        signals["source_coverage"] = round(coverage_hits / len(expected_files), 2)
+    else:
+        signals["source_coverage"] = 0.0
 
     return signals
 

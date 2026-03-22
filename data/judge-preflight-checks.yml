@@ -31,3 +31,13 @@ preflights:
     check_type: existence
     signal_name: has_chunks
     signal_type: bool
+    
+  - id: source_coverage
+    description: Fraction of expected source files present in retrieval
+    check_type: coverage
+    signal_name: source_coverage
+    signal_type: float  # 0.0-1.0
+    rationale: |
+      Multi-document synthesis questions (e.g., "Describe the full research workflow")
+      require chunks from multiple specific sources. Low coverage (< 0.5) indicates
+      retrieval missed key sources, making complete answers unlikely even with good generation.
