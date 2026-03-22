@@ -22,7 +22,7 @@ except ImportError:
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from rag_index import answer_query
+from rag_index import answer_query  # noqa: E402
 
 
 def get_ram_gb():
@@ -34,12 +34,7 @@ def get_ram_gb():
 def check_model_loaded(model_name):
     """Check if model is currently loaded via ollama ps."""
     try:
-        result = subprocess.run(
-            ["ollama", "ps"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
+        result = subprocess.run(["ollama", "ps"], capture_output=True, text=True, timeout=5)
         # Extract model tag without ollama/ prefix
         tag = model_name.replace("ollama/", "")
         return tag in result.stdout
@@ -51,8 +46,9 @@ def main():
     parser = argparse.ArgumentParser(description="Test RAM pattern across queries")
     parser.add_argument("--model", required=True, help="Model to test (e.g., ollama/phi3:mini)")
     parser.add_argument("--num-queries", type=int, default=4, help="Number of queries to run")
-    parser.add_argument("--cooldown", type=int, default=2, 
-                        help="Cooldown seconds between queries (default: 2, use 0 to disable)")
+    parser.add_argument(
+        "--cooldown", type=int, default=2, help="Cooldown seconds between queries (default: 2, use 0 to disable)"
+    )
     args = parser.parse_args()
 
     print(f"Testing RAM pattern: {args.model} across {args.num_queries} queries")
@@ -61,59 +57,61 @@ def main():
 
     # Test queries (reuse from benchmark tier-2)
     queries = [
-        "If I'm working on a research task, which agent should I delegate to, and what tools does that agent have access to?",
-        "I need to create a new session scratchpad and write an encoding checkpoint. What skills or procedures should I follow, and what script do I run?",
+        "If I'm working on a research task, which agent should I delegate to, "
+        "and what tools does that agent have access to?",
+        "I need to create a new session scratchpad and write an encoding checkpoint. "
+        "What skills or procedures should I follow, and what script do I run?",
         "Can a subagent commit directly to the repository if the Review agent has approved their changes?",
-        "The Research Scout agent wants to fetch an external URL. According to its posture, is it allowed to use the terminal tool?"
+        "The Research Scout agent wants to fetch an external URL. "
+        "According to its posture, is it allowed to use the terminal tool?",
     ]
 
     # Baseline: Unload all models
     print("\n🧹 Pre-test cleanup...")
-    subprocess.run(["ollama", "stop", args.model.replace("ollama/", "")], 
-                   capture_output=True, timeout=10)
+    subprocess.run(["ollama", "stop", args.model.replace("ollama/", "")], capture_output=True, timeout=10)
     time.sleep(2)
-    
+
     baseline_ram = get_ram_gb()
     print(f"   Baseline RAM (no models loaded): {baseline_ram:.1f} GB\n")
 
     # Run queries and measure RAM after each
     ram_immediate = []  # RAM immediately after query
     ram_after_cooldown = []  # RAM after cooldown period
-    
-    for i, query in enumerate(queries[:args.num_queries], 1):
+
+    for i, query in enumerate(queries[: args.num_queries], 1):
         print(f"Query {i}: {query[:60]}...")
-        
+
         # Check if model is loaded before query
         was_loaded = check_model_loaded(args.model)
         print(f"   Model loaded before query? {was_loaded}")
-        
+
         # Run query
         start = time.time()
         result = answer_query(query, model=args.model, top_k=5)
         duration = time.time() - start
-        
+
         success = result.get("ok", False)
         print(f"   Query completed: {success} ({duration:.1f}s)")
-        
+
         # Measure RAM immediately after query
         ram_now = get_ram_gb()
         ram_immediate.append(ram_now)
         print(f"   RAM immediately after query: {ram_now:.1f} GB")
-        
+
         # Cooldown period
         if args.cooldown > 0:
             print(f"   Cooling down for {args.cooldown}s...")
             time.sleep(args.cooldown)
-            
+
             # Measure RAM after cooldown
             ram_cooled = get_ram_gb()
             ram_after_cooldown.append(ram_cooled)
-            
+
             # Check if model is still loaded
             is_loaded = check_model_loaded(args.model)
             print(f"   Model still loaded after cooldown? {is_loaded}")
             print(f"   RAM after cooldown: {ram_cooled:.1f} GB")
-            
+
             # Calculate delta from immediate measurement
             cooldown_delta = ram_cooled - ram_now
             if abs(cooldown_delta) > 0.1:
@@ -122,7 +120,7 @@ def main():
             # No cooldown - just copy immediate value
             ram_after_cooldown.append(ram_now)
             time.sleep(1)  # Brief pause for stability
-        
+
         # Calculate delta from baseline
         delta = ram_after_cooldown[-1] - baseline_ram
         print(f"   Delta from baseline: {delta:+.1f} GB\n")
@@ -131,19 +129,23 @@ def main():
     print("=" * 70)
     print("RESULTS:")
     print(f"  Baseline (no model): {baseline_ram:.1f} GB")
-    
+
     for i in range(len(ram_immediate)):
         delta_from_baseline = ram_after_cooldown[i] - baseline_ram
-        delta_from_prev = (ram_after_cooldown[i] - ram_after_cooldown[i-1]) if i > 0 else 0
-        
+        delta_from_prev = (ram_after_cooldown[i] - ram_after_cooldown[i - 1]) if i > 0 else 0
+
         if args.cooldown > 0:
             cooldown_effect = ram_after_cooldown[i] - ram_immediate[i]
-            print(f"  Query {i+1}: {ram_immediate[i]:.1f} GB → {ram_after_cooldown[i]:.1f} GB "
-                  f"(cooldown: {cooldown_effect:+.1f} GB, baseline: {delta_from_baseline:+.1f} GB)")
+            print(
+                f"  Query {i + 1}: {ram_immediate[i]:.1f} GB → {ram_after_cooldown[i]:.1f} GB "
+                f"(cooldown: {cooldown_effect:+.1f} GB, baseline: {delta_from_baseline:+.1f} GB)"
+            )
         else:
-            print(f"  Query {i+1}: {ram_immediate[i]:.1f} GB "
-                  f"(baseline: {delta_from_baseline:+.1f} GB, prev: {delta_from_prev:+.1f} GB)")
-    
+            print(
+                f"  Query {i + 1}: {ram_immediate[i]:.1f} GB "
+                f"(baseline: {delta_from_baseline:+.1f} GB, prev: {delta_from_prev:+.1f} GB)"
+            )
+
     print("\nPATTERN ANALYSIS:")
     if len(ram_after_cooldown) > 1:
         # Check if RAM is stable (variance < 0.2 GB)
@@ -162,30 +164,29 @@ def main():
             else:
                 print(f"  📊 VARIABLE: RAM variance {variance:.2f} GB (not clearly stable or degrading)")
                 print("  → May depend on query complexity or system load")
-    
+
     # Cooldown effectiveness analysis
     if args.cooldown > 0 and len(ram_immediate) > 0:
         print("\nCOOLDOWN EFFECTIVENESS:")
-        cooldown_effects = [ram_after_cooldown[i] - ram_immediate[i] 
-                           for i in range(len(ram_immediate))]
+        cooldown_effects = [ram_after_cooldown[i] - ram_immediate[i] for i in range(len(ram_immediate))]
         avg_cooldown_effect = sum(cooldown_effects) / len(cooldown_effects)
         max_cooldown_effect = max(cooldown_effects)
-        
+
         if avg_cooldown_effect > 0.1:
             print(f"  ✅ HELPFUL: Avg +{avg_cooldown_effect:.2f} GB recovered per cooldown")
             print(f"  → Best recovery: +{max_cooldown_effect:.1f} GB")
             print(f"  → Cooldown period of {args.cooldown}s allows memory release")
         elif avg_cooldown_effect < -0.1:
             print(f"  ⚠️  HARMFUL: Avg {avg_cooldown_effect:.2f} GB lost per cooldown")
-            print(f"  → Something consuming memory during cooldown")
+            print("  → Something consuming memory during cooldown")
         else:
             print(f"  ➡️  NEUTRAL: Avg {avg_cooldown_effect:+.2f} GB change (< 0.1 GB threshold)")
-            print(f"  → Cooldown has minimal effect on RAM recovery")
-            print(f"  → Consider testing longer cooldown or explicit unload")
-    
+            print("  → Cooldown has minimal effect on RAM recovery")
+            print("  → Consider testing longer cooldown or explicit unload")
+
     print("\nRECOMMENDATION:")
     if len(ram_after_cooldown) > 1:
-        final_ram = ram_after_cooldown[-1]
+        final_ram = ram_after_cooldown[-1]  # noqa: F841  (kept for future logging use)
         if variance < 0.2:
             print("  Keep model loaded across queries with same model.")
             print("  Only unload when switching models or at benchmark end.")

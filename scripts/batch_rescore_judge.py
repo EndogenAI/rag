@@ -41,7 +41,7 @@ import yaml
 
 # Import from benchmark_rag.py
 try:
-    from benchmark_rag import evaluate_with_judge, BENCHMARK_DATA
+    from benchmark_rag import BENCHMARK_DATA, evaluate_with_judge
 except ImportError:
     print("ERROR: Could not import from benchmark_rag.py. Run from repo root.")
     sys.exit(1)
@@ -85,12 +85,12 @@ def iter_jsonl_artifacts(study_id: str, pattern: str = "*.jsonl") -> Iterator[Pa
         # Skip already-rescored files
         if "-rescored.jsonl" in path.name:
             continue
-            
+
         # Skip original files if a rescored sibling already exists
         rescored_path = path.with_name(f"{path.stem}-rescored.jsonl")
         if rescored_path.exists():
             continue
-            
+
         yield path
 
 
@@ -192,7 +192,11 @@ def main():
         "--judge-model", default="ollama/phi3:mini", help="LiteLLM judge model (default: ollama/phi3:mini)"
     )
     parser.add_argument("--dry-run", action="store_true", help="Count queries without rescoring")
-    parser.add_argument("--in-place", action="store_true", help="Overwrite original files (default: write *-rescored.jsonl)")
+    parser.add_argument(
+        "--in-place",
+        action="store_true",
+        help="Overwrite original files (default: write *-rescored.jsonl)",
+    )
     parser.add_argument("--pattern", default="*.jsonl", help="Glob pattern for JSONL files (default: *.jsonl)")
 
     args = parser.parse_args()
