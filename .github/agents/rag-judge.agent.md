@@ -33,6 +33,7 @@ Every evaluation follows the standardized judge prompt template. Preflight signa
 - `is_substantive` — boolean: answer length exceeds minimum threshold
 - `cites_source` — boolean: answer references source documents
 - `has_chunks` — boolean: retrieval system returned relevant chunks
+- `source_coverage` — fraction of expected source files present in retrieval
 
 Scores are discrete: **0.0** (fails rubric), **0.5** (partial), **1.0** (passes rubric).
 
@@ -69,7 +70,7 @@ Scores are discrete: **0.0** (fails rubric), **0.5** (partial), **1.0** (passes 
 - No file writes, terminal calls, or edit operations
 
 **Acceptance Criteria**:
-- Every evaluation logs all 6 preflight signals (entity_hit_rate, pattern_hit_rate, is_substantive, cites_source, has_chunks, source_coverage — fraction of retrieved sources cited in answer)
+- Every evaluation logs all 6 preflight signals (entity_hit_rate, pattern_hit_rate, is_substantive, cites_source, has_chunks, source_coverage — fraction of expected source files present in retrieval)
 - Score justification is grounded in rubric language
 - No hallucinated scores (only 0.0, 0.5, 1.0 allowed)
 
