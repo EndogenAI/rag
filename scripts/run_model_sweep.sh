@@ -144,6 +144,11 @@ ALL_MODELS=(
     "ollama/granite3.3:2b|9|1.2|ibm-reasoning-v3.3"
     "ollama/phi3:mini|15|2.2|judge-model-kept"
     "ollama/orca-mini|8|2.0|fixed-tag"
+    
+    # Mid-tier (7-9B) - Phase 4
+    "ollama/qwen2.5:7b|60|4.7|fast-v2.5-mid"
+    "ollama/llama3.1:8b|70|4.9|meta-baseline-mid"
+    "ollama/gemma2:9b|80|5.4|google-consistent-mid"
 )
 
 # Filter models if --models flag was used
@@ -208,7 +213,7 @@ echo ""
 
 if [ "$DRY_RUN" = true ]; then
     echo "=========================================="
-    echo "| Model | Params | Selected K |"
+    echo "| Model | Params | Dynamic K | Variant K (Used) |"
     echo "=========================================="
 fi
 
@@ -222,7 +227,7 @@ for i in "${!MODELS[@]}"; do
     K=$(get_k_size "$PARAMS")
     
     if [ "$DRY_RUN" = true ]; then
-        echo "| $MODEL_TAG | ${PARAMS}B | k=$K |"
+        echo "| $MODEL_TAG | ${PARAMS}B | k=$K | k=$TOP_K |"
         continue
     fi
     
@@ -237,7 +242,7 @@ for i in "${!MODELS[@]}"; do
     echo ""
     echo "=========================================="
     echo -e "${GREEN}Model $MODEL_NUM/$TOTAL: $MODEL${NC}"
-    echo "  Size: ${SIZE_GB} GB | Est: ~${EST_MIN} min | Dynamic K: $K | Notes: ${NOTES}"
+    echo "  Size: ${SIZE_GB} GB | Est: ~${EST_MIN} min | Variant K: $TOP_K (Dynamic: $K) | Notes: ${NOTES}"
     echo "=========================================="
     
     # Ensure clean state before each model
@@ -296,7 +301,8 @@ for i in "${!MODELS[@]}"; do
     
     # Build benchmark command (tier-2, pattern-matching only)
     # Judge scoring deferred to batch phase after all models complete (RAM efficiency)
-    BENCH_CMD="uv run python scripts/benchmark_rag.py --model \"$MODEL\" --tier 2 --no-ram-block --study-id \"$STUDY_ID\" --top-k $K"
+    # Use variant's configured TOP_K (dynamic K is shown for reference only in dry-run)
+    BENCH_CMD="uv run python scripts/benchmark_rag.py --model \"$MODEL\" --tier 2 --no-ram-block --study-id \"$STUDY_ID\" --top-k $TOP_K"
     
     # Add template path parameter if variant specifies custom template
     if [ -n "$TEMPLATE_PATH" ]; then

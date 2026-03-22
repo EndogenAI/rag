@@ -380,6 +380,13 @@ def run_rag_answer(query: str, model: str, top_k: int = 10, template_path: str =
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": f"Query timed out after {timeout_sec}s"}
     except subprocess.CalledProcessError as e:
+        # Fast-fail on model-not-found errors (exit code 2 = model missing)
+        error_msg = e.stderr.lower() if e.stderr else ""
+        if "model" in error_msg and "not found" in error_msg:
+            print(f"\n❌ ERROR: Model {model} not found.", file=sys.stderr)
+            print(f"   Run 'ollama pull {model}' first.", file=sys.stderr)
+            print(f"   Available models: Run 'ollama list' to see what's on disk.", file=sys.stderr)
+            sys.exit(2)  # Exit code 2 = model missing (distinct from general failure)
         return {"ok": False, "error": e.stderr}
     except json.JSONDecodeError:
         return {"ok": False, "error": "Invalid JSON output"}
