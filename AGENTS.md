@@ -1029,12 +1029,16 @@ Key agents for this repo:
 | **Executive Scripter** | Identify tasks done >2 times interactively; audit `scripts/` for gaps |
 | **Executive Automator** | Design file watchers, pre-commit hooks, CI tasks |
 | **RAG Specialist** | Define bounded retrieval, indexing, and evaluation workflow contracts for repository RAG systems |
+| **RAG Judge** | Evaluate RAG model answers against preflight signals and reasoning-density thresholds (Tier 2). |
 | **Review** | Validate any changed files against AGENTS.md constraints before committing |
 | **GitHub** | Commit approved changes following Conventional Commits |
 
 ### Agent Skills
 
 Skills are `SKILL.md` files at `.github/skills/<skill-name>/SKILL.md`. **Agents encode *who does a task*; skills encode *how a task is done*.** If a procedure is needed by more than one agent or AI tool, it belongs in a skill — not an agent body.
+
+Recent skills include:
+- [rag-rapid-research](.github/skills/rag-rapid-research/SKILL.md) — Factorial RAG sweep workflow: tier-0–3 stressor progression, model benchmarking, adaptive k-selection, and reasoning density diagnostics for local compute-first evaluation.
 
 **Encoding inheritance chain** — four layers (plus redirection):
 
