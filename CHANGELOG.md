@@ -1,3 +1,46 @@
+# [0.5.0](https://github.com/EndogenAI/rag/compare/v0.4.0...v0.5.0) (2026-03-22)
+
+
+### Bug Fixes
+
+* **agents:** add x-governs provenance to rag-judge ([845145c](https://github.com/EndogenAI/rag/commit/845145cf905d42fd8ee69af312b2382063850058))
+* **lint, tests:** commit backfill W293 fix; calibrate BEIR recall threshold ([c2ea946](https://github.com/EndogenAI/rag/commit/c2ea946f3d0e0cbc2880a5953ae4acd9e7170b12))
+* **lint:** resolve all ruff W293/E501/E402/F841 violations on branch ([340b121](https://github.com/EndogenAI/rag/commit/340b121e6c64475191e1b36c53df574778548a8a))
+* **rag:** align k-thresholds, citation format, and RAM test exit status ([8391942](https://github.com/EndogenAI/rag/commit/839194294864db72e8892d3c65d6cbab1a281de2))
+* **rag:** separate FTS OR-query from normalized_query API field; fix _print_output capsys capture ([24734b6](https://github.com/EndogenAI/rag/commit/24734b6df3517abbe1e130f5842c84a00c0bde6f))
+* **review:** address all 8 inline PR review comments ([4a9f792](https://github.com/EndogenAI/rag/commit/4a9f792da45b0bb4a264341de9c17e29649708fe))
+* **review:** address second Copilot review — expand SKILL, fix bugs, add inline docs ([50968b7](https://github.com/EndogenAI/rag/commit/50968b73a15f257a5ae2caeed6ab192381bd865f))
+* **scripts:** apply ruff format and trailing whitespace fixes to adaptive_k_selector ([3fae1c4](https://github.com/EndogenAI/rag/commit/3fae1c40fce698f50fa3e518626b4fa0cfadad44))
+* **scripts:** honor --no-ram-block flag in check_ram_availability ([1ff43b4](https://github.com/EndogenAI/rag/commit/1ff43b4229fa42f81a36087b1ac2560173166a04))
+* **skills:** add YAML frontmatter to rag-rapid-research SKILL.md ([9c76285](https://github.com/EndogenAI/rag/commit/9c762853bed75d0becfb90b5d5fa85a6a392b96b))
+
+
+### Features
+
+* **agents:** add RAG Judge agent ([8267a87](https://github.com/EndogenAI/rag/commit/8267a877d92a23824ffac1e848e6e8b838ceb00f))
+* **benchmark:** add preflight signals and per-query RAM tracking to artifacts ([4f25a8a](https://github.com/EndogenAI/rag/commit/4f25a8a1f1bc1f464267598da1acdd19ed45c651))
+* **benchmark:** extract judge prompt to versioned template with preflight checks ([62f4847](https://github.com/EndogenAI/rag/commit/62f4847a7cb2261718ca3a4cbb33609354027720))
+* **rag:** add hardened benchmark script with dry-run and safety checks ([59d5091](https://github.com/EndogenAI/rag/commit/59d50910ffb850f2810b31e9ff328461e1e5f466))
+* **rag:** add machine metadata and harden retrieved chunks capture ([f05664f](https://github.com/EndogenAI/rag/commit/f05664f95d71bc177aa0c266854871fbd29076ad))
+* **rag:** add Study 2a benchmark artifacts — 11 model reports in JSONL ([c914d00](https://github.com/EndogenAI/rag/commit/c914d0048e0c72e48735edfd84231229dabc18d6))
+* **rag:** add Study 2a smallest-tier factorial results and Option B template ([1c2bfce](https://github.com/EndogenAI/rag/commit/1c2bfceab8e92e4a2538c91bc6c2d203d89cb73f))
+* **rag:** add T3 stressors and v2.0 dynamic k-tuning orchestrator ([773d733](https://github.com/EndogenAI/rag/commit/773d733a7985308b317f8ab293b6c79da4074eb1))
+* **rag:** add tier-2 LLM-as-judge evaluation to benchmark_rag.py ([bd10520](https://github.com/EndogenAI/rag/commit/bd10520298b437bc39d71154b8500b67031aee04))
+* **rag:** complete Study 2a Phase 2 — 11-model benchmark sweep with quantization paradox finding ([1c507bd](https://github.com/EndogenAI/rag/commit/1c507bd656ad3e3a4e5acb550bca9fd543f6c8e6))
+* **rag:** consolidate study-id detection and artifacts ([3103070](https://github.com/EndogenAI/rag/commit/3103070629844899120e36dd955b48d1e61b1dfe))
+* **scripts:** add benchmark resilience improvements ([ea8e06d](https://github.com/EndogenAI/rag/commit/ea8e06d340574fe0eca594540f23bba03a4ef42a))
+* **scripts:** add Copilot-based judge evaluation workflow ([f60fadd](https://github.com/EndogenAI/rag/commit/f60fadd5e4e8ff33ae8d96e0544c5b1608e2d14e))
+* **scripts:** add JSONL artifact generation to benchmark_rag.py ([d61a62e](https://github.com/EndogenAI/rag/commit/d61a62edbe6d1d8f25ed42e7c0be3d65346af1f9))
+* **scripts:** add multi-model sweep orchestrator for Study 2a ([783968c](https://github.com/EndogenAI/rag/commit/783968c31f4dee55d52c24575c0dae0c0d604206))
+* **scripts:** add RAM pattern empirical test script ([c11c0e3](https://github.com/EndogenAI/rag/commit/c11c0e38b728f39262a9307ae8cacb1348bbac1f))
+* **scripts:** filter RAM-incompatible models from sweep (qwen:7b, mistral:7b, llama3:latest) ([1274a7d](https://github.com/EndogenAI/rag/commit/1274a7da21f5d3bbfc51b2d79da8cdec4ca0d3ac))
+* **scripts:** implement cooldown-based RAM recovery in benchmark_rag ([1d1b275](https://github.com/EndogenAI/rag/commit/1d1b275b5b57673cfaf8091e75906c02de22916e))
+* **scripts:** lower RAM floor threshold and add query progress tracking ([5695cd6](https://github.com/EndogenAI/rag/commit/5695cd67dd5b2c5ff9af26a4d3bc004d77390dc4))
+* **scripts:** Phase 8 - sweep timing tracking, extended timeout support, quantization tests ([2b209bf](https://github.com/EndogenAI/rag/commit/2b209bf6f89e1555dd9d02c0d8098702038b1a7a))
+* **scripts:** revert to 3s cooldown default based on empirical validation ([f2741db](https://github.com/EndogenAI/rag/commit/f2741dbfb4c83ea06b27063f6eaeb5329821a082))
+
+
+
 # [0.4.0](https://github.com/EndogenAI/rag/compare/v0.3.1...v0.4.0) (2026-03-20)
 
 
