@@ -2,9 +2,26 @@
 """
 Test RAM consumption pattern across multiple queries without model unloading.
 
-Usage: uv run python scripts/test_ram_pattern.py --model ollama/phi3:mini --num-queries 4
+Exercises the Ollama RAM floor detection pattern: measures available RAM before
+and after each query to determine whether memory stabilizes (healthy) or degrades
+(leak/fragmentation). The floor baseline is: initial_available_ram − 1.5 GB.
 
-This helps answer: Does RAM stabilize or degrade when the model stays loaded?
+Usage:
+    uv run python scripts/test_ram_pattern.py --model ollama/phi3:mini --num-queries 4
+
+Arguments:
+    --model MODEL          Ollama model tag to test, prefixed with ollama/
+                           (e.g., ollama/phi3:mini, ollama/qwen2.5:7b)
+    --num-queries INT      Number of sequential queries to run (default: 4)
+    --cooldown INT         Seconds to wait between queries (default: 2; 0 to disable)
+
+Outputs:
+    Per-query RAM readings (GB available) and a final stability verdict printed
+    to stdout. Exit code 0 = RAM stable; non-zero = degradation detected.
+
+Governance:
+    Part of the RAG Study sweep pipeline. See .github/skills/rag-rapid-research/SKILL.md.
+    Ollama model management rules: AGENTS.md § Ollama Model Management.
 """
 
 import argparse
