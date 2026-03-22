@@ -207,6 +207,7 @@ def main():
         if variance < 0.2:
             print("  Keep model loaded across queries with same model.")
             print("  Only unload when switching models or at benchmark end.")
+            return 0
         else:
             if args.cooldown > 0 and avg_cooldown_effect > 0.1:
                 print(f"  Use {args.cooldown}s cooldown between queries to allow natural memory release.")
@@ -214,7 +215,10 @@ def main():
             else:
                 print("  Continue RAM floor monitoring + auto-unload.")
                 print("  Degradation detected — current strategy is correct.")
+            return 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
