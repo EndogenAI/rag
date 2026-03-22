@@ -1,20 +1,21 @@
 #!/usr/bin/env bash
 # Run full model sweep for Study 2a (tier-2 suite)
 # Usage: bash scripts/run_model_sweep.sh
+#
+# RAM-filtered model list (2026-03-21):
+# Removed qwen:7b, mistral:7b, llama3:latest due to RAM exhaustion on 8GB systems
+# See: .tmp/research-rag-stress-test-quantization/2026-03-21.md Phase 7
 
 set -euo pipefail
 
-# Model matrix from docs/plans/2026-03-20-research-2a-model-landscape.md
+# Model matrix (RAM-compatible: ≤ 5GB for 8GB system)
 MODELS=(
     "ollama/qwen:0.5b"
     "ollama/qwen:1.8b"
     "ollama/qwen:4b"
-    "ollama/qwen:7b"
     "ollama/phi3:mini"
     "ollama/llama3:8b-instruct-q4_K_M"
-    "ollama/llama3:latest"
     "ollama/gemma2:2b"
-    "ollama/mistral:7b"
     "ollama/tinyllama:1.1b"
     "ollama/gemma:2b"
     "ollama/orca-mini:3b"
@@ -23,11 +24,16 @@ MODELS=(
 TOTAL=${#MODELS[@]}
 
 echo "=========================================="
-echo "Study 2a Full Model Sweep"
+echo "Study 2a RAM-Filtered Model Sweep"
 echo "=========================================="
-echo "Total models: $TOTAL"
+echo "Total models: $TOTAL (RAM-compatible only)"
 echo "Tier: 2 (9 test cases per model)"
-echo "Estimated time: ~20 min per model = ~4 hours total"
+echo "Estimated time: ~20 min per model = ~3 hours total"
+echo ""
+echo "Excluded (RAM exhaustion on 8GB):"
+echo "  - qwen:7b (4.5GB)"
+echo "  - mistral:7b (4.1GB)"
+echo "  - llama3:latest (~8GB)"
 echo "==========================================" 
 echo ""
 
