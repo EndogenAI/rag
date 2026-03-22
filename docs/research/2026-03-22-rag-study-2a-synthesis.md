@@ -1,7 +1,7 @@
 ---
 title: RAG Study 2a Synthesis — Model Stratification and Retrieval Volatility
 status: Final
-closes_issue: [28, 31, 32, 33]
+closes_issue: [28]
 date: 2026-03-22
 ---
 

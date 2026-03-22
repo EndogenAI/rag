@@ -654,7 +654,8 @@ def _normalize_query_for_fts(query: str) -> tuple[str, str]:
     tokens = re.findall(r"[A-Za-z0-9]+", query)
     if not tokens:
         raise ValueError("query must contain at least one alphanumeric token")
-    return " ".join(tokens), " OR ".join(tokens)
+    quoted = [f'"{t}"' for t in tokens]
+    return " ".join(tokens), " OR ".join(quoted)
 
 
 def query_index(

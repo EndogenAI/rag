@@ -124,7 +124,12 @@ def rescore_artifact(
                 continue
 
             total_queries += 1
-            query_detail = json.loads(line)
+            try:
+                query_detail = json.loads(line)
+            except json.JSONDecodeError as exc:
+                print(f"WARNING: skipping malformed JSON line: {exc}", file=sys.stderr)
+                rescored_lines.append(line)
+                continue
             query_id = query_detail.get("query_id")
             test_case = test_cases.get(query_id)
 
