@@ -1,3 +1,15 @@
+---
+name: rag-rapid-research
+description: |
+  Factorial RAG sweep workflow: tier-0–3 stressor progression, model benchmarking,
+  adaptive k-selection, and reasoning density diagnostics for local compute-first evaluation.
+effort: L
+languages: [python, bash]
+related-docs:
+  - docs/research/2026-03-22-rag-study-2a-synthesis.md
+  - AGENTS.md
+---
+
 # SKILL: RAG Rapid Research (Factorial Sweeps)
 
 **Governing Constraints**: 
