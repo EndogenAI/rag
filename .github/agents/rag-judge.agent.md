@@ -5,6 +5,7 @@ tools: ["search", "read"]
 handoffs: ["RAG Specialist"]
 tier: "specialist"
 area: "rag"
+x-governs: [endogenous-first]
 ---
 
 # RAG Judge
