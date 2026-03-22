@@ -26,6 +26,25 @@ Current benchmarks support the hypothesis that model response to context volume 
 
 **Conclusion**: The "Reasoning Density" of a model determines its optimal context window. Lower-density models require higher recall (redundant evidence) to maintain signal, while higher-density models require higher precision (targeted signal) to avoid distractor-based reasoning failures. At the 7B+ scale, family alignment with the embedding space becomes the dominant factor.
 
+## Latency & Efficiency Frontier
+
+As per the **Local Compute-First** axiom ([MANIFESTO.md](../../MANIFESTO.md#3-local-compute-first)), performance must be balanced against local resource constraints. The Study 2a Option C (k=20) sweep reveals significant variance in inference cost:
+
+| Model | Score | Avg Latency (s) | RAM Footprint | Viability Status |
+|-------|-------|-----------------|---------------|-----------------|
+| SmollM-360M | 0.333 | 8.86s | < 1GB | **High Efficiency** |
+| TinyLlama-1.1B | 0.611 | 9.75s | ~1.5GB | **Optimal Entry** |
+| Qwen2.5-1.5B | 0.733 | 22.04s | ~2.5GB | **Balanced** |
+| Granite-3.3-2B | 0.867 | 43.20s | ~3.5GB | **Deployment Baseline** |
+| Qwen2.5-7B | **0.956** | 85.18s | ~8GB | **SOTA (High-Res)** |
+| Llama3.1-8B | 0.611 | 95.37s | ~9GB | **Sub-optimal** |
+| Gemma2-9B | 0.311 | 525.00s | ~10GB+ | **Non-Viable** |
+
+### The "Latency Wall" and Local Compute-First Alignment
+*   **Prioritize Deployment Baseline (Granite-3.3-2B)**: While **Qwen2.5-7B** (0.956) is the absolute SOTA, its 85s latency exceeds the 60s interactivity threshold for standard local compute environments. **Granite-3.3-2B** (0.922 @ 12s in baseline, 0.867 here) is designated as the **primary deployment baseline**—offering a 90%+ quality-to-latency ratio that adheres to [MANIFESTO.md §3 Local Compute-First](../../MANIFESTO.md#3-local-compute-first).
+*   **Theoretically High Performance / Practically Non-Viable**: **Gemma2-9B** is excluded from production consideration due to a 525s (8.7 min) average latency and systemic retrieval failure. Even on 16GB systems, this latency breaks the interactive utility of local RAG.
+*   **The 60s Interactivity Threshold**: Models exceeding 60s latency (Qwen2.5-7B, Llama3.1-8B) require high-GPU/RAM environments to reach interactive speeds. **Qwen2.5-7B** justifies this cost through its SOTA performance in specialized "High-Res" research contexts, whereas **Llama3.1-8B** fails to provide more value than the much faster **Granite-3.3-2B**.
+
 ## Pattern Catalog
 
 ### Pattern: Architectural Retrieval Failure (Gemma2-9B)
@@ -60,7 +79,12 @@ Selection logic for RAG pipelines must be family-aware. Qwen-series models shoul
 Until embedding alignment issues are resolved, flag Gemma2 as "Not Recommended" for the EndogenAI Workflows corpus.
 
 ## Sources
-*   [data/benchmark-results/study-2a/](../../data/benchmark-results/study-2a/) (Baseline k=10)
-*   [data/benchmark-results/study-2a-optionc/](../../data/benchmark-results/study-2a-optionc/) (Mid-tier k=20)
+*   [Study 2a Baseline k=10](../../data/benchmark-results/study-2a/)
+*   [Study 2a Option C k=20](../../data/benchmark-results/study-2a-optionc/)
+*   [Granite-3.3-2B Results](../../data/benchmark-results/study-2a-optionc/granite3.3-2b-2026-03-22T09-02-58.011437Z-rescored.jsonl)
+*   [Llama3.1-8B Results](../../data/benchmark-results/study-2a-optionc/llama3.1-8b-2026-03-22T10-29-30.531386Z-rescored.jsonl)
+*   [SmollM-360M Results](../../data/benchmark-results/study-2a-optionc/smollm-360m-2026-03-22T09-28-06.779093Z-rescored.jsonl)
+*   [Qwen2.5-7B SOTA Results](../../data/benchmark-results/study-2a-optionc/qwen2.5-7b-2026-03-22T10-43-10.199270Z-rescored.jsonl)
+*   [Gemma2-9B Failure Results](../../data/benchmark-results/study-2a-optionc/gemma2-9b-2026-03-22T12-02-51.498586Z-rescored.jsonl)
 *   [.tmp/research-rag-stress-test-quantization/2026-03-22.md](../../.tmp/research-rag-stress-test-quantization/2026-03-22.md) (Session Scratchpad)
 *   `scripts/analyze_study2a.py`
