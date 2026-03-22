@@ -1,7 +1,7 @@
 ---
 title: RAG Study 2a Synthesis — Model Stratification and Retrieval Volatility
 status: Final
-closes_issue: [31, 32, 33]
+closes_issue: [28]
 date: 2026-03-22
 ---
 
@@ -54,15 +54,12 @@ Selection logic for RAG pipelines must be family-aware. Qwen-series models shoul
 *   [data/benchmark-results/study-2a-optionc/](../../data/benchmark-results/study-2a-optionc/) (Mid-tier k=20)
 *   [.tmp/research-rag-stress-test-quantization/2026-03-22.md](../../.tmp/research-rag-stress-test-quantization/2026-03-22.md) (Session Scratchpad)
 
+---
 
-### Review Gate 1 — Research Quality ⬜
-**Agent**: Re**Agent**: Re**Agent**: Re**Agent**: Re**Agent**: Re**Agent**:Ph**Agent**: Re**Agent**: Re**Agent**: Re**Agent**: Rese 1 d**Agent**: Re**Agent**: Re**Agent**: Re**Agent**: ��**Agent**: Re**Agende**Agent**: Re**Agent**: Re**Agent**:ipter
-**Del**Del**Del*:
-**Del**Del**Del*:
-nt**: Re**Agent**: Re**Agent**: Re**Agent**: Re**Agent**:Ph**Agent**: Re**Agent**: Re**Agent**: Re**Agent**: Rese 1 d**Agent**: Re**Agent**: Re**Agent**: Re**Agent**: ��**Agent**: Re**Agende**Agent**: Re**Agent**: Re**Agalintte
-nt**: Re**AgNotnt**: Re**AgNotnt**: Re**AgNotnt**: Re**AgNInnt**: Re**AgNotnt**: Re**AgNotr
-nt**: Re**AgNotn:
-nt**: Re**AgNotn:
-*: Re**AgNotnt**: Re**AgNotnt**: Re**AgNInnt**: Re**AgNotnt**: Re**AgNotr
-**: Re**Agent**: Rese 1 d**Agent**: Re**ee**: Re**Agent**: Rese 1 d**Agent**: Re**ee**: Re**Agent**: Rese 1 d**Agent**: Re**ee**: Re**Agent**: Rese 1 d**Agent**: Re*ona**: mmits
-- Session summary written to scra- Session summary written txe- Session summary writn**- Session summary written to scra- Sessioat- Session summary written to scra- Session summary written txe- Session summary writn**- Session summary written to scra- Sessioat- Session summary written to scra- Session summary written txe- Session summary writn**- Session summary written to scpl- Session summard
+### Review Gate 1 — Research Quality ✅
+
+**Agent**: Review
+**Deliverables**: Synthesis doc validated against D4 schema; verdict APPROVED
+**Depends on**: All Recommendations sections drafted; Sources section populated
+**Gate**: Commit does not proceed until Review returns APPROVED
+**Status**: ✅ Complete — APPROVED

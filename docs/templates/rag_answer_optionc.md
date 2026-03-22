@@ -32,10 +32,11 @@ You are an expert RAG Synthesizer. Your goal is high-fidelity extraction and mul
 ```
 
 ## Logic: Adaptive top-k
-This variant utilizes `scripts/adaptive_k_selector.py` to dynamically adjust the retrieval window based on query complexity:
-- **Informational**: k=3 (Precision-weighted)
-- **Comparative**: k=7 (Recall-weighted)
-- **Synthetic/Complex**: k=12 (Reasoning-weighted)
+This variant utilizes `scripts/adaptive_k_selector.py` to dynamically adjust the retrieval window based on **model parameter tier** (not query complexity):
+- **Tier 1 (<1.5B)**: k=20 (Maximise evidence redundancy for low-density models)
+- **Tier 2 (1.5B–8B)**: k=10 (Prioritize signal precision)
+- **Tier 3 (>8B)**: k=5–8 (Highly focused precision)
+- **Exception**: k=20 for validated mid-tier families (e.g., Qwen2.5-7B)
 
 ## Evaluation Target
 - **Tool**: `scripts/batch_rescore_judge.py`

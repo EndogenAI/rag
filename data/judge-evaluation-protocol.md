@@ -59,7 +59,7 @@ with open("data/judge-prompt-template.md") as f:
 
 **Step 2**: Substitute placeholders:
 
-- `{question}` → tier-2 question text
+- `{query}` → tier-2 question text
 - `{answer}` → RAG system output
 - `{rubric}` → question-specific scoring criteria from `data/rag-benchmarks.yml`
 - `{preflight_signals}` → YAML-formatted preflight signal dict

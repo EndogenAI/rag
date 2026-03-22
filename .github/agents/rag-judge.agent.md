@@ -43,8 +43,8 @@ Scores are discrete: **0.0** (fails rubric), **0.5** (partial), **1.0** (passes 
 
 1. **Receive inputs**: answer text, test question, rubric, preflight signals dict
 2. **Load template**: Read `data/judge-prompt-template.md` from disk
-3. **Verify preflight signals**: Confirm all 5 required signals are present (entity_hit_rate, pattern_hit_rate, is_substantive, cites_source, has_chunks)
-4. **Substitute placeholders**: Replace `{question}`, `{answer}`, `{rubric}`, `{preflight_signals}` in template
+3. **Verify preflight signals**: Confirm all 6 required signals are present (entity_hit_rate, pattern_hit_rate, is_substantive, cites_source, has_chunks, source_coverage)
+4. **Substitute placeholders**: Replace `{query}`, `{answer}`, `{rubric}`, `{preflight_signals}` in template
 5. **Evaluate**: Score answer against rubric; reference at least one preflight signal in reasoning
 6. **Return**: Score (0.0 / 0.5 / 1.0) and reasoning (≤100 tokens)
 
@@ -68,7 +68,7 @@ Scores are discrete: **0.0** (fails rubric), **0.5** (partial), **1.0** (passes 
 - No file writes, terminal calls, or edit operations
 
 **Acceptance Criteria**:
-- Every evaluation logs all 5 preflight signals
+- Every evaluation logs all 6 preflight signals (entity_hit_rate, pattern_hit_rate, is_substantive, cites_source, has_chunks, source_coverage — fraction of retrieved sources cited in answer)
 - Score justification is grounded in rubric language
 - No hallucinated scores (only 0.0, 0.5, 1.0 allowed)
 
