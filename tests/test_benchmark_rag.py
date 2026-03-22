@@ -9,13 +9,11 @@ Tests cover the 5 new functions added in commits b8fb1d3, fc869ff, and b874658:
 """
 
 import json
-import re
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
-import yaml
 
 # Import functions under test
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -26,7 +24,6 @@ from scripts.benchmark_rag import (
     load_judge_template,
     run_preflight_checks,
 )
-
 
 # --- Fixtures ---
 
@@ -159,7 +156,10 @@ def test_run_preflight_checks_partial_entities(test_case_basic):
 
 def test_run_preflight_checks_no_expectations(test_case_no_expectations):
     """run_preflight_checks handles test cases with no expected entities/patterns."""
-    answer = "This is a substantive answer with enough tokens to clearly pass the minimum threshold check for substantiveness. See docs/guides/ for more details."
+    answer = (
+        "This is a substantive answer with enough tokens to clearly pass the minimum "
+        "threshold check for substantiveness. See docs/guides/ for more details."
+    )
     retrieved_chunks = ["guide.md"]
 
     signals = run_preflight_checks(answer, test_case_no_expectations, retrieved_chunks)

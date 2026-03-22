@@ -8,16 +8,16 @@ Cooldown-Based RAM Management (Recommended):
   Ollama releases internal buffers passively during 2-5s cooldown periods, recovering
   ~1.8 GB on 8GB systems without explicit model unload. The benchmark uses cooldown-based
   recovery for same-model queries to minimize latency overhead.
-  
+
   Behavior:
     - Same model, RAM < floor: Apply cooldown (default 3s), re-check RAM, unload only if still low
     - Model switch or persistent low RAM: Explicit unload (safeguard mode)
     - Preflight cleanup: Unloads any pinned models before benchmarking begins
     - Post-benchmark cleanup: Unloads model after all queries complete
-  
+
   Configure: --query-cooldown <seconds> (default: 3, range: 0-10)
   Disable cooldown: --query-cooldown 0 (reverts to aggressive auto-unload between every query)
-  
+
   Empirical validation (8GB MacBook Air): 3s captures 90-94% of recoverable RAM.
   10s cooldown adds only 0.1-0.2 GB more (+6-10% marginal gain) at 7s latency cost per query.
 
@@ -127,12 +127,17 @@ def check_ram_availability(min_ram_bytes: int = _MIN_RAM_BYTES, warn_only: bool 
     total_gb = total_bytes / 1024**3
 
     if available_bytes < required_bytes:
-        msg = f"Insufficient RAM: {available_gb:.1f} GB available, {required_gb:.1f} GB required (50% of {total_gb:.1f} GB total)"
+        msg = (
+            f"Insufficient RAM: {available_gb:.1f} GB available, "
+            f"{required_gb:.1f} GB required (50% of {total_gb:.1f} GB total)"
+        )
         if warn_only:
             return True, f"⚠️  {msg} (--no-ram-block: proceeding anyway)"
         return False, msg
 
-    return True, f"RAM OK: {available_gb:.1f} GB available (≥{required_gb:.1f} GB required, 50% of {total_gb:.1f} GB total)"
+    return True, (
+        f"RAM OK: {available_gb:.1f} GB available (≥{required_gb:.1f} GB required, 50% of {total_gb:.1f} GB total)"
+    )
 
 
 def check_model_lifecycle(enforce: bool = False) -> tuple[bool, str, list[str]]:
@@ -191,22 +196,22 @@ def check_ollama_loaded_models() -> list[str]:
 
 def estimate_model_timeout(model: str) -> int:
     """Estimate query timeout in seconds based on model size.
-    
+
     Parses model name to extract parameter count, then applies scaling:
     - <4B params: 300s (5 min)
     - 4-8B params: 420s (7 min)
     - 8-13B params: 600s (10 min)
     - 13B+ params: 900s (15 min)
-    
+
     For tier-2 queries (longer context), applies 1.5x multiplier.
-    
+
     Returns:
         Timeout in seconds (conservative for low-resource hardware)
     """
     # Common model name patterns: phi3:mini (~3.8B), llama3:8b, mistral:7b, etc.
     # Extract numeric size from model string (e.g., "8b", "7B", "mini", "13b-instruct")
     name_lower = model.lower()
-    
+
     # Heuristic mapping for common size indicators
     if "mini" in name_lower or "3b" in name_lower or "2b" in name_lower:
         params_b = 3
@@ -218,12 +223,12 @@ def estimate_model_timeout(model: str) -> int:
         params_b = 70
     else:
         # Try parsing numeric pattern like "llama-3.1-8b" or "mistral-7b-instruct"
-        match = re.search(r'(\d+)b', name_lower)
+        match = re.search(r"(\d+)b", name_lower)
         if match:
             params_b = int(match.group(1))
         else:
             params_b = 7  # Conservative default (medium model)
-    
+
     # Apply timeout scaling
     if params_b < 4:
         return 300  # 5 min
@@ -261,18 +266,13 @@ def run_ollama_preflight(model_lifecycle_check: bool = False, warn_only_ram: boo
         warnings.append(lifecycle_msg)
     else:
         print(f"✓ {lifecycle_msg}", file=sys.stderr if not dry_run else sys.stdout, flush=True)
-    
+
     # Preflight: Unload any loaded models for clean slate
     if loaded_models and not dry_run:
         print("🧹 Preflight cleanup: Unloading all loaded models...", file=sys.stderr, flush=True)
         for model_name in loaded_models:
             try:
-                subprocess.run(
-                    ["ollama", "stop", model_name],
-                    check=True,
-                    capture_output=True,
-                    timeout=10
-                )
+                subprocess.run(["ollama", "stop", model_name], check=True, capture_output=True, timeout=10)
                 print(f"   ✓ Unloaded {model_name}", file=sys.stderr, flush=True)
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
                 print(f"   ⚠️  Failed to unload {model_name}: {e}", file=sys.stderr, flush=True)
@@ -353,7 +353,7 @@ def get_machine_metadata() -> dict:
 
 def run_rag_answer(query: str, model: str, top_k: int = 10, template_path: str = None, timeout_sec: int = 300) -> dict:
     """Run the rag_index.py answer command and return JSON.
-    
+
     Args:
         timeout_sec: Timeout in seconds (default 300s/5min; dynamically scaled by caller)
     """
@@ -385,7 +385,7 @@ def run_rag_answer(query: str, model: str, top_k: int = 10, template_path: str =
         if "model" in error_msg and "not found" in error_msg:
             print(f"\n❌ ERROR: Model {model} not found.", file=sys.stderr)
             print(f"   Run 'ollama pull {model}' first.", file=sys.stderr)
-            print(f"   Available models: Run 'ollama list' to see what's on disk.", file=sys.stderr)
+            print("   Available models: Run 'ollama list' to see what's on disk.", file=sys.stderr)
             sys.exit(2)  # Exit code 2 = model missing (distinct from general failure)
         return {"ok": False, "error": e.stderr}
     except json.JSONDecodeError:
@@ -523,13 +523,10 @@ def run_preflight_checks(answer: str, test_case: dict, retrieved_chunks: list) -
     if expected_source and retrieved_chunks:
         # Parse comma-separated expected sources
         expected_files = [f.strip() for f in expected_source.split(",")]
-        
+
         # Check how many expected files appear in retrieved chunks
         # Use substring match (e.g., "AGENTS.md" in "path/to/AGENTS.md")
-        coverage_hits = sum(
-            1 for expected in expected_files
-            if any(expected in chunk for chunk in retrieved_chunks)
-        )
+        coverage_hits = sum(1 for expected in expected_files if any(expected in chunk for chunk in retrieved_chunks))
         signals["source_coverage"] = round(coverage_hits / len(expected_files), 2)
     else:
         signals["source_coverage"] = 0.0
@@ -855,7 +852,10 @@ def main():
     parser.add_argument(
         "--timeout",
         type=int,
-        help="Override query timeout in seconds (default: auto-estimated by model size). Use for extended testing of large models on RAM-constrained systems.",
+        help=(
+            "Override query timeout in seconds (default: auto-estimated by model size). "
+            "Use for extended testing of large models on RAM-constrained systems."
+        ),
     )
     args = parser.parse_args()
 
@@ -967,13 +967,16 @@ def main():
         current_ram_gb = get_available_ram_gb()
         if current_ram_gb > 0 and current_ram_gb < ram_floor_gb:
             print(f"⚠️  RAM below floor: {current_ram_gb:.1f} GB (expected ≥{ram_floor_gb:.1f} GB)", flush=True)
-            
+
             # Strategy: For same-model queries, try cooldown-based recovery first
             # Only unload if RAM still insufficient OR switching models
-            same_model = (last_model_used == args.model)
+            same_model = last_model_used == args.model
             if same_model and cooldown_sec > 0:
-                print(f"   Same model as previous query — applying {cooldown_sec}s cooldown for passive recovery...", flush=True)
-                
+                print(
+                    f"   Same model as previous query — applying {cooldown_sec}s cooldown for passive recovery...",
+                    flush=True,
+                )
+
                 # Log RAM at intervals to observe recovery pattern
                 intervals = [3, 5, 7, 10]
                 prev_interval = 0
@@ -986,14 +989,14 @@ def main():
                         prev_interval = interval
                     else:
                         break
-                
+
                 # Use final measurement
                 current_ram_gb = get_available_ram_gb()
                 print(f"   Final RAM after {cooldown_sec}s cooldown: {current_ram_gb:.1f} GB", flush=True)
-            
+
             # If still below floor after cooldown (or different model), auto-unload
             if current_ram_gb < ram_floor_gb:
-                print(f"   RAM still below floor — checking `ollama ps` for pinned models...", flush=True)
+                print("   RAM still below floor — checking `ollama ps` for pinned models...", flush=True)
                 pinned_models = check_ollama_loaded_models()
                 if pinned_models:
                     print(f"   FOUND: {', '.join(pinned_models)} still loaded", flush=True)
@@ -1004,20 +1007,20 @@ def main():
                         current_ram_gb = get_available_ram_gb()
                         print(f"   RAM after unload: {current_ram_gb:.1f} GB\n", flush=True)
                     except (subprocess.TimeoutExpired, FileNotFoundError):
-                        print(f"   Failed to unload model. Proceeding anyway.\n", flush=True)
+                        print("   Failed to unload model. Proceeding anyway.\n", flush=True)
                 else:
                     print("   No pinned models found. System may be under load.\n", flush=True)
             else:
-                print(f"   ✓ Cooldown recovery successful — RAM adequate\n", flush=True)
-        
+                print("   ✓ Cooldown recovery successful — RAM adequate\n", flush=True)
+
         print(f" - ({idx}/{total_cases}) Running '{tc['id']}'...", flush=True)
-        
+
         # Track model for next iteration's cooldown strategy
         last_model_used = args.model
-        
+
         # Capture available RAM before query execution
         ram_available_gb = get_available_ram_gb() if psutil is not None else None
-        
+
         start_time = time.time()
         payload = run_rag_answer(tc["query"], args.model, args.top_k, args.template_path, timeout_sec=query_timeout_sec)
         duration = time.time() - start_time
@@ -1094,12 +1097,7 @@ def main():
     if loaded:
         for model_name in loaded:
             try:
-                subprocess.run(
-                    ["ollama", "stop", model_name],
-                    check=True,
-                    capture_output=True,
-                    timeout=10
-                )
+                subprocess.run(["ollama", "stop", model_name], check=True, capture_output=True, timeout=10)
                 print(f"   ✓ Unloaded {model_name}", flush=True)
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
                 print(f"   ⚠️  Failed to unload {model_name}: {e}", flush=True)

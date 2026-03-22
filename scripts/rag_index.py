@@ -694,11 +694,14 @@ def query_index(
         normalized_query, fts_query = _normalize_query_for_fts(query)
 
         sql = (
-            "SELECT c.chunk_id, c.source_file, c.scope, c.governance_tier, c.partition_id, c.retention_policy, "
+            "SELECT c.chunk_id, c.source_file, c.scope, c.governance_tier, "
+            "c.partition_id, c.retention_policy, "
             "c.heading, c.governs_csv, c.fallback_h2, "
             "c.start_line, c.end_line, c.content, "
             "(bm25(rag_fts) + "
-            " (CASE WHEN c.source_file IN ('AGENTS.md', 'MANIFESTO.md', 'CONTRIBUTING.md', 'CLAUDE.md') THEN -5.0 ELSE 0.0 END) + "
+            " (CASE WHEN c.source_file IN "
+            "('AGENTS.md', 'MANIFESTO.md', 'CONTRIBUTING.md', 'CLAUDE.md') "
+            "THEN -5.0 ELSE 0.0 END) + "
             " (CASE WHEN c.source_file LIKE 'docs/research/%' THEN 2.0 ELSE 0.0 END)) AS score "
             "FROM rag_fts "
             "JOIN chunks c ON c.chunk_id = rag_fts.chunk_id "

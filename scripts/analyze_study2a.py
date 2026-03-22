@@ -3,21 +3,22 @@
 
 import argparse
 import json
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
+
 
 def main():
     parser = argparse.ArgumentParser(description="Quick analysis of Study 2a rescored results.")
-    parser.add_argument('--study', type=str, default='study-2a', help='Study directory name')
-    parser.add_argument('--model', type=str, help='Filter by model name prefix (e.g., granite3.3-2b)')
+    parser.add_argument("--study", type=str, default="study-2a", help="Study directory name")
+    parser.add_argument("--model", type=str, help="Filter by model name prefix (e.g., granite3.3-2b)")
     args = parser.parse_args()
 
-    artifacts_dir = Path(f'data/benchmark-results/{args.study}')
+    artifacts_dir = Path(f"data/benchmark-results/{args.study}")
     if not artifacts_dir.exists():
         print(f"Error: Directory {artifacts_dir} not found.")
         return
 
-    pattern = f'{args.model}*-rescored.jsonl' if args.model else '*-rescored.jsonl'
+    pattern = f"{args.model}*-rescored.jsonl" if args.model else "*-rescored.jsonl"
     rescored_files = list(artifacts_dir.glob(pattern))
 
     if not rescored_files:
@@ -34,10 +35,10 @@ def main():
         with open(f) as file:
             for line in file:
                 data = json.loads(line)
-                qid = data.get('query_id')
-                score = data.get('score', 0.0)
+                qid = data.get("query_id")
+                score = data.get("score", 0.0)
                 # Fix: retrieval data is in "retrieved_chunks" field, not "retrieval"
-                retrieved_chunks = data.get('retrieved_chunks', [])
+                retrieved_chunks = data.get("retrieved_chunks", [])
                 query_scores[qid].append(score)
                 query_retrievals[qid].append(len(retrieved_chunks))
 
@@ -87,7 +88,9 @@ def main():
     print(f"  • Total unique queries: {len(query_stats)}")
     print(f"  • Queries with avg score < 0.50: {sum(1 for s in query_stats if s[1] < 0.5)}")
     print(f"  • Queries with avg score ≥ 0.80: {sum(1 for s in query_stats if s[1] >= 0.8)}")
-    print(f"  • Average variance across all queries: {sum(s[4] for s in query_stats) / len(query_stats) if len(query_stats) > 0 else 0:.2f}")
+    avg_variance = sum(s[4] for s in query_stats) / len(query_stats) if len(query_stats) > 0 else 0
+    print(f"  • Average variance across all queries: {avg_variance:.2f}")
+
 
 if __name__ == "__main__":
     main()
