@@ -57,6 +57,12 @@ As per the **Local Compute-First** axiom ([MANIFESTO.md](../../MANIFESTO.md#3-lo
 *   **Evidence**: Perfectly handled verbose prompts and high-context (k=20) environments.
 *   **Canonical Example**: Qwen2.5-7B maintained 100% citation accuracy across 9/9 queries, demonstrating that "verbose" is not "noisy" for high-density architectures.
 
+### Pattern: Family Alignment as Primary Retrieval Predictor
+*   **Observation**: At the 7B–9B parameter tier, model family alignment with the embedding space (nomic-embed-text) is the primary predictor of retrieval quality—exceeding raw parameter count as an explanatory variable.
+*   **Evidence**: Qwen2.5-7B (0.956) and Gemma2-9B (0.311) operated on identical hardware with identical k=20 retrieval depth. The 3× quality gap tracks architectural, not quantitative, differences.
+*   **Anti-pattern**: Assuming larger models always retrieve better. Gemma2-9B returned zero sources on 5/9 queries despite having the largest parameter count in the sweep.
+*   **Canonical Example**: Qwen2.5-7B achieved 100% source citation accuracy across all 9 task categories; Gemma2-9B failed retrieval entirely on 5 of those same tasks.
+
 ## Recommendations
 
 ### 1. ADOPT Qwen2.5-7B as Default Mid-tier Baseline
@@ -77,6 +83,16 @@ Selection logic for RAG pipelines must be family-aware. Qwen-series models shoul
 
 ### 5. DEPRECATE Gemma2 for Local RAG
 Until embedding alignment issues are resolved, flag Gemma2 as "Not Recommended" for the EndogenAI Workflows corpus.
+
+## Open Questions
+
+The following questions are unresolved and inform the research agenda for Study 2b and beyond:
+
+1. **Embedding Alignment Mechanism**: What architectural property of Gemma2 causes retrieval void at k=20? Does the same failure manifest with alternative embedding models (e.g., mxbai-embed-large)?
+2. **SOTA Stability**: Is Qwen2.5-7B's 0.956 score stable across varied corpus compositions, or is it optimised for the markdown-heavy governance docs in this study?
+3. **Family Ladder Gaps**: Can Qwen2.5-3B or Qwen2.5-4B variants fill the latency gap between Qwen2.5-1.5B (22s) and Qwen2.5-7B (85s)?
+4. **Adaptive K Threshold Precision**: The 1.5B boundary is derived from 17 models at coarse parameter increments. A finer-grained sweep (2B–4B) would tighten the transition point.
+5. **Cross-Embedding Sensitivity**: Does switching from nomic-embed-text to mxbai-embed-large reorder the family ranking, or does the stratification pattern persist across embedding models?
 
 ## Sources
 *   [Study 2a Baseline k=10](../../data/benchmark-results/study-2a/)
