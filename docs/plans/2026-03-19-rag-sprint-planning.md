@@ -99,6 +99,29 @@ Gate acceptance criteria:
 2. Adoption recommendations are grounded in evidence rather than preference.
 3. Risk mitigation proposals are concrete and prioritized.
 
+### Phase 6 - Local Generation and Answer Integration (A+G)
+Issues: #405 (Generation Architecture)
+Owner recommendation: RAG Specialist + Executive Scripter
+Depends on: Phase 1 (Retrieval) and Phase 3 (Installability)
+Deliverables:
+- `scripts/rag_index.py answer` command implementing LiteLLM + local model selection
+- Grounded system prompt template (enforcing citation-rule-2: path+line link)
+- Verification script for "Job-to-be-done" (answer accuracy against context)
+Exit criteria:
+- Command succeeds using local Ollama endpoint (Phi-3/Llama-3-8B)
+- Grounded output includes valid local markdown links [path.md#Lnn]
+- Zero "hallucination" leakage in pilot evaluation set
+
+### Review Gate 6 - Generation Fidelity
+Owner recommendation: Review
+Depends on: Phase 6
+Goal: verify grounding quality and local-compute-first compliance
+Hard gate: Phase 7 (Adoption) cannot begin until APPROVED.
+Gate acceptance criteria:
+1. Answer command correctly consumes RAG query output without manual copy-paste.
+2. Citations are verified as correct links to source docs.
+3. System prompt prevents answering from hidden prior knowledge (grounding-only).
+
 ### Phase 4 - Pilot Evidence Integration and Hold/Release Decision
 Issues: #8 and cross-reference to #15-#20
 Owner recommendation: Executive Orchestrator + Executive Docs
