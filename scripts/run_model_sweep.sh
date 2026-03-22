@@ -5,6 +5,7 @@
 # RAM-filtered model list (2026-03-21):
 # Phase 7: Removed qwen:7b, mistral:7b due to RAM exhaustion on 8GB systems
 # Phase 8: Added llama3:8b (non-quant), quantized variants, timing tracking
+# Phase 9C: Upgraded qwen → qwen2.5, llama3 → llama3.1, added deepseek-r1 reasoning
 # See: .tmp/research-rag-stress-test-quantization/2026-03-21.md
 
 set -euo pipefail
@@ -21,12 +22,16 @@ SWEEP_START=$(date +%s)
 # Model matrix with estimated per-model time (min) and size
 # Format: "model|estimated_min|size_gb|notes"
 MODELS=(
-    "ollama/qwen:0.5b|5|0.4|baseline-fast"
-    "ollama/qwen:1.8b|8|1.1|fast"
-    "ollama/qwen:4b|12|2.3|moderate"
+    "ollama/qwen2.5:0.5b|5|0.4|baseline-fast-v2.5"
+    "ollama/qwen2.5:1.5b|8|0.9|fast-v2.5"
+    "ollama/qwen2.5:3b|12|1.9|moderate-v2.5"
     "ollama/phi3:mini|15|2.2|variable-latency"
-    "ollama/llama3:8b-instruct-q4_K_M|18|4.9|quantized-proven"
-    "ollama/llama3:8b|25|4.7|non-quant-borderline"
+    "ollama/llama3.1:8b-instruct-q4_K_M|18|4.9|quantized-proven-v3.1"
+    "ollama/qwen2.5:7b-instruct-q4_K_M|22|4.4|quantized-7b-v2.5"
+    "ollama/mistral:7b-instruct-q4_K_M|22|4.4|quantized-7b"
+    "ollama/llama3.1:8b|25|4.7|non-quant-v3.1"
+    "ollama/deepseek-r1:1.5b|10|0.9|reasoning-fast"
+    "ollama/deepseek-r1:7b|20|4.1|reasoning-7b"
     "ollama/gemma2:2b|8|1.6|fast-consistent"
     "ollama/tinyllama:1.1b|5|0.6|ultralight"
     "ollama/gemma:2b|8|1.7|moderate"
@@ -45,17 +50,27 @@ TOTAL_EST_HOURS=$((TOTAL_EST_MIN / 60))
 TOTAL_EST_REMAINING_MIN=$((TOTAL_EST_MIN % 60))
 
 echo "=========================================="
-echo "Study 2a Extended Model Sweep"
+echo "Study 2a Extended Model Sweep (LLM-as-Judge)"
 echo "=========================================="
 echo "Total models: $TOTAL"
-echo "Tier: 2 (9 test cases per model)"
+echo "Tier: 2 (12 test cases per model, includes source_coverage signal)"
+echo "Judge model: phi3:mini (evaluates against judge rubrics)"
 echo "Estimated total time: ~${TOTAL_EST_HOURS}h ${TOTAL_EST_REMAINING_MIN}m (${TOTAL_EST_MIN} min)"
 echo ""
-echo "New in Phase 8:"
-echo "  + llama3:8b (non-quant, 4.7GB, 900s timeout)"
-echo "  + orca-mini (fixed tag: latest not :3b)"
-echo "  + Per-model timing estimates"
-echo "  + Sweep-level duration tracking"
+echo "New in Phase 9C (Version Upgrades + Reasoning Models):"
+echo "  + qwen → qwen2.5 (all variants: 0.5b, 1.5b, 3b, 7b-q4)"
+echo "  + llama3 → llama3.1 (both 8b-q4 and non-quant)"
+echo "  + deepseek-r1 reasoning models (1.5b, 7b)"
+echo "  + source_coverage preflight signal active"
+echo ""
+echo "Phase 9A-bis infrastructure:"
+echo "  + LLM-as-judge evaluation (phi3:mini) for tier-2 queries"
+echo "  + Rubric-based scoring (replaces pattern_match fallback)"
+echo "  + All responses saved to JSONL for later analysis"
+echo ""
+echo "Quantized 7B comparison:"
+echo "  + llama3.1:8b-q4 vs llama3.1:8b (quantization impact)"
+echo "  + qwen2.5:7b-q4, mistral:7b-q4 (proven quantized)"
 echo ""
 echo "Excluded (RAM exhaustion on 8GB):"
 echo "  - qwen:7b (4.5GB) - full precision, swaps to disk"
@@ -92,8 +107,8 @@ for i in "${!MODELS[@]}"; do
     done
     sleep 2
     
-    # Build benchmark command with optional extended timeout
-    BENCH_CMD="uv run python scripts/benchmark_rag.py --model \"$MODEL\" --tier 2 --no-ram-block"
+    # Build benchmark command with LLM-as-judge for tier-2 evaluation
+    BENCH_CMD="uv run python scripts/benchmark_rag.py --model \"$MODEL\" --tier 2 --no-ram-block --judge-model ollama/phi3:mini"
     
     # Extended timeout for large non-quant models
     if [[ "$MODEL" == *"llama3:8b"* ]] && [[ "$MODEL" != *"q4_K_M"* ]]; then
@@ -117,8 +132,30 @@ for i in "${!MODELS[@]}"; do
         echo -e "${GREEN}✓ Model $MODEL_NUM/$TOTAL complete${NC}"
         echo -e "  Actual: ${MODEL_ELAPSED_MIN}m ${MODEL_ELAPSED_SEC}s | Est: ${EST_MIN}m | Δ: $((MODEL_ELAPSED_MIN - EST_MIN))m"
     else
-        echo -e "${RED}✗ Model $MODEL_NUM/$TOTAL FAILED${NC} (continuing to next model)"
+        echo -e "${RED}❌ Model $MODEL_NUM/$TOTAL FAILED${NC} (continuing to next model)"
         echo -e "  Failed after ${MODEL_ELAPSED_MIN}m ${MODEL_ELAPSED_SEC}s"
+        
+        # Health check: Verify ollama daemon is responsive after failure
+        echo "Checking ollama daemon health..."
+        if ! curl -sf http://localhost:11434/ >/dev/null 2>&1; then
+            echo -e "${RED}⚠️  Ollama daemon unresponsive after failure${NC}"
+            echo "Attempting to recover..."
+            # Try unloading all models first
+            ollama ps | tail -n +2 | awk '{print $1}' | while read -r model; do
+                [ -n "$model" ] && ollama stop "$model" 2>/dev/null || true
+            done
+            sleep 5
+            # Re-check
+            if ! curl -sf http://localhost:11434/ >/dev/null 2>&1; then
+                echo -e "${RED}❌ Ollama daemon still unresponsive — manual intervention required${NC}"
+                echo "Stopping sweep. Please restart ollama and re-run."
+                exit 1
+            else
+                echo -e "${GREEN}✓ Ollama daemon recovered${NC}"
+            fi
+        else
+            echo -e "${GREEN}✓ Ollama daemon healthy${NC}"
+        fi
     fi
     
     # Cleanup after each model
