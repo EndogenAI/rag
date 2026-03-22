@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Run full model sweep for Study 2a (tier-2 suite)
-# Usage: 
-#   bash scripts/run_model_sweep.sh [--variant baseline|optiona|optionb] [--models MODEL1,MODEL2,...]
+# Usage:
+#   bash scripts/run_model_sweep.sh [--variant baseline|optiona|optionb|optionc] [--models MODEL1,MODEL2,...]
 #
 # Variants:
 #   baseline: top-k=10, standard template, study-id=study-2a (default)
 #   optiona:  top-k=20, standard template, study-id=study-2a-topk20
 #   optionb:  top-k=10, enhanced agent-workflow prompt, study-id=study-2a-optionb
+#   optionc:  top-k=20, reasoning-first template (rag_answer_optionc.md), study-id=study-2a-optionc
 #
 # Examples:
 #   bash scripts/run_model_sweep.sh --variant optionb

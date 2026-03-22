@@ -17,6 +17,11 @@ Usage:
     # Rescore and overwrite original files
     uv run python scripts/batch_rescore_judge.py --in-place
 
+Arguments:
+    --study STUDY    Study directory under data/benchmark-results/ (default: study-2a)
+    --dry-run        Preview which artifacts would be rescored; make no writes
+    --in-place       Overwrite original JSONL files instead of writing *-rescored.jsonl
+
 Workflow:
     1. Read all JSONL artifacts from data/benchmark-results/<study>/
     2. Load test cases from data/rag-benchmarks.yml
@@ -26,9 +31,16 @@ Workflow:
        - Update score field (preserve all other fields)
     5. Write rescored artifacts to *-rescored.jsonl (or overwrite if --in-place)
 
+Outputs:
+    *-rescored.jsonl files alongside originals (default), or in-place overwrite.
+    Prints per-artifact progress and final score summary to stdout.
+
 RAM efficiency:
     - Judge model loaded once for all responses (vs. per-query during sweep)
     - Peak RAM: phi3:mini (2.2 GB) only, no test models
+
+Governance:
+    Part of the RAG Study sweep pipeline. See .github/skills/rag-rapid-research/SKILL.md.
 """
 
 import argparse
@@ -182,8 +194,12 @@ def rescore_artifact(
 
         with open(output_path, "w") as f:
             for detail in rescored_lines:
-                line = json.dumps(detail, separators=(",", ":"))
-                f.write(line + "\n")
+                # Malformed-line passthrough: raw strings from the except branch
+                # must be written as-is; json.dumps would double-encode them.
+                if isinstance(detail, str):
+                    f.write(detail + "\n")
+                else:
+                    f.write(json.dumps(detail, separators=(",", ":")) + "\n")
 
         print(f"  Wrote: {output_path}")
 

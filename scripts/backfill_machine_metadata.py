@@ -2,7 +2,24 @@
 """
 Backfill machine_metadata to existing benchmark JSONL files.
 
-Usage: uv run python scripts/backfill_machine_metadata.py
+Reads every JSONL artifact in data/benchmark-results/<study>/ and injects a
+``machine_metadata`` field (platform.processor, ram_gb, python_version, etc.)
+into any entry that does not already have one. Existing entries with the field
+are left unchanged (idempotent).
+
+Usage:
+    uv run python scripts/backfill_machine_metadata.py
+
+Arguments:
+    (none)  Study directory is hard-coded to data/benchmark-results/study-2a/.
+            Edit main() to target a different study.
+
+Outputs:
+    Modifies JSONL files in-place; prints per-file progress to stdout.
+    Adds fields: machine_type, system, processor, python_version, ram_gb.
+
+Governance:
+    Part of the RAG Study sweep pipeline. See .github/skills/rag-rapid-research/SKILL.md.
 """
 
 import json
@@ -92,7 +109,11 @@ def main():
     print("\nBackfill complete. Verifying sample entry...")
 
     # Verify by reading back one file
-    sample_file = list(study_dir.glob("*.jsonl"))[0]
+    jsonl_files = list(study_dir.glob("*.jsonl"))
+    if not jsonl_files:
+        print(f"WARNING: No .jsonl files found in {study_dir} — skipping verification.")
+        return 0
+    sample_file = jsonl_files[0]
     with open(sample_file, "r") as f:
         first_line = f.readline()
         sample_entry = json.loads(first_line)
