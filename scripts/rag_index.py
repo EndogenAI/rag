@@ -641,16 +641,20 @@ def _validate_filter_scope(filter_scope: str | None) -> str | None:
     return normalized
 
 
-def _normalize_query_for_fts(query: str) -> str:
-    """Convert user query text into a safe FTS token query.
+def _normalize_query_for_fts(query: str) -> tuple[str, str]:
+    """Convert user query text into tokens and two derived forms.
 
-    Uses ' OR ' union to avoid 0-result 'starvation' in long natural language
-    questions while relying on BM25 to rank the most relevant overlaps.
+    Returns:
+        (normalized, fts_query) where:
+        - normalized: human-readable space-joined form (for API consumers / tests)
+        - fts_query: ' OR '-joined form used in the SQLite FTS MATCH clause to
+          avoid 0-result 'starvation' for long natural-language questions while
+          letting BM25 rank the most relevant overlaps.
     """
     tokens = re.findall(r"[A-Za-z0-9]+", query)
     if not tokens:
         raise ValueError("query must contain at least one alphanumeric token")
-    return " OR ".join(tokens)
+    return " ".join(tokens), " OR ".join(tokens)
 
 
 def query_index(
@@ -687,7 +691,7 @@ def query_index(
                 f"Index version mismatch: found '{version or 'none'}', expected '{INDEX_VERSION}'. Run full reindex."
             )
 
-        fts_query = _normalize_query_for_fts(query)
+        normalized_query, fts_query = _normalize_query_for_fts(query)
 
         sql = (
             "SELECT c.chunk_id, c.source_file, c.scope, c.governance_tier, c.partition_id, c.retention_policy, "
@@ -746,7 +750,7 @@ def query_index(
         return {
             "ok": True,
             "query": query,
-            "normalized_query": fts_query,
+            "normalized_query": normalized_query,
             "top_k": top_k,
             "filter_governs": normalized_filter,
             "filter_scope": effective_scope,
@@ -1120,7 +1124,9 @@ def answer_query(
     }
 
 
-def _print_output(payload: dict[str, Any], output: str, file: Any = sys.stdout) -> None:
+def _print_output(payload: dict[str, Any], output: str, file: Any = None) -> None:
+    if file is None:
+        file = sys.stdout
     if output == "json":
         print(json.dumps(payload, indent=2), file=file)
         return
