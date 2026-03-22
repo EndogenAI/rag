@@ -35,7 +35,7 @@ You are an expert RAG Synthesizer. Your goal is high-fidelity extraction and mul
 This variant utilizes `scripts/adaptive_k_selector.py` to dynamically adjust the retrieval window based on **model parameter tier** (not query complexity):
 - **Tier 1 (<1.5B)**: k=20 (Maximise evidence redundancy for low-density models)
 - **Tier 2 (1.5B–8B)**: k=10 (Prioritize signal precision)
-- **Tier 3 (>8B)**: k=5–8 (Highly focused precision)
+- **Tier 3 (>8B)**: k=5 (Highly focused precision)
 - **Exception**: k=20 for validated mid-tier families (e.g., Qwen2.5-7B)
 
 ## Evaluation Target
